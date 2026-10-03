@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-03T12:19:04.128Z",
+  "title": "Design System: Enero Marso Cafe",
+  "extensions": {
+    "colorMeta": {
+      "gold": {
+        "role": "primary",
+        "displayName": "Logo Gold",
+        "canonical": "oklch(72.9% 0.106 74)",
+        "tonalRamp": [
+          "#150800",
+          "#351e00",
+          "#593700",
+          "#805300",
+          "#a6762d",
+          "#cc9a54",
+          "#ebc38e",
+          "#ffe9c3"
+        ]
+      },
+      "brown": {
+        "role": "secondary",
+        "displayName": "Roasted Brown",
+        "canonical": "oklch(46.9% 0.094 53)",
+        "tonalRamp": [
+          "#180600",
+          "#3a1a02",
+          "#61310c",
+          "#864d25",
+          "#ac7048",
+          "#d3946c",
+          "#f6bc99",
+          "#ffe4ca"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Espresso Ink",
+        "canonical": "oklch(18.5% 0.005 39)",
+        "tonalRamp": [
+          "#0d0a09",
+          "#262322",
+          "#423f3e",
+          "#605d5b",
+          "#837f7e",
+          "#a8a3a2",
+          "#cec9c8",
+          "#f2edec"
+        ]
+      },
+      "cream": {
+        "role": "neutral",
+        "displayName": "Steamed Cream",
+        "canonical": "oklch(96.1% 0.023 82)",
+        "tonalRamp": [
+          "#100a02",
+          "#2a2317",
+          "#463f32",
+          "#645d4f",
+          "#877f71",
+          "#aca495",
+          "#d2c9ba",
+          "#f6eddd"
+        ]
+      },
+      "sand": {
+        "role": "neutral",
+        "displayName": "Sand Paper",
+        "canonical": "oklch(85.8% 0.042 74)",
+        "tonalRamp": [
+          "#150800",
+          "#30210b",
+          "#4d3d26",
+          "#6c5a43",
+          "#8f7d65",
+          "#b4a188",
+          "#dbc7ad",
+          "#ffebd1"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Kraft Card",
+        "canonical": "oklch(79.4% 0.056 74)",
+        "tonalRamp": [
+          "#150800",
+          "#341f00",
+          "#523b1b",
+          "#715939",
+          "#957c5a",
+          "#baa07e",
+          "#e1c6a2",
+          "#ffeac5"
+        ]
+      },
+      "cocoa": {
+        "role": "neutral",
+        "displayName": "Cocoa",
+        "canonical": "oklch(35.0% 0.049 44)",
+        "tonalRamp": [
+          "#180501",
+          "#371c0f",
+          "#56372a",
+          "#765547",
+          "#9a7769",
+          "#c09b8c",
+          "#e7c1b1",
+          "#ffe5d4"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Landing wordmark headline only; uppercase, optically re-centered."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Menu band titles and sub-page titles; uppercase brown on sand or cream on brown."
+      },
+      "headline-hero": {
+        "displayName": "Headline Hero",
+        "purpose": "Home hero title in gold over video; uppercase."
+      },
+      "script": {
+        "displayName": "Script (Allura)",
+        "purpose": "One short tagline per block; gold on dark, ink on sand."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Menu card item names; uppercase."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running copy."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, nav, info-panel headings; uppercase tracked."
+      },
+      "label-sm": {
+        "displayName": "Label Small",
+        "purpose": "Footer column headings and landing corner links; uppercase."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card-lift",
+        "value": "0 1rem 2rem -1.25rem rgb(21 18 17 / 0.55)",
+        "purpose": "Menu card hover only, paired with translateY(-4px)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Eased-out curve for card lift, nav sheet slide, chevron nudge and loader."
+      },
+      {
+        "name": "state-fast",
+        "value": "0.2s ease",
+        "purpose": "Icon, round and nav-link color/background changes."
+      },
+      {
+        "name": "state-button",
+        "value": "0.25s ease",
+        "purpose": "Ghost and pill button fills."
+      },
+      {
+        "name": "lift",
+        "value": "0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Menu card hover lift."
+      },
+      {
+        "name": "nav-sheet",
+        "value": "opacity 0.25s ease, translate 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Mobile nav sheet open/close."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "transition-duration: 0.01ms",
+        "purpose": "All transitions collapse; the loader fades the mark in whole."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "34rem"
+      },
+      {
+        "name": "tablet",
+        "value": "56rem"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Square cream-outlined CTA over photography (landing).",
+      "html": "<div class=\"ds-dark\"><a class=\"ds-btn-ghost\" href=\"#\">Order here</a></div>",
+      "css": ":host{--cream:#faf1e1;--sand:#e1cdb3;--card:#d2b794;--brown:#834a22;--gold:#cf9d57;--cocoa:#503225;--ink:#151211;--brand:\"Montserrat\",\"Century Gothic\",sans-serif;--script:\"Allura\",\"Brush Script MT\",cursive;--ease:cubic-bezier(0.16,1,0.3,1);} .ds-dark{background:var(--ink);padding:2rem;} .ds-btn-ghost{font:600 0.875rem/1 var(--brand);letter-spacing:0.2em;text-transform:uppercase;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:0.6rem;transition:background-color .25s ease,color .25s ease,border-color .25s ease;padding:1.05rem 2rem;border:1px solid var(--cream);color:var(--cream);background:transparent;} .ds-btn-ghost:hover{background:var(--cream);color:var(--ink);} .ds-btn-ghost:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}"
+    },
+    {
+      "name": "Pill Button",
+      "kind": "button",
+      "refersTo": "button-pill",
+      "description": "Rounded outline CTA inside content bands; takes the band's headline color.",
+      "html": "<div class=\"ds-sand\"><a class=\"ds-btn-pill\" href=\"#\">View full menu</a></div>",
+      "css": ":host{--cream:#faf1e1;--sand:#e1cdb3;--card:#d2b794;--brown:#834a22;--gold:#cf9d57;--cocoa:#503225;--ink:#151211;--brand:\"Montserrat\",\"Century Gothic\",sans-serif;--script:\"Allura\",\"Brush Script MT\",cursive;--ease:cubic-bezier(0.16,1,0.3,1);} .ds-sand{background:var(--sand);padding:2rem;} .ds-btn-pill{font:600 0.875rem/1 var(--brand);letter-spacing:0.2em;text-transform:uppercase;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:0.6rem;transition:background-color .25s ease,color .25s ease,border-color .25s ease;padding:1rem 2.1rem;border:2px solid currentColor;border-radius:999px;color:var(--brown);} .ds-btn-pill:hover{background:var(--brown);color:var(--sand);} .ds-btn-pill:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}"
+    },
+    {
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "button-icon",
+      "description": "Gold-outlined circle in the header (search, menu toggle).",
+      "html": "<div class=\"ds-dark\"><button class=\"ds-btn-icon\" aria-label=\"Search the menu\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"6.5\"/><path d=\"m16 16 4.5 4.5\"/></svg></button></div>",
+      "css": ":host{--cream:#faf1e1;--sand:#e1cdb3;--card:#d2b794;--brown:#834a22;--gold:#cf9d57;--cocoa:#503225;--ink:#151211;--brand:\"Montserrat\",\"Century Gothic\",sans-serif;--script:\"Allura\",\"Brush Script MT\",cursive;--ease:cubic-bezier(0.16,1,0.3,1);} .ds-dark{background:var(--ink);padding:2rem;} .ds-btn-icon{width:2.75rem;height:2.75rem;display:grid;place-items:center;border-radius:50%;color:var(--gold);background:none;border:1.5px solid var(--gold);cursor:pointer;transition:background-color .2s ease,color .2s ease;} .ds-btn-icon svg{width:1.2rem;height:1.2rem;} .ds-btn-icon:hover{background:var(--gold);color:var(--ink);} .ds-btn-icon:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}"
+    },
+    {
+      "name": "Round Button",
+      "kind": "button",
+      "refersTo": "button-round",
+      "description": "Carousel prev/next control under menu rows; currentColor outline, 30% when disabled.",
+      "html": "<div class=\"ds-sand\"><button class=\"ds-btn-round\" disabled aria-label=\"Previous\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 5l-7 7 7 7\"/></svg></button><button class=\"ds-btn-round\" aria-label=\"Next\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 5l7 7-7 7\"/></svg></button></div>",
+      "css": ":host{--cream:#faf1e1;--sand:#e1cdb3;--card:#d2b794;--brown:#834a22;--gold:#cf9d57;--cocoa:#503225;--ink:#151211;--brand:\"Montserrat\",\"Century Gothic\",sans-serif;--script:\"Allura\",\"Brush Script MT\",cursive;--ease:cubic-bezier(0.16,1,0.3,1);} .ds-sand{background:var(--sand);padding:2rem;display:flex;gap:.75rem;color:var(--brown);} .ds-btn-round{width:3rem;height:3rem;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:transparent;color:inherit;border:1.5px solid currentColor;transition:background-color .2s ease,opacity .2s ease;} .ds-btn-round svg{width:1.25rem;height:1.25rem;} .ds-btn-round:not(:disabled):hover{background:var(--brown);color:var(--sand);} .ds-btn-round:disabled{opacity:.3;cursor:default;} .ds-btn-round:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Pill search on the full menu page; focus outlines the whole field in gold.",
+      "html": "<div class=\"ds-sand\"><label class=\"ds-search\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"6.5\"/><path d=\"m16 16 4.5 4.5\"/></svg><input type=\"search\" placeholder=\"Search the menu\"></label></div>",
+      "css": ":host{--cream:#faf1e1;--sand:#e1cdb3;--card:#d2b794;--brown:#834a22;--gold:#cf9d57;--cocoa:#503225;--ink:#151211;--brand:\"Montserrat\",\"Century Gothic\",sans-serif;--script:\"Allura\",\"Brush Script MT\",cursive;--ease:cubic-bezier(0.16,1,0.3,1);} .ds-sand{background:var(--sand);padding:2rem;} .ds-search{display:flex;align-items:center;gap:.75rem;padding:.4rem 1.25rem;border:2px solid var(--brown);border-radius:999px;background:var(--cream);color:var(--brown);max-width:30rem;} .ds-search svg{width:1.3rem;height:1.3rem;flex:none;} .ds-search input{flex:1;min-width:0;border:0;background:none;padding:.75rem 0;font:500 1.0625rem var(--brand);color:var(--ink);outline:none;} .ds-search input::placeholder{color:#7a5a44;} .ds-search:focus-within{outline:2px solid var(--gold);outline-offset:3px;}"
+    },
+    {
+      "name": "Header Navigation",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Tracked uppercase cream links on ink; gold hover, gold underline on the current page.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\" aria-current=\"page\">Home</a><a href=\"#\">Gallery</a><a href=\"#\">Our Store</a><a href=\"#\">Contact</a></nav>",
+      "css": ":host{--cream:#faf1e1;--sand:#e1cdb3;--card:#d2b794;--brown:#834a22;--gold:#cf9d57;--cocoa:#503225;--ink:#151211;--brand:\"Montserrat\",\"Century Gothic\",sans-serif;--script:\"Allura\",\"Brush Script MT\",cursive;--ease:cubic-bezier(0.16,1,0.3,1);} .ds-nav{display:flex;flex-wrap:wrap;gap:2.5rem;background:var(--ink);color:var(--cream);padding:1.25rem 2rem;} .ds-nav a{font:500 0.875rem var(--brand);letter-spacing:.22em;text-transform:uppercase;text-decoration:none;color:inherit;padding:.5rem 0;border-bottom:1px solid transparent;transition:border-color .2s ease,color .2s ease;} .ds-nav a:hover{color:var(--gold);} .ds-nav a[aria-current=\"page\"]{border-bottom-color:var(--gold);} .ds-nav a:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}"
+    },
+    {
+      "name": "Menu Card",
+      "kind": "card",
+      "refersTo": "menu-card",
+      "description": "Square kraft card with ink keyline, photo, uppercase name and price; lifts on hover.",
+      "html": "<div class=\"ds-sand\"><article class=\"ds-card\"><div class=\"ds-card-photo\"><span>Photo coming soon</span></div><div class=\"ds-card-label\"><h3>Iced Latte</h3><p>₱120</p></div></article></div>",
+      "css": ":host{--cream:#faf1e1;--sand:#e1cdb3;--card:#d2b794;--brown:#834a22;--gold:#cf9d57;--cocoa:#503225;--ink:#151211;--brand:\"Montserrat\",\"Century Gothic\",sans-serif;--script:\"Allura\",\"Brush Script MT\",cursive;--ease:cubic-bezier(0.16,1,0.3,1);} .ds-sand{background:var(--sand);padding:2rem;} .ds-card{width:16rem;border:1px solid var(--ink);background:var(--card);color:var(--cocoa);font-family:var(--brand);transition:transform .4s var(--ease),box-shadow .4s var(--ease);} .ds-card:hover{transform:translateY(-4px);box-shadow:0 1rem 2rem -1.25rem rgb(21 18 17 / .55);} .ds-card-photo{aspect-ratio:289/344;background:var(--cocoa);color:var(--card);display:grid;place-content:center;font-size:.75rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;} .ds-card-label{padding:1.1rem 1.1rem 1.4rem;} .ds-card-label h3{margin:0;font-weight:700;font-size:1.0625rem;letter-spacing:.12em;text-transform:uppercase;} .ds-card-label p{margin:.2rem 0 0;font-weight:600;font-size:1.0625rem;letter-spacing:.08em;}"
+    },
+    {
+      "name": "Menu List",
+      "kind": "custom",
+      "refersTo": "menu-list",
+      "description": "Full-menu board rows: uppercase name, dotted cocoa leader, brown tabular price.",
+      "html": "<div class=\"ds-sand\"><section class=\"ds-list\"><h2>Coffee</h2><ul><li><span>Iced Latte</span><span class=\"ds-dots\"></span><span class=\"ds-price\">₱120</span></li><li><span>Vanilla Latte</span><span class=\"ds-dots\"></span><span class=\"ds-price\">₱140</span></li></ul></section></div>",
+      "css": ":host{--cream:#faf1e1;--sand:#e1cdb3;--card:#d2b794;--brown:#834a22;--gold:#cf9d57;--cocoa:#503225;--ink:#151211;--brand:\"Montserrat\",\"Century Gothic\",sans-serif;--script:\"Allura\",\"Brush Script MT\",cursive;--ease:cubic-bezier(0.16,1,0.3,1);} .ds-sand{background:var(--sand);padding:2rem;font-family:var(--brand);color:var(--ink);} .ds-list{max-width:46rem;} .ds-list h2{margin:0;font-weight:700;font-size:1.5rem;letter-spacing:.16em;text-transform:uppercase;color:var(--brown);padding-bottom:.75rem;border-bottom:2px solid var(--brown);} .ds-list ul{list-style:none;margin:0;padding:0;} .ds-list li{display:flex;align-items:baseline;gap:.75rem;padding:1rem 0;border-bottom:1px solid rgb(80 50 37 / .25);font-weight:600;letter-spacing:.08em;text-transform:uppercase;} .ds-dots{flex:1;border-bottom:2px dotted rgb(80 50 37 / .45);translate:0 -.3em;} .ds-price{color:var(--brown);font-variant-numeric:tabular-nums;}"
+    },
+    {
+      "name": "Info Panel",
+      "kind": "card",
+      "refersTo": "info-panel",
+      "description": "Square cream panel with ink keyline for contact and store facts.",
+      "html": "<div class=\"ds-sand\"><section class=\"ds-info\"><h2>Visit</h2><p class=\"ds-info-big\">126 Champaca St., Western Bicutan, Taguig</p></section></div>",
+      "css": ":host{--cream:#faf1e1;--sand:#e1cdb3;--card:#d2b794;--brown:#834a22;--gold:#cf9d57;--cocoa:#503225;--ink:#151211;--brand:\"Montserrat\",\"Century Gothic\",sans-serif;--script:\"Allura\",\"Brush Script MT\",cursive;--ease:cubic-bezier(0.16,1,0.3,1);} .ds-sand{background:var(--sand);padding:2rem;font-family:var(--brand);color:var(--ink);} .ds-info{max-width:26rem;background:var(--cream);border:1px solid var(--ink);padding:clamp(1.75rem,4vw,2.75rem);} .ds-info h2{margin:0 0 .75rem;font-weight:600;font-size:.875rem;letter-spacing:.22em;text-transform:uppercase;color:var(--brown);} .ds-info-big{margin:0;font-weight:600;font-size:clamp(1.25rem,2.4vw,1.6rem);line-height:1.35;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Gold Leaf on a Dark Roast",
+    "overview": "The site is the owner's Canva design made real for phones and the web: a near-black roast ground (ink) carrying the gold of the logo, opening into warm paper bands (sand, cream, card) where the menu lives. Photography and the barista video do the atmospheric work at the top of each page; below that, the system turns into a calm, well-lit menu board of square-cornered cards, tracked uppercase Montserrat and short gold or ink script lines in Allura.\n\nDensity is relaxed and generous. Sections breathe with clamp-driven padding, horizontal menu rows scroll and snap rather than wrap, and every practical fact (menu, address, contact) sits one tap from the header. The loader is the single theatrical moment: the logo draws itself once per browser session and never again on reload.\n\nThe look is premium without pretension. Flat tonal bands rather than layered chrome, one soft lift on hover for menu cards, thin ink keylines and gold accents rather than gradients or glows outside photo shades.",
+    "keyCharacteristics": [
+      "Ink ground with gold accents at the frame (header, footer, landing, hero); sand and brown bands for content.",
+      "All structural type is Montserrat in tracked uppercase; Allura appears only as a single short tagline line.",
+      "Square cards with 1px ink keylines; pill and circle shapes reserved for controls.",
+      "Photography under directional ink shades carries mood; no decorative gradients elsewhere.",
+      "Motion is short and eased (0.2-0.4s, `cubic-bezier(0.16, 1, 0.3, 1)`), fully muted under reduced motion."
+    ],
+    "rules": [
+      {
+        "name": "The Gold Is Jewelry Rule",
+        "body": "Gold marks the brand, the current place and the interactive edge (focus, active nav, icon buttons). It is used for lines, icons and type, never as a section background.",
+        "section": "colors"
+      },
+      {
+        "name": "The Band Pairing Rule",
+        "body": "Content bands come in two fixed pairings: sand ground with brown headline and ink text, or brown ground with cream headline and text. Components inside read their colors from the band (`--head`, `--tag`, `--text`, `--line`), never hard-coded.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Script Line Rule",
+        "body": "Allura is used for a single short tagline per block (under ten words), never for headings, body, prices, buttons or navigation.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tracked Caps Rule",
+        "body": "Every heading, label, nav item and menu item name is uppercase Montserrat with positive tracking (0.01em on heavy headlines up to 0.24em on small labels). Prices use tabular numerals.",
+        "section": "typography"
+      },
+      {
+        "name": "The Shade Not Shadow Rule",
+        "body": "Legibility over imagery comes from ink-tinted gradients over the photo, not from text shadows or boxes behind text.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** use the seven palette tokens only, and keep each band to its pairing: sand with brown and ink, or brown with cream and gold.",
+      "**Do** set every heading, label, nav item and item name in uppercase Montserrat with positive tracking.",
+      "**Do** keep Allura to one short tagline per block, in gold on dark grounds or ink on sand.",
+      "**Do** keep containers square with a 1px ink keyline and controls pill or circle shaped.",
+      "**Do** put ink-tinted gradient shades over photography to carry text, and pad edges with the gutter and safe-area insets.",
+      "**Do** show honest placeholders (\"To be announced\", \"Photo coming soon\") rather than invented facts or stock stand-ins."
+    ],
+    "donts": [
+      "**Don't** use gold as a band or panel fill; it is for type, lines, icons and focus.",
+      "**Don't** set headlines, body copy, prices or buttons in Allura.",
+      "**Don't** round cards or panels, or add shadows beyond the menu card hover lift.",
+      "**Don't** replay the loader after it has played once in a session."
+    ]
+  }
+}
