@@ -1,0 +1,131 @@
+/* Enero Marso Cafe — logo loader
+   The logo artwork is animated in place: each part of the mark is a clipped
+   copy of the same image, revealed with its own mask. The two rules beside
+   "CAFE" are the real progress bar. */
+
+@property --em-sweep  { syntax: "<angle>";      inherits: false; initial-value: 0deg; }
+@property --em-open   { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+@property --em-write  { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+@property --em-shine  { syntax: "<percentage>"; inherits: false; initial-value: -30%; }
+
+:root {
+  --em-ink: #090705;          /* loader ground: warm black */
+  --em-ember: #1d140a;        /* ambient warmth behind the mark */
+  --em-gold: #dba22e;         /* sampled from the logo */
+  --em-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --em-logo: url("../assets/enero-marso-logo.jpg");
+}
+
+.em-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(60% 55% at 50% 46%, var(--em-ember) 0%, transparent 70%),
+    var(--em-ink);
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 1.1s var(--em-ease-out);
+}
+
+/* Fine grain so the ground reads as material, not a flat fill */
+.em-loader::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .85 0 0 0 0 .6 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.em-mark {
+  position: relative;
+  width: min(76vw, 60vh, 520px);
+  aspect-ratio: 1;
+  /* The artwork sits on pure black; screen drops the black onto our ground */
+  mix-blend-mode: screen;
+  isolation: isolate;
+  transition: transform 0.9s var(--em-ease-out), opacity 0.7s ease, filter 0.7s ease;
+}
+
+.em-part {
+  position: absolute;
+  inset: 0;
+  background: var(--em-logo) center / 100% 100% no-repeat;
+  opacity: 0;
+}
+
+/* Regions, measured from the 1254×1254 artwork */
+.em-mono    { clip-path: inset(0 0 39.4% 0); }
+.em-name    { clip-path: inset(63.5% 0 27.8% 0); }
+.em-cafe    { clip-path: inset(74.2% 35.4% 19.6% 36.6%); }
+.em-rule-l  { clip-path: inset(74.2% 67.2% 19.6% 7%); }
+.em-rule-r  { clip-path: inset(74.2% 7.3% 19.6% 67.4%); }
+.em-premier { clip-path: inset(80.4% 0 0 0); }
+.em-shine   { filter: brightness(1.9) saturate(1.15); }
+
+/* Masks */
+.em-mono {
+  -webkit-mask-image: conic-gradient(from 0deg at 52.8% 33%, #000 var(--em-sweep), transparent calc(var(--em-sweep) + 18deg));
+          mask-image: conic-gradient(from 0deg at 52.8% 33%, #000 var(--em-sweep), transparent calc(var(--em-sweep) + 18deg));
+}
+.em-name {
+  -webkit-mask-image: linear-gradient(90deg, transparent calc(50% - var(--em-open)), #000 calc(50% - var(--em-open) + 6%), #000 calc(50% + var(--em-open) - 6%), transparent calc(50% + var(--em-open)));
+          mask-image: linear-gradient(90deg, transparent calc(50% - var(--em-open)), #000 calc(50% - var(--em-open) + 6%), #000 calc(50% + var(--em-open) - 6%), transparent calc(50% + var(--em-open)));
+}
+/* Rules grow outward from "CAFE" as the page loads (--em-progress: 0 → 1, set by JS) */
+.em-rule-l {
+  opacity: 1;
+  -webkit-mask-image: linear-gradient(90deg, transparent calc(32.4% - var(--em-progress, 0) * 24.8%), #000 calc(32.4% - var(--em-progress, 0) * 24.8% + 0.4%));
+          mask-image: linear-gradient(90deg, transparent calc(32.4% - var(--em-progress, 0) * 24.8%), #000 calc(32.4% - var(--em-progress, 0) * 24.8% + 0.4%));
+}
+.em-rule-r {
+  opacity: 1;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(67.7% + var(--em-progress, 0) * 24.4% - 0.4%), transparent calc(67.7% + var(--em-progress, 0) * 24.4%));
+          mask-image: linear-gradient(90deg, #000 calc(67.7% + var(--em-progress, 0) * 24.4% - 0.4%), transparent calc(67.7% + var(--em-progress, 0) * 24.4%));
+}
+.em-premier {
+  -webkit-mask-image: linear-gradient(100deg, #000 calc(var(--em-write) - 7%), transparent var(--em-write));
+          mask-image: linear-gradient(100deg, #000 calc(var(--em-write) - 7%), transparent var(--em-write));
+}
+.em-shine {
+  -webkit-mask-image: linear-gradient(115deg, transparent calc(var(--em-shine) - 14%), rgb(0 0 0 / 0.85) var(--em-shine), transparent calc(var(--em-shine) + 14%));
+          mask-image: linear-gradient(115deg, transparent calc(var(--em-shine) - 14%), rgb(0 0 0 / 0.85) var(--em-shine), transparent calc(var(--em-shine) + 14%));
+}
+
+/* Choreography — starts once the artwork has decoded */
+.em-loader.is-playing .em-mono    { animation: em-draw 1.5s cubic-bezier(0.55, 0.1, 0.25, 1) 0.15s both, em-settle 1.9s var(--em-ease-out) 0.15s both; }
+.em-loader.is-playing .em-name    { animation: em-open 1.1s var(--em-ease-out) 1.6s both; }
+.em-loader.is-playing .em-cafe    { animation: em-rise 0.8s var(--em-ease-out) 1.95s both; }
+.em-loader.is-playing .em-premier { animation: em-write 1.3s cubic-bezier(0.45, 0.05, 0.35, 1) 2.25s both; }
+.em-loader.is-finishing .em-shine { animation: em-shine 1.05s cubic-bezier(0.5, 0, 0.3, 1) both; }
+
+@keyframes em-draw   { from { opacity: 1; --em-sweep: 0deg; }   to { opacity: 1; --em-sweep: 380deg; } }
+@keyframes em-settle { from { transform: scale(0.965); filter: blur(3px); } to { transform: none; filter: none; } }
+@keyframes em-open   { from { opacity: 0; --em-open: -8%; transform: translateY(1.2%); } 1% { opacity: 1; --em-open: -7%; } to { opacity: 1; --em-open: 60%; transform: none; } }
+@keyframes em-rise   { from { opacity: 0; transform: translateY(1.5%); filter: blur(2px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes em-write  { from { opacity: 0; --em-write: 16%; } 1% { opacity: 1; --em-write: 17%; } to { opacity: 1; --em-write: 92%; } }
+@keyframes em-shine  { from { opacity: 1; --em-shine: -30%; } to { opacity: 1; --em-shine: 130%; } }
+
+/* Exit: the mark recedes, then the ground lifts away like a curtain */
+.em-loader.is-leaving .em-mark { transform: scale(0.94) translateY(-2%); opacity: 0; filter: blur(4px); }
+.em-loader.is-leaving { clip-path: inset(0 0 100% 0); transition-delay: 0.25s; }
+.em-loader.is-gone { display: none; }
+
+html.em-locked, html.em-locked body { overflow: hidden; }
+
+/* Reduced motion: no sweeps or glint — the mark fades in whole, progress still reports */
+@media (prefers-reduced-motion: reduce) {
+  .em-loader.is-playing .em-part:not(.em-shine) { animation: em-fade 0.5s ease both; --em-sweep: 360deg; --em-open: 60%; --em-write: 100%; }
+  .em-loader.is-finishing .em-shine { animation: none; }
+  .em-loader, .em-mark { transition-duration: 0.4s; }
+  .em-loader.is-leaving { clip-path: inset(0 0 0 0); opacity: 0; transition: opacity 0.4s ease; }
+  .em-loader.is-leaving .em-mark { transform: none; filter: none; }
+}
+@keyframes em-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.em-sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Enero Marso Cafe — Three styles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --night: #0c0907; --gold: #dba22e; --cream: #f1e6cf; --soft: #cdbb98; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--night); color: var(--cream); font: 400 1.0625rem/1.55 "Josefin Sans", "Century Gothic", sans-serif; padding: clamp(2rem, 6vw, 4rem) clamp(1rem, 4vw, 3rem); }
+  ::selection { background: var(--gold); color: var(--night); }
+  main { max-width: 70rem; margin: 0 auto; }
+  header { display: flex; gap: 1.5rem; align-items: center; margin-bottom: clamp(2rem, 5vw, 3.5rem); }
+  header img { width: 4.5rem; }
+  h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.1; font-weight: 700; }
+  header p { margin: 0.4rem 0 0; color: var(--soft); }
+  ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+  a.style { display: grid; grid-template-columns: 7rem 1fr auto; gap: 1.5rem; align-items: center; padding: 1.25rem; text-decoration: none; color: inherit; border: 1px solid rgb(219 162 46 / 0.35); transition: border-color 0.2s ease, background-color 0.2s ease; }
+  a.style:hover { border-color: var(--gold); background: rgb(219 162 46 / 0.06); }
+  a.style:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .sw { height: 5rem; display: flex; }
+  .sw i { flex: 1; }
+  h2 { margin: 0 0 0.25rem; font-size: 1.4rem; font-weight: 700; color: var(--gold); }
+  a.style p { margin: 0; color: var(--soft); max-width: 60ch; }
+  .go { font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; font-size: 0.8125rem; }
+  @media (max-width: 40rem) { a.style { grid-template-columns: 1fr; } .sw { height: 3rem; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="../assets/enero-marso-monogram-gold.png" alt="">
+    <div><h1>Three styles for Enero Marso</h1><p>Homepage previews to compare while the Canva design is on its way. Menus, hours and addresses are placeholders.</p></div>
+  </header>
+  <ol>
+    <li><a class="style" href="a-roast-label.html">
+      <span class="sw" aria-hidden="true"><i style="background:#c39867"></i><i style="background:#1a120c"></i><i style="background:#8a1912"></i></span>
+      <span><h2>A · Roast Label</h2><p>The site is printed like a coffee bag label: kraft paper, two inks, the cup's details as proof of quality. Honest, crafted, coffee-first.</p></span>
+      <span class="go">View →</span></a></li>
+    <li><a class="style" href="b-premier-deco.html">
+      <span class="sw" aria-hidden="true"><i style="background:#0c0907"></i><i style="background:#dba22e"></i><i style="background:#4e0f16"></i></span>
+      <span><h2>B · Premier Deco</h2><p>A 1930s Manila movie palace on premiere night: marquee lights, letterboard menu, showtimes for hours. Opens with your logo loader. Matches the logo most closely.</p></span>
+      <span class="go">View →</span></a></li>
+    <li><a class="style" href="c-cherry-drench.html">
+      <span class="sw" aria-hidden="true"><i style="background:#b51d2a"></i><i style="background:#fff6ea"></i><i style="background:#f0b43a"></i></span>
+      <span><h2>C · Cherry Drench</h2><p>Coffee-cherry red everywhere with app-like capsules: pick delivery, pickup or dine-in right from the top. Youthful, fast, built for phones.</p></span>
+      <span class="go">View →</span></a></li>
+  </ol>
+</main>
+</body>
+</html>

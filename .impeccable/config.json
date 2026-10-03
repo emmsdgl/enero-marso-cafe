@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "styles/b-premier-deco.html"
+        ],
+        "createdAt": "2026-10-03T09:18:49.290Z",
+        "reason": "Claude: only glow in this file is the literal marquee light bulbs of the cinema marquee (style B)"
+      }
+    ]
+  }
+}

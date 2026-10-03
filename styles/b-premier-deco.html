@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Enero Marso Cafe — Premier Deco</title>
+<meta name="theme-color" content="#0c0907">
+<link rel="preload" as="image" href="../assets/enero-marso-logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&family=Limelight&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../loader/loader.css">
+<style>
+  :root {
+    --em-logo: url("../assets/enero-marso-logo.jpg");
+    --night: #0c0907;
+    --velvet: #4e0f16;
+    --velvet-deep: #2c070b;
+    --gold: #dba22e;
+    --gold-hi: #f2c873;
+    --cream: #f1e6cf;
+    --cream-soft: #cdbb98;
+    --bulb: #ffe3a3;
+    --marquee: "Limelight", "Josefin Sans", serif;
+    --ui: "Josefin Sans", "Futura", "Century Gothic", sans-serif;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; overflow-x: clip; }
+  body {
+    margin: 0; background: var(--night); color: var(--cream);
+    font: 400 1.125rem/1.6 var(--ui);
+    padding: 0 clamp(1rem, 4vw, 3rem);
+  }
+  ::selection { background: var(--gold); color: var(--night); }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 4px; }
+
+  /* ——— Navigation: a thin brass rail ——— */
+  .rail {
+    max-width: 78rem; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 1.1rem 0; border-bottom: 1px solid rgb(219 162 46 / 0.35);
+    font: 600 0.8125rem/1 var(--ui); letter-spacing: 0.24em; text-transform: uppercase;
+  }
+  .rail nav { display: flex; gap: clamp(1rem, 3vw, 2.5rem); }
+  .rail a { text-decoration: none; padding: 0.5rem 0; }
+  .rail nav a:hover { color: var(--gold-hi); }
+  .rail .home { display: flex; align-items: center; gap: 0.75rem; color: var(--gold); }
+  .rail .home img { width: 2.2rem; height: auto; }
+
+  /* ——— The marquee ——— */
+  .marquee-wrap { max-width: 78rem; margin: clamp(1.5rem, 4vw, 3rem) auto 0; position: relative; isolation: isolate; }
+  .rays {
+    position: absolute; z-index: -1; left: 50%; top: 0; width: 140%; aspect-ratio: 2 / 1; translate: -50% -38%;
+    background: repeating-conic-gradient(from -90deg at 50% 100%, rgb(219 162 46 / 0.2) 0 3deg, transparent 3deg 9deg);
+    -webkit-mask: radial-gradient(70% 100% at 50% 100%, #000 30%, transparent 75%);
+            mask: radial-gradient(70% 100% at 50% 100%, #000 30%, transparent 75%);
+    pointer-events: none;
+  }
+  .marquee {
+    position: relative;
+    background:
+      radial-gradient(90% 80% at 50% 0%, rgb(219 162 46 / 0.14), transparent 70%),
+      linear-gradient(var(--velvet), var(--velvet-deep));
+    border: 2px solid var(--gold);
+    padding: clamp(2.25rem, 5vw, 3.75rem) clamp(1.25rem, 5vw, 4.5rem);
+    display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr); gap: clamp(1.5rem, 5vw, 4rem); align-items: center;
+  }
+  /* stepped deco corners */
+  .marquee::before, .marquee::after {
+    content: ""; position: absolute; width: 3.25rem; height: 3.25rem; pointer-events: none;
+    border: 2px solid var(--gold);
+  }
+  .marquee::before, .marquee::after { display: none; }
+  .corner { position: absolute; width: 3rem; height: 3rem; pointer-events: none; color: var(--gold); }
+  .corner svg { width: 100%; height: 100%; display: block; }
+  .corner.tl { top: 0.55rem; left: 0.55rem; }
+  .corner.tr { top: 0.55rem; right: 0.55rem; transform: scaleX(-1); }
+  .corner.bl { bottom: 0.55rem; left: 0.55rem; transform: scaleY(-1); }
+  .corner.br { bottom: 0.55rem; right: 0.55rem; transform: scale(-1); }
+
+  /* the bulbs: a ring of lights that chase once, then glow */
+  .bulbs { position: absolute; inset: -1.1rem; pointer-events: none; }
+  .bulbs i {
+    position: absolute; width: 0.55rem; height: 0.55rem; border-radius: 50%;
+    background: var(--bulb);
+    box-shadow: 0 0 0.35rem 0.1rem rgb(255 210 120 / 0.7), 0 0 1.2rem 0.2rem rgb(255 180 80 / 0.25);
+    translate: -50% -50%;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .bulbs i { animation: bulb 0.9s ease-out both; animation-delay: calc(var(--i) * 18ms + 3.9s); }
+  }
+  @keyframes bulb { from { opacity: 0.12; scale: 0.6; } 40% { opacity: 1; scale: 1.25; } to { opacity: 1; scale: 1; } }
+
+  .marquee .logo { width: 100%; max-width: 26rem; justify-self: center; aspect-ratio: 1; mix-blend-mode: screen; }
+  .marquee .logo img { width: 100%; height: 100%; display: block; }
+  h1 {
+    margin: 0 0 1.25rem;
+    font: 400 clamp(2.6rem, 6.4vw, 5.4rem)/1 var(--marquee);
+    color: var(--gold-hi); letter-spacing: 0.01em;
+    text-wrap: balance;
+  }
+  .marquee p { margin: 0 0 2rem; max-width: 36ch; color: var(--cream); font-size: 1.1875rem; }
+
+  /* ticket stubs: the actions */
+  .stubs { display: flex; flex-wrap: wrap; gap: 0.9rem; }
+  .stub {
+    --notch: radial-gradient(circle at 0 50%, transparent 0.55rem, #000 0.58rem) left / 51% 100% no-repeat,
+             radial-gradient(circle at 100% 50%, transparent 0.55rem, #000 0.58rem) right / 51% 100% no-repeat;
+    -webkit-mask: var(--notch); mask: var(--notch);
+    display: inline-flex; align-items: center; gap: 0.9rem;
+    padding: 1.05rem 1.9rem 0.95rem;
+    font: 700 0.875rem/1 var(--ui); letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none;
+    background: var(--gold); color: var(--night);
+    transition: background-color 0.25s ease, transform 0.35s var(--ease);
+  }
+  .stub small { font-weight: 400; letter-spacing: 0.1em; border-left: 1px dashed currentColor; padding-left: 0.9rem; }
+  .stub.alt { background: var(--cream); }
+  .stub:hover { background: var(--gold-hi); transform: translateY(-2px); }
+
+  /* ——— Sections ——— */
+  section { max-width: 78rem; margin: 0 auto; padding: clamp(4rem, 9vw, 7rem) 0 0; }
+  h2 {
+    margin: 0 0 2rem; text-align: center;
+    font: 400 clamp(2rem, 4.6vw, 3.4rem)/1.05 var(--marquee); color: var(--gold);
+  }
+  .divider { display: flex; align-items: center; gap: 1rem; justify-content: center; margin: -1rem auto 2.5rem; color: var(--gold); }
+  .divider::before, .divider::after { content: ""; height: 1px; width: min(9rem, 22vw); background: currentColor; }
+  .divider svg { width: 1.5rem; height: 1.5rem; }
+
+  /* letterboard menu */
+  .board-frame { padding: 0.65rem; border: 2px solid var(--gold); background: linear-gradient(135deg, #3a2a10, #1c1308); }
+  .board {
+    background-color: #141110;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 1.55rem, rgb(0 0 0 / 0.85) 1.55rem 1.65rem, rgb(255 255 255 / 0.04) 1.65rem 1.7rem);
+    padding: clamp(1.5rem, 4vw, 3rem);
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr)); gap: 2rem clamp(1.25rem, 3vw, 2.5rem);
+    font: 600 0.9375rem/1.7rem var(--ui); letter-spacing: 0.1em; text-transform: uppercase; color: #f5efe4;
+  }
+  .board h3 { margin: 0 0 0.85rem; font: 700 1rem/1.7rem var(--ui); letter-spacing: 0.3em; color: var(--gold-hi); }
+  .board ul { list-style: none; margin: 0; padding: 0; }
+  .board li { display: flex; justify-content: space-between; gap: 1rem; white-space: nowrap; }
+  .board li span:last-child { color: var(--cream-soft); }
+  .board-note { text-align: center; margin: 1.25rem auto 0; max-width: 52ch; font-size: 0.9375rem; color: var(--cream-soft); }
+
+  /* menu + showtimes side by side */
+  .bill { display: grid; grid-template-columns: minmax(0, 2.1fr) minmax(16rem, 1fr); gap: clamp(1rem, 2.5vw, 1.75rem); align-items: stretch; }
+  .showtimes { border: 2px solid var(--gold); background: var(--velvet); padding: clamp(1.5rem, 3vw, 2.25rem); display: flex; flex-direction: column; gap: 1.25rem; }
+  .showtimes h3 { margin: 0; font: 400 2rem/1 var(--marquee); color: var(--gold-hi); }
+  .showtimes .stub { align-self: start; margin-top: auto; }
+
+  /* feature presentation: the coffee itself */
+  .feature { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); border: 2px solid var(--gold); }
+  .feature .title { padding: clamp(1.75rem, 4vw, 3rem); border-right: 2px solid var(--gold); background: radial-gradient(80% 90% at 50% 100%, rgb(219 162 46 / 0.16), transparent 70%); display: flex; flex-direction: column; justify-content: center; gap: 1rem; }
+  .feature .title b { font: 400 clamp(2.2rem, 4.5vw, 3.4rem)/1 var(--marquee); color: var(--gold-hi); }
+  .feature .title p { margin: 0; color: var(--cream-soft); max-width: 34ch; }
+  .credits { margin: 0; padding: clamp(1.75rem, 4vw, 3rem); display: grid; grid-template-columns: auto 1fr; gap: 0.9rem 2rem; align-content: center; }
+  .credits dt { font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; font-size: 0.8125rem; color: var(--gold); padding-top: 0.2rem; }
+  .credits dd { margin: 0; font-size: 1.1875rem; }
+  .credits dd small { display: block; color: var(--cream-soft); font-size: 0.875rem; }
+
+  /* coming attractions: poster frames for photos */
+  .posters { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(1rem, 2.5vw, 1.75rem); }
+  .poster { margin: 0; padding: 0.6rem; border: 2px solid var(--gold); background: linear-gradient(135deg, #3a2a10, #1c1308); }
+  .poster .slot {
+    aspect-ratio: 3 / 4; border: 1px solid rgb(219 162 46 / 0.5);
+    background: repeating-conic-gradient(from -90deg at 50% 108%, rgb(219 162 46 / 0.12) 0 4deg, transparent 4deg 10deg), var(--velvet-deep);
+    display: grid; place-items: end center; padding: 1.25rem; text-align: center;
+  }
+  .poster .slot span { font: 600 0.75rem/1.4 var(--ui); letter-spacing: 0.22em; text-transform: uppercase; color: var(--cream-soft); }
+  .poster figcaption { padding: 0.9rem 0.25rem 0.3rem; text-align: center; font: 400 1.35rem/1.1 var(--marquee); color: var(--gold-hi); }
+
+  /* screenings: one row per kind of visit */
+  .screenings { list-style: none; margin: 0; padding: 0; border-top: 1px solid rgb(219 162 46 / 0.4); }
+  .screenings li {
+    display: grid; grid-template-columns: 9rem minmax(0, 1fr) minmax(0, 1.3fr); gap: 1.5rem; align-items: baseline;
+    padding: 1.6rem 0; border-bottom: 1px solid rgb(219 162 46 / 0.4);
+  }
+  .screenings .when { font: 600 0.8125rem/1 var(--ui); letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
+  .screenings h3 { margin: 0; font: 400 clamp(1.6rem, 3vw, 2.2rem)/1.1 var(--marquee); color: var(--cream); }
+  .screenings p { margin: 0; color: var(--cream-soft); max-width: 46ch; }
+
+  /* showtimes + box office */
+  .box { display: grid; grid-template-columns: 1fr; border: 2px solid var(--gold); }
+  .box > div#order { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 3rem; align-items: center; }
+  .box > div#order h3, .box > div#order p { grid-column: 1; }
+  .box > div#order p { margin-bottom: 0; }
+  .box > div#order .stubs { grid-column: 2; grid-row: 1 / span 2; }
+  .box > div { padding: clamp(1.5rem, 4vw, 3rem); }
+  .box > div + div { background: var(--velvet); border-left: 2px solid var(--gold); }
+  .box h3 { margin: 0 0 1.25rem; font: 400 2rem/1 var(--marquee); color: var(--gold-hi); }
+  .times { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0.6rem 2rem; }
+  .times dt { font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; font-size: 0.875rem; color: var(--gold); }
+  .times dd { margin: 0; }
+  .box p { margin: 0 0 1.5rem; max-width: 40ch; }
+
+  footer {
+    max-width: 78rem; margin: clamp(4rem, 9vw, 7rem) auto 0; padding: 2rem 0 calc(2.5rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgb(219 162 46 / 0.35);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+    font: 600 0.75rem/1.5 var(--ui); letter-spacing: 0.2em; text-transform: uppercase; color: var(--cream-soft);
+  }
+
+  @media (max-width: 72rem) {
+    .bill { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 56rem) {
+    .marquee { grid-template-columns: 1fr; text-align: center; }
+    .marquee .logo { max-width: 17rem; }
+    .marquee p { margin-inline: auto; }
+    .stubs { justify-content: center; }
+
+    .bill, .feature { grid-template-columns: 1fr; }
+    .feature .title { border-right: 0; border-bottom: 2px solid var(--gold); }
+    .posters { grid-template-columns: repeat(3, minmax(13rem, 1fr)); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 0.5rem; }
+    .poster { scroll-snap-align: start; }
+    .box > div#order { grid-template-columns: 1fr; gap: 1.25rem; }
+    .box > div#order .stubs { grid-column: 1; grid-row: auto; }
+    .screenings li { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.75rem; }
+    .screenings h3 { order: -1; }
+    .screenings p { flex-basis: 100%; margin-top: 0.4rem; }
+    .box { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 34rem) {
+    .rail nav { gap: 1rem; letter-spacing: 0.14em; }
+    .rail .home span { display: none; }
+    .bulbs { inset: -0.7rem; }
+    .stub { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="em-loader" data-em-loader data-em-src="../assets/enero-marso-logo.jpg"
+     role="progressbar" aria-label="Loading Enero Marso Cafe" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-busy="true">
+  <div class="em-mark" aria-hidden="true">
+    <div class="em-part em-mono"></div><div class="em-part em-name"></div><div class="em-part em-rule-l"></div>
+    <div class="em-part em-cafe"></div><div class="em-part em-rule-r"></div><div class="em-part em-premier"></div><div class="em-part em-shine"></div>
+  </div>
+  <span class="em-sr-only" data-em-status aria-live="polite"></span>
+</div>
+
+<header class="rail">
+  <a class="home" href="#top"><img src="../assets/enero-marso-monogram-gold.png" alt=""><span>Enero Marso</span></a>
+  <nav aria-label="Main"><a href="#menu">Menu</a><a href="#hours">Hours</a><a href="#feature">Coffee</a><a href="#order">Order</a></nav>
+</header>
+
+<main id="top">
+  <div class="marquee-wrap">
+    <div class="rays" aria-hidden="true"></div>
+    <div class="marquee">
+      <div class="bulbs" aria-hidden="true"></div>
+      <span class="corner tl" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 46V2h44"/><path d="M10 46V10h36"/><path d="M18 30V18h12"/></svg></span><span class="corner tr" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 46V2h44"/><path d="M10 46V10h36"/><path d="M18 30V18h12"/></svg></span><span class="corner bl" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 46V2h44"/><path d="M10 46V10h36"/><path d="M18 30V18h12"/></svg></span><span class="corner br" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 46V2h44"/><path d="M10 46V10h36"/><path d="M18 30V18h12"/></svg></span>
+      <div class="logo"><img src="../assets/enero-marso-logo.jpg" alt="Enero Marso Cafe Premier"></div>
+      <div>
+        <h1>Every cup gets a premiere.</h1>
+        <p>Premier coffee, poured by people who care how it tastes. Come for a quick cup, stay for the evening.</p>
+        <div class="stubs">
+          <a class="stub" href="#menu">See the menu</a>
+          <a class="stub alt" href="#order">Order <small>Delivery · Pickup</small></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section id="menu" aria-labelledby="menu-title">
+    <h2 id="menu-title">Now serving</h2>
+    <div class="divider" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3 10-3 10-3-10z"/><path d="M2 12h20"/></svg></div>
+    <div class="bill">
+    <div class="board-frame">
+      <div class="board">
+        <div><h3>Espresso</h3><ul>
+          <li><span>Americano</span><span>₱ TBA</span></li>
+          <li><span>Café latte</span><span>₱ TBA</span></li>
+          <li><span>Spanish latte</span><span>₱ TBA</span></li>
+          <li><span>Flat white</span><span>₱ TBA</span></li>
+        </ul></div>
+        <div><h3>Brew &amp; more</h3><ul>
+          <li><span>Hand brew</span><span>₱ TBA</span></li>
+          <li><span>Cold brew</span><span>₱ TBA</span></li>
+          <li><span>Matcha latte</span><span>₱ TBA</span></li>
+          <li><span>Chocolate</span><span>₱ TBA</span></li>
+        </ul></div>
+        <div><h3>Kitchen</h3><ul>
+          <li><span>Pastries</span><span>₱ TBA</span></li>
+          <li><span>Breakfast</span><span>₱ TBA</span></li>
+          <li><span>Pasta</span><span>₱ TBA</span></li>
+          <li><span>Sandwiches</span><span>₱ TBA</span></li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="showtimes" id="hours">
+      <h3>Showtimes</h3>
+      <dl class="times">
+        <dt>Mon – Fri</dt><dd>Hours to be added</dd>
+        <dt>Sat – Sun</dt><dd>Hours to be added</dd>
+        <dt>Address</dt><dd>To be added</dd>
+      </dl>
+      <a class="stub alt" href="#hours">Get directions</a>
+    </div>
+    </div>
+    <p class="board-note">Sample menu showing the layout. Real drinks, food and prices will come from Enero Marso.</p>
+  </section>
+
+  <section id="feature" aria-labelledby="feature-title">
+    <h2 id="feature-title">Feature presentation</h2>
+    <div class="divider" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3 10-3 10-3-10z"/><path d="M2 12h20"/></svg></div>
+    <div class="feature">
+      <div class="title"><b>The house cup</b><p>The coffee is the star of the show. Its details will be listed here, bean by bean.</p></div>
+      <dl class="credits">
+        <dt>Blend</dt><dd>House espresso<small>Sample, name to be confirmed</small></dd>
+        <dt>Origin</dt><dd>To be confirmed</dd>
+        <dt>Roast</dt><dd>Medium-dark<small>Sample</small></dd>
+        <dt>Notes</dt><dd>Cacao, brown sugar, citrus<small>Sample notes</small></dd>
+      </dl>
+    </div>
+  </section>
+
+  <section aria-labelledby="posters-title">
+    <h2 id="posters-title">Coming attractions</h2>
+    <div class="divider" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3 10-3 10-3-10z"/><path d="M2 12h20"/></svg></div>
+    <div class="posters">
+      <figure class="poster"><div class="slot"><span>Photo to be added</span></div><figcaption>The bar</figcaption></figure>
+      <figure class="poster"><div class="slot"><span>Photo to be added</span></div><figcaption>The house</figcaption></figure>
+      <figure class="poster"><div class="slot"><span>Photo to be added</span></div><figcaption>Tonight's cup</figcaption></figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="screen-title">
+    <h2 id="screen-title">Pick your screening</h2>
+    <div class="divider" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3 10-3 10-3-10z"/><path d="M2 12h20"/></svg></div>
+    <ul class="screenings">
+      <li><span class="when">Matinee</span><h3>Stay &amp; study</h3><p>Bring the laptop or the readings and take your time. Refills are a counter away.</p></li>
+      <li><span class="when">Express</span><h3>Grab &amp; go</h3><p>Order ahead for pickup on the way to work.</p></li>
+      <li><span class="when">Weekend</span><h3>The family table</h3><p>Food and drinks for the whole group, with room to linger.</p></li>
+      <li><span class="when">Premiere</span><h3>Date night</h3><p>A good cup, a good dessert and the best seat in the house.</p></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="box-title">
+    <h2 id="box-title">Box office</h2>
+    <div class="divider" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3 10-3 10-3-10z"/><path d="M2 12h20"/></svg></div>
+    <div class="box">
+      <div id="order">
+        <h3>Tickets to go</h3>
+        <p>Have it delivered, or pick it up when it's ready. Delivery partners and links will be added.</p>
+        <div class="stubs">
+          <a class="stub" href="#order">Delivery</a>
+          <a class="stub alt" href="#order">Pickup</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>© Enero Marso Cafe</span>
+  <span>Style B · Premier Deco · preview</span>
+</footer>
+
+<script>
+  // Place the marquee bulbs evenly around the frame
+  (function () {
+    const host = document.querySelector(".bulbs");
+    function lay() {
+      host.textContent = "";
+      const w = host.clientWidth, h = host.clientHeight, gap = 30;
+      const nx = Math.max(2, Math.round(w / gap)), ny = Math.max(2, Math.round(h / gap));
+      const pts = [];
+      for (let i = 0; i < nx; i++) pts.push([i / nx * w, 0]);
+      for (let i = 0; i < ny; i++) pts.push([w, i / ny * h]);
+      for (let i = nx; i > 0; i--) pts.push([i / nx * w, h]);
+      for (let i = ny; i > 0; i--) pts.push([0, i / ny * h]);
+      pts.forEach(([x, y], i) => {
+        const b = document.createElement("i");
+        b.style.left = x + "px"; b.style.top = y + "px"; b.style.setProperty("--i", i);
+        host.appendChild(b);
+      });
+    }
+    let t; const later = () => { clearTimeout(t); t = setTimeout(lay, 60); };
+    lay();
+    if (document.fonts) document.fonts.ready.then(lay);
+    if ("ResizeObserver" in window) new ResizeObserver(later).observe(document.querySelector(".marquee"));
+    else addEventListener("resize", later);
+  })();
+</script>
+<script src="../loader/loader.js"></script>
+</body>
+</html>

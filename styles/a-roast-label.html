@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Enero Marso Cafe — Roast Label</title>
+<meta name="theme-color" content="#c39867">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&family=Big+Shoulders+Display:wght@700;900&family=Martian+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* Two inks on kraft. No grays anywhere. */
+  :root {
+    --kraft: #c39867;
+    --kraft-deep: #b5895a;
+    --ink: #1a120c;
+    --red: #8a1912;
+    --display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+    --body: "Archivo", "Arial Narrow", sans-serif;
+    --data: "Martian Mono", ui-monospace, "Consolas", monospace;
+    --rule: 2px solid var(--ink);
+    --gutter: clamp(1rem, 4vw, 3rem);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background-color: var(--kraft);
+    /* kraft fiber, printed in the ground's own hue */
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9 .18' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .36 0 0 0 0 .18 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+    color: var(--ink);
+    font: 400 1.0625rem/1.55 var(--body);
+    font-stretch: 92%;
+    padding: 0 var(--gutter);
+  }
+  ::selection { background: var(--ink); color: var(--kraft); }
+  a { color: inherit; text-underline-offset: 0.2em; text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* the gold logo printed in label ink */
+  .ink { display: block; filter: brightness(0); }
+
+  /* ——— Top strip ——— */
+  .strip {
+    max-width: 75rem; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 1rem 0;
+    font: 700 0.8125rem/1 var(--body); font-stretch: 75%; letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .strip nav { display: flex; gap: clamp(0.9rem, 2.5vw, 2rem); flex-wrap: wrap; }
+  .strip nav a { text-decoration: none; padding: 0.4rem 0; }
+  .strip nav a:hover { text-decoration: underline; }
+  .strip .mark { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; }
+  .strip .mark .ink { width: 1.9rem; height: auto; }
+
+  /* ——— The label ——— */
+  .label {
+    max-width: 75rem; margin: 0 auto;
+    border: 3px solid var(--ink);
+    outline: 1px solid var(--ink); outline-offset: 5px;
+    position: relative;
+  }
+  .course { border-top: var(--rule); }
+  .course:first-child { border-top: 0; }
+
+  .head {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1.25rem;
+    padding: 1rem clamp(1rem, 3vw, 2rem);
+    font: 700 0.8125rem/1.3 var(--body); font-stretch: 75%; text-transform: uppercase; letter-spacing: 0.12em;
+  }
+  .head .no { font: 900 1.6rem/1 var(--display); letter-spacing: 0.02em; }
+  .head .mid { text-align: center; }
+
+  .hero {
+    display: grid; grid-template-columns: 1.35fr 1fr;
+  }
+  .hero-copy { padding: clamp(1.25rem, 3vw, 2.25rem) clamp(1rem, 3vw, 2rem); border-right: var(--rule); display: flex; flex-direction: column; gap: 1.5rem; }
+  .hero-logo { width: clamp(6rem, 11vw, 8rem); height: auto; }
+  h1 {
+    margin: 0;
+    font: 900 clamp(3.2rem, 8vw, 6.6rem)/0.84 var(--display);
+    text-transform: uppercase; letter-spacing: -0.005em;
+  }
+  h1 em { font-style: normal; color: var(--red); }
+  .hero-copy p { margin: 0; max-width: 34ch; font-size: 1.125rem; }
+
+  .spec { display: grid; align-content: stretch; }
+  .spec dl { margin: 0; display: grid; height: 100%; grid-auto-rows: 1fr; }
+  .spec .row {
+    display: grid; grid-template-columns: 7.5rem 1fr; gap: 1rem;
+    padding: 0.8rem clamp(1rem, 2.4vw, 1.6rem);
+    border-bottom: 1px solid var(--ink);
+    align-items: baseline;
+  }
+  .spec dt { font: 600 0.6875rem/1.4 var(--data); letter-spacing: 0.08em; text-transform: uppercase; }
+  .spec dd { margin: 0; font-weight: 600; font-size: 1.0625rem; line-height: 1.35; }
+  .spec dd small { display: block; font: 400 0.6875rem/1.4 var(--data); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.2rem; }
+  .hero-copy { position: relative; }
+  .stamp { position: absolute; top: clamp(1.25rem, 3vw, 2.5rem); right: clamp(1rem, 3vw, 2.25rem); width: clamp(8.5rem, 15vw, 11.5rem); transform: rotate(-7deg); color: var(--red); }
+  .stamp svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+  /* Tear-off tabs: the primary actions */
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 0; position: relative; }
+  .tabs::before {
+    content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 2px;
+    background: repeating-linear-gradient(90deg, var(--ink) 0 10px, transparent 10px 18px);
+  }
+  .tab {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    padding: 1.3rem clamp(1rem, 2.4vw, 1.6rem);
+    text-decoration: none;
+    font: 900 clamp(1.35rem, 2.4vw, 1.9rem)/1 var(--display); text-transform: uppercase; letter-spacing: 0.02em;
+    border-left: 2px dashed var(--ink);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .tab:first-child { border-left: 0; background: var(--ink); color: var(--kraft); }
+  .tab svg { width: 1.6rem; height: 1.6rem; flex: none; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+  .tab:hover { background: var(--red); color: var(--kraft); }
+  .tab:hover svg { transform: translateX(4px); }
+
+  /* ——— Freshness line: the page's spine ——— */
+  .line {
+    max-width: 75rem; margin: clamp(3rem, 7vw, 5.5rem) auto;
+    position: relative;
+  }
+  .line h2, .section-title {
+    font: 900 clamp(2.2rem, 5vw, 3.6rem)/0.9 var(--display); text-transform: uppercase; margin: 0 0 1.75rem;
+  }
+  .line ol {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: repeat(4, 1fr); position: relative;
+  }
+  .line ol::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 1.05rem; height: 3px;
+    background: var(--ink);
+    transform-origin: left;
+  }
+  .line li { position: relative; padding-right: 1.5rem; }
+  .line li .dot {
+    width: 2.2rem; height: 2.2rem; border-radius: 50%;
+    background: var(--kraft); border: 3px solid var(--ink);
+    display: grid; place-items: center; position: relative;
+    font: 600 0.75rem/1 var(--data);
+  }
+  .line li:last-child .dot { background: var(--red); border-color: var(--red); color: var(--kraft); }
+  .line li h3 { font: 900 1.6rem/1 var(--display); text-transform: uppercase; margin: 1rem 0 0.4rem; }
+  .line li p { margin: 0; max-width: 24ch; }
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .line ol::before { animation: draw linear both; animation-timeline: view(); animation-range: entry 10% cover 45%; }
+      .line li { animation: land linear both; animation-timeline: view(); animation-range: entry 10% cover 40%; }
+      .line li:nth-child(2) { animation-range: entry 18% cover 44%; }
+      .line li:nth-child(3) { animation-range: entry 26% cover 48%; }
+      .line li:nth-child(4) { animation-range: entry 34% cover 52%; }
+    }
+  }
+  @keyframes draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes land { from { opacity: 0.25; translate: 0 0.6rem; } to { opacity: 1; translate: 0 0; } }
+
+  /* ——— Menu panel ——— */
+  .panel { max-width: 75rem; margin: 0 auto clamp(3rem, 7vw, 5.5rem); border: 3px solid var(--ink); }
+  .panel-head {
+    display: flex; justify-content: space-between; align-items: end; gap: 1rem; flex-wrap: wrap;
+    padding: clamp(1.25rem, 3vw, 2rem); border-bottom: var(--rule);
+  }
+  .panel-head .section-title { margin: 0; }
+  .note { font: 600 0.6875rem/1.5 var(--data); text-transform: uppercase; letter-spacing: 0.06em; max-width: 34ch; }
+  .note b { background: var(--ink); color: var(--kraft); padding: 0.1rem 0.35rem; }
+  .menu { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .menu section { padding: clamp(1.25rem, 3vw, 2rem); border-left: var(--rule); }
+  .menu section:first-child { border-left: 0; }
+  .menu h3 { font: 900 1.7rem/1 var(--display); text-transform: uppercase; margin: 0 0 1rem; display: flex; justify-content: space-between; }
+  .menu h3 span { font: 600 0.6875rem/1 var(--data); letter-spacing: 0.06em; align-self: center; }
+  .menu ul { list-style: none; margin: 0; padding: 0; }
+  .menu li { display: grid; grid-template-columns: 1fr auto; gap: 0.25rem 0.75rem; padding: 0.7rem 0; border-top: 1px solid var(--ink); }
+  .menu li:first-child { border-top: 0; }
+  .menu li b { font-weight: 700; }
+  .menu li .p { font: 600 0.875rem/1.4 var(--data); }
+  .menu li small { grid-column: 1 / -1; font-size: 0.9375rem; line-height: 1.4; }
+
+  /* ——— Visits: one row per kind of visit ——— */
+  .visits { max-width: 75rem; margin: 0 auto clamp(3rem, 7vw, 5.5rem); }
+  .visits .row {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 1.5rem; align-items: baseline;
+    padding: 1.4rem 0; border-top: var(--rule);
+  }
+  .visits .row:last-child { border-bottom: var(--rule); }
+  .visits .n { font: 600 0.75rem/1 var(--data); }
+  .visits h3 { margin: 0; font: 900 clamp(1.8rem, 4vw, 2.8rem)/0.9 var(--display); text-transform: uppercase; }
+  .visits p { margin: 0; max-width: 46ch; }
+
+  /* ——— Visit + order ——— */
+  .find { max-width: 75rem; margin: 0 auto clamp(3rem, 7vw, 5rem); display: grid; grid-template-columns: 1fr 1fr; border: 3px solid var(--ink); }
+  .find > div { padding: clamp(1.25rem, 3vw, 2.25rem); }
+  .find > div + div { border-left: var(--rule); background: var(--ink); color: var(--kraft); }
+  .find dl { margin: 1.25rem 0 1.5rem; display: grid; grid-template-columns: 6.5rem 1fr; gap: 0.6rem 1rem; }
+  .find dt { font: 600 0.6875rem/1.7 var(--data); text-transform: uppercase; letter-spacing: 0.06em; }
+  .find dd { margin: 0; font-weight: 600; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    padding: 0.95rem 1.4rem 0.85rem; text-decoration: none;
+    font: 900 1.25rem/1 var(--display); text-transform: uppercase; letter-spacing: 0.04em;
+    border: 2px solid currentColor;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .btn:hover { background: var(--ink); color: var(--kraft); }
+  .find > div + div .btn { border-color: var(--kraft); }
+  .find > div + div .btn:hover { background: var(--kraft); color: var(--ink); }
+  .btns { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .find h2 { margin: 0; font: 900 clamp(2.2rem, 5vw, 3.6rem)/0.9 var(--display); text-transform: uppercase; }
+  .find p { margin: 1rem 0 1.5rem; max-width: 40ch; }
+
+  /* Photo windows: die-cut openings printed in ink halftone until real photos arrive */
+  .photos { max-width: 75rem; margin: 0 auto clamp(3rem, 7vw, 5.5rem); }
+  .windows { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: clamp(0.75rem, 2vw, 1.25rem); }
+  .window {
+    margin: 0; border: 3px solid var(--ink); border-radius: 1.4rem; overflow: hidden;
+    display: grid; grid-template-rows: 1fr auto; min-height: clamp(14rem, 26vw, 20rem);
+  }
+  .window .print {
+    background: radial-gradient(circle, var(--ink) 34%, transparent 36%) 0 0 / 7px 7px;
+    -webkit-mask: radial-gradient(120% 90% at 30% 25%, #000 0%, rgb(0 0 0 / 0.75) 40%, rgb(0 0 0 / 0.2) 100%);
+            mask: radial-gradient(120% 90% at 30% 25%, #000 0%, rgb(0 0 0 / 0.75) 40%, rgb(0 0 0 / 0.2) 100%);
+  }
+  .window figcaption {
+    border-top: var(--rule); padding: 0.7rem 1rem; display: flex; justify-content: space-between; gap: 0.75rem;
+    font: 700 0.8125rem/1.3 var(--body); font-stretch: 75%; letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .window figcaption span:last-child { font: 600 0.6875rem/1.3 var(--data); letter-spacing: 0.04em; }
+
+  /* The freshness line keeps running beside every course on wide screens */
+  @media (min-width: 84rem) {
+    main { position: relative; }
+    main::before {
+      content: ""; position: absolute; top: 0; bottom: -1.5rem; width: 3px; background: var(--ink);
+      left: calc((100% - 75rem) / 2 - 2.6rem);
+    }
+    .line, .panel, .visits, .photos, .find { position: relative; }
+    .line::before, .panel::before, .visits::before, .photos::before, .find::before {
+      content: ""; position: absolute; top: 0.6rem; left: calc(-2.6rem - 0.55rem + 1.5px); width: 1.1rem; height: 1.1rem; border-radius: 50%;
+      background: var(--kraft); border: 3px solid var(--ink);
+    }
+    .find::before { background: var(--red); border-color: var(--red); }
+  }
+
+  footer {
+    max-width: 75rem; margin: 0 auto; padding: 1.5rem 0 calc(2rem + env(safe-area-inset-bottom, 0px));
+    display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: center;
+    font: 700 0.75rem/1.5 var(--body); font-stretch: 75%; text-transform: uppercase; letter-spacing: 0.12em;
+    border-top: var(--rule);
+  }
+
+  @media (max-width: 60rem) {
+    .hero { grid-template-columns: 1fr; }
+    .hero-copy { border-right: 0; border-bottom: var(--rule); }
+    .menu { grid-template-columns: 1fr; }
+    .menu section { border-left: 0; border-top: var(--rule); }
+    .menu section:first-child { border-top: 0; }
+    .find { grid-template-columns: 1fr; }
+    .find > div + div { border-left: 0; border-top: var(--rule); }
+  }
+  @media (max-width: 52rem) {
+    .windows { grid-template-columns: 1fr 1fr; }
+    .window:first-child { grid-column: 1 / -1; }
+  }
+  @media (max-width: 40rem) {
+    .windows { grid-template-columns: 1fr; }
+    .window { min-height: 12rem; }
+    .strip .mark span { display: none; }
+    .strip nav { gap: 1.1rem; }
+    .head { grid-template-columns: 1fr auto; }
+    .head .mid { display: none; }
+    .tabs { grid-template-columns: 1fr; }
+    .tab { border-left: 0; border-top: 2px dashed var(--ink); }
+    .tab:first-child { border-top: 0; }
+    .line ol { grid-template-columns: 1fr; gap: 1.5rem; padding-left: 0; }
+    .line ol::before { left: 1.05rem; right: auto; top: 0; bottom: 0; width: 3px; height: auto; transform-origin: top; }
+    .line li { display: grid; grid-template-columns: 2.2rem 1fr; column-gap: 1rem; }
+    .line li h3 { margin-top: 0.3rem; }
+    .line li p { grid-column: 2; }
+    @keyframes draw { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    .visits .row { grid-template-columns: 1fr; gap: 0.5rem; }
+    .spec .row { grid-template-columns: 6rem 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="strip">
+  <a class="mark" href="#top" aria-label="Enero Marso Cafe, home"><img class="ink" src="../assets/enero-marso-monogram-gold.png" alt="" width="31" height="35"><span>Enero Marso Cafe</span></a>
+  <nav aria-label="Main">
+    <a href="#menu">Menu</a>
+    <a href="#visit">Visit</a>
+    <a href="#order">Order</a>
+  </nav>
+</header>
+
+<main id="top">
+  <article class="label" aria-labelledby="hero-title">
+    <div class="course head">
+      <span class="no">Nº 001</span>
+      <span class="mid">Premier coffee &nbsp;·&nbsp; brewed to order &nbsp;·&nbsp; Philippines</span>
+      <span>Hot<br>or iced</span>
+    </div>
+
+    <div class="course hero">
+      <div class="hero-copy">
+        <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="ink"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.6"/><feComponentTransfer result="d"><feFuncA type="identity"/></feComponentTransfer><feTurbulence type="fractalNoise" baseFrequency="0.06 0.5" numOctaves="2" seed="3" result="w"/><feColorMatrix in="w" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.4 1.75" result="wm"/><feComposite in="d" in2="wm" operator="in"/></filter></svg>
+        <div class="stamp" aria-hidden="true"><svg viewBox="0 0 200 92"><g filter="url(#ink)" fill="none" stroke="currentColor"><rect x="4" y="4" width="192" height="84" rx="3" stroke-width="5"/><rect x="12" y="12" width="176" height="68" rx="2" stroke-width="2"/><text x="100" y="47" text-anchor="middle" fill="currentColor" stroke="none" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="34" letter-spacing="3">PREMIER</text><text x="100" y="68" text-anchor="middle" fill="currentColor" stroke="none" font-family="Martian Mono, monospace" font-weight="600" font-size="9.5" letter-spacing="1.6">ROAST DATE · TBA</text></g></svg></div>
+        <img class="ink hero-logo" src="../assets/enero-marso-logo-gold.png" alt="Enero Marso Cafe Premier">
+        <h1 id="hero-title">Premier coffee, <em>brewed</em> to order.</h1>
+        <p>Espresso, hand brews and good food for every kind of visit: a quick cup before work, a long study session, a weekend table.</p>
+      </div>
+      <div class="spec">
+        <dl>
+          <div class="row"><dt>House cup</dt><dd>Espresso blend<small>Sample, name to be confirmed</small></dd></div>
+          <div class="row"><dt>Roasted</dt><dd>Date to be added<small>Sample, roast dates come from Enero Marso</small></dd></div>
+          <div class="row"><dt>Origin</dt><dd>To be confirmed<small>Bean source from Enero Marso</small></dd></div>
+          <div class="row"><dt>Cup notes</dt><dd>Cacao, brown sugar, citrus<small>Sample notes</small></dd></div>
+          <div class="row"><dt>Open today</dt><dd>Hours to be added</dd></div>
+          <div class="row"><dt>Serve as</dt><dd>Dine in · Pickup · Delivery</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <nav class="course tabs" aria-label="Quick actions">
+      <a class="tab" href="#menu">See the menu <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+      <a class="tab" href="#order">Order now <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+      <a class="tab" href="#visit">Get directions <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+    </nav>
+  </article>
+
+  <section class="line" aria-labelledby="line-title">
+    <h2 id="line-title">From bean to your cup</h2>
+    <ol>
+      <li><span class="dot">01</span><h3>Bean</h3><p>Chosen for the house cup. Origin to be listed here.</p></li>
+      <li><span class="dot">02</span><h3>Grind</h3><p>Grind and method to be confirmed by the cafe.</p></li>
+      <li><span class="dot">03</span><h3>Brew</h3><p>Espresso or hand brew, made at the bar.</p></li>
+      <li><span class="dot">04</span><h3>Cup</h3><p>On your table, in your hand, or at your door.</p></li>
+    </ol>
+  </section>
+
+  <section class="panel" id="menu" aria-labelledby="menu-title">
+    <div class="panel-head">
+      <h2 class="section-title" id="menu-title">Menu</h2>
+      <p class="note"><b>Sample menu.</b> Items show the layout. Real drinks, food and prices come from Enero Marso.</p>
+    </div>
+    <div class="menu">
+      <section>
+        <h3>Espresso <span>Hot / Iced</span></h3>
+        <ul>
+          <li><b>Americano</b><span class="p">₱ TBA</span><small>Espresso and water, nothing else to hide behind.</small></li>
+          <li><b>Café latte</b><span class="p">₱ TBA</span><small>Espresso with steamed milk.</small></li>
+          <li><b>Spanish latte</b><span class="p">₱ TBA</span><small>Sweetened milk, a local favorite.</small></li>
+          <li><b>Flat white</b><span class="p">₱ TBA</span><small>Stronger, less milk.</small></li>
+        </ul>
+      </section>
+      <section>
+        <h3>Brew &amp; more <span>Hot / Iced</span></h3>
+        <ul>
+          <li><b>Hand brew</b><span class="p">₱ TBA</span><small>Poured over, one cup at a time.</small></li>
+          <li><b>Cold brew</b><span class="p">₱ TBA</span><small>Steeped slow, served cold.</small></li>
+          <li><b>Matcha latte</b><span class="p">₱ TBA</span><small>For the non-coffee friend.</small></li>
+          <li><b>Chocolate</b><span class="p">₱ TBA</span><small>Thick, rich, kid-approved.</small></li>
+        </ul>
+      </section>
+      <section>
+        <h3>Food <span>All day</span></h3>
+        <ul>
+          <li><b>Pastries</b><span class="p">₱ TBA</span><small>Baked goods for the counter.</small></li>
+          <li><b>All-day breakfast</b><span class="p">₱ TBA</span><small>For the late risers.</small></li>
+          <li><b>Pasta</b><span class="p">₱ TBA</span><small>For the weekend table.</small></li>
+          <li><b>Sandwiches</b><span class="p">₱ TBA</span><small>Easy to take away.</small></li>
+        </ul>
+      </section>
+    </div>
+  </section>
+
+  <section class="visits" aria-labelledby="visits-title">
+    <h2 class="section-title" id="visits-title">However you visit</h2>
+    <div class="row"><h3>Stay a while</h3><p>Bring the laptop or the readings. Order another cup when the first runs out.</p></div>
+    <div class="row"><h3>Grab &amp; go</h3><p>Order ahead for pickup and skip the line on the way to work.</p></div>
+    <div class="row"><h3>Weekend table</h3><p>Food and drinks for the whole group, with room to linger.</p></div>
+    <div class="row"><h3>Date night</h3><p>The Premier side of the cafe: a good cup, a good dessert, good company.</p></div>
+  </section>
+
+  <section class="photos" aria-labelledby="photos-title">
+    <h2 class="section-title" id="photos-title">Inside Enero Marso</h2>
+    <div class="windows">
+      <figure class="window"><div class="print" aria-hidden="true"></div><figcaption><span>The bar</span><span>Photo to be added</span></figcaption></figure>
+      <figure class="window"><div class="print" aria-hidden="true"></div><figcaption><span>The tables</span><span>Photo to be added</span></figcaption></figure>
+      <figure class="window"><div class="print" aria-hidden="true"></div><figcaption><span>A cup</span><span>Photo to be added</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="find" aria-label="Visit and order">
+    <div id="visit">
+      <h2>Visit</h2>
+      <dl>
+        <dt>Address</dt><dd>To be added</dd>
+        <dt>Hours</dt><dd>To be added</dd>
+        <dt>Contact</dt><dd>To be added</dd>
+      </dl>
+      <div class="btns"><a class="btn" href="#visit">Open in Maps</a></div>
+    </div>
+    <div id="order">
+      <h2>Order</h2>
+      <p>Delivery to your door, or pickup when it's ready. Delivery partners and links to be added.</p>
+      <div class="btns">
+        <a class="btn" href="#order">Delivery</a>
+        <a class="btn" href="#order">Pickup</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>© Enero Marso Cafe</span>
+  <span>Style A · Roast Label · preview</span>
+</footer>
+
+</body>
+</html>

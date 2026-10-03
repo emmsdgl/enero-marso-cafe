@@ -1,0 +1,16 @@
+# dependencies and build output
+node_modules/
+web/.next/
+web/out/
+*.tsbuildinfo
+web/next-env.d.ts
+
+# env files
+.env*
+!.env.example
+
+# local tool state
+.impeccable/live/sessions/
+.impeccable/*.cache.json
+.vercel
+.DS_Store
