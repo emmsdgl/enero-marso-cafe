@@ -1,18 +1,31 @@
 import "server-only";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq, gte } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auditLog, branchNetworks, db, staff, type Role, type Staff } from "@/db";
 import { auth } from "@/lib/auth/server";
+import { readPinSession } from "@/lib/pin-session";
 
 /** The signed-in person's staff record, or null (not signed in, not staff, or deactivated) */
 export async function getCurrentStaff(): Promise<Staff | null> {
   const { data: session } = await auth.getSession();
   const user = session?.user;
-  if (!user) return null;
-  const [row] = await db.select().from(staff).where(eq(staff.authUserId, user.id)).limit(1);
-  return row && row.active ? row : null;
+  if (user) {
+    const [row] = await db.select().from(staff).where(eq(staff.authUserId, user.id)).limit(1);
+    return row && row.active ? row : null;
+  }
+  // PIN sign-in at the branch: employees only, whatever the cookie says
+  const pinStaffId = await readPinSession();
+  if (!pinStaffId) return null;
+  const [row] = await db.select().from(staff).where(eq(staff.id, pinStaffId)).limit(1);
+  return row && row.active && row.role === "employee" ? row : null;
+}
+
+/** True when the current person signed in with a PIN rather than a password */
+export async function signedInWithPin(): Promise<boolean> {
+  const { data: session } = await auth.getSession();
+  return !session?.user && !!(await readPinSession());
 }
 
 /** Use at the top of every staff page and action. Redirects anyone without the right role. */
@@ -62,6 +75,18 @@ export function verifyPin(pin: string, stored: string | null) {
   return timingSafeEqual(test, Buffer.from(hash, "hex"));
 }
 export const PIN_RULE = /^\d{4,6}$/;
+
+/** Wrong PINs (tablet or sign-in) lock that person's PIN for a while */
+export const PIN_MAX_TRIES = 5;
+export const PIN_LOCK_MINUTES = 10;
+export async function pinFailures(staffId: string) {
+  const since = new Date(Date.now() - PIN_LOCK_MINUTES * 60_000);
+  const [{ n }] = await db
+    .select({ n: count() })
+    .from(auditLog)
+    .where(and(eq(auditLog.actorId, staffId), eq(auditLog.action, "pin.wrong"), gte(auditLog.at, since)));
+  return n;
+}
 
 // ——— Clock-in tablet tokens: random secret in an httpOnly cookie, only an HMAC of it in the database ———
 export function newKioskToken() {

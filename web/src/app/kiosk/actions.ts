@@ -1,17 +1,14 @@
 "use server";
 
-import { and, count, eq, gte } from "drizzle-orm";
-import { auditLog, db, staff } from "@/db";
+import { eq } from "drizzle-orm";
+import { db, staff } from "@/db";
 import { toggleClock } from "@/lib/clock";
 import { currentKiosk } from "@/lib/kiosk";
-import { audit, clientIp, PIN_RULE, verifyPin } from "@/lib/staff";
+import { audit, clientIp, PIN_LOCK_MINUTES, PIN_MAX_TRIES, PIN_RULE, pinFailures, verifyPin } from "@/lib/staff";
 
 export type KioskResult =
   | { ok: true; name: string; action: "in" | "out"; at: string; hours?: number }
   | { ok: false; error: string };
-
-const MAX_TRIES = 5;
-const LOCK_MINUTES = 10;
 
 export async function kioskPunch(staffId: string, pin: string): Promise<KioskResult> {
   const kiosk = await currentKiosk();
@@ -22,17 +19,13 @@ export async function kioskPunch(staffId: string, pin: string): Promise<KioskRes
   if (!member || !member.active || member.branchId !== kiosk.branchId) return { ok: false, error: "You're not on this branch's team." };
 
   // Lock a person out for a while after several wrong PINs
-  const since = new Date(Date.now() - LOCK_MINUTES * 60_000);
-  const [{ n }] = await db
-    .select({ n: count() })
-    .from(auditLog)
-    .where(and(eq(auditLog.actorId, member.id), eq(auditLog.action, "kiosk.pin-wrong"), gte(auditLog.at, since)));
-  if (n >= MAX_TRIES) return { ok: false, error: `Too many wrong PINs. Try again in ${LOCK_MINUTES} minutes, or ask a manager to reset it.` };
+  const n = await pinFailures(member.id);
+  if (n >= PIN_MAX_TRIES) return { ok: false, error: `Too many wrong PINs. Try again in ${PIN_LOCK_MINUTES} minutes, or ask a manager to reset it.` };
 
   if (!verifyPin(pin, member.pinHash)) {
-    await audit(member.id, "kiosk.pin-wrong", { kioskId: kiosk.id });
-    const left = MAX_TRIES - n - 1;
-    return { ok: false, error: left > 0 ? `Wrong PIN. ${left} ${left === 1 ? "try" : "tries"} left.` : `Wrong PIN. Locked for ${LOCK_MINUTES} minutes.` };
+    await audit(member.id, "pin.wrong", { via: "tablet", kioskId: kiosk.id });
+    const left = PIN_MAX_TRIES - n - 1;
+    return { ok: false, error: left > 0 ? `Wrong PIN. ${left} ${left === 1 ? "try" : "tries"} left.` : `Wrong PIN. Locked for ${PIN_LOCK_MINUTES} minutes.` };
   }
 
   const punch = await toggleClock(member, kiosk.branchId, "tablet", await clientIp());

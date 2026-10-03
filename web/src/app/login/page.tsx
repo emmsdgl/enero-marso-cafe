@@ -9,8 +9,8 @@ export default function LoginPage() {
     <AuthCard
       title="Staff sign in"
       fields={[
-        { name: "email", label: "Email", type: "email", autoComplete: "username" },
-        { name: "password", label: "Password", type: "password", autoComplete: "current-password" },
+        { name: "who", label: "Name or email", autoComplete: "username" },
+        { name: "secret", label: "Password or PIN", type: "password", autoComplete: "current-password", hint: "Employees can use their PIN on the cafe Wi-Fi or tablet" },
       ]}
       submit="Sign in"
       action={signIn}

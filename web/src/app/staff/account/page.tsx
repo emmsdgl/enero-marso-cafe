@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import ActionForm from "@/components/staff/ActionForm";
-import { requireStaff } from "@/lib/staff";
+import { requireStaff, signedInWithPin } from "@/lib/staff";
 import { changeMyPassword, setMyPin } from "../actions";
 
 export const metadata: Metadata = { title: "My account" };
 
 export default async function AccountPage() {
   const me = await requireStaff();
+  const viaPin = await signedInWithPin();
   return (
     <div className="staff-page">
       <header className="staff-head">
@@ -28,10 +29,14 @@ export default async function AccountPage() {
         </section>
         <section className="staff-card" aria-labelledby="pw-title">
           <h2 id="pw-title">Password</h2>
-          <ActionForm action={changeMyPassword} submit="Change password">
-            <label>Current password<input name="current" type="password" autoComplete="current-password" required /></label>
-            <label>New password<input name="next" type="password" autoComplete="new-password" minLength={8} required /></label>
-          </ActionForm>
+          {viaPin ? (
+            <p className="staff-help">You signed in with your PIN. To change your password, sign out and sign in with your password.</p>
+          ) : (
+            <ActionForm action={changeMyPassword} submit="Change password">
+              <label>Current password<input name="current" type="password" autoComplete="current-password" required /></label>
+              <label>New password<input name="next" type="password" autoComplete="new-password" minLength={8} required /></label>
+            </ActionForm>
+          )}
         </section>
       </div>
     </div>

@@ -43,7 +43,7 @@ export default function AuthCard({
                 autoComplete={f.autoComplete}
                 inputMode={f.inputMode}
                 required
-                defaultValue={f.name === "email" ? state?.email : undefined}
+                defaultValue={f.name === "email" || f.name === "who" ? state?.email : undefined}
               />
               {f.hint && <small>{f.hint}</small>}
             </label>
