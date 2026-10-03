@@ -121,6 +121,12 @@ h1, h2, h3 { margin: 0; }
 .hero h1 { font-weight: 500; font-size: clamp(2.2rem, 4.6vw, 3.6rem); line-height: 1.05; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); margin-bottom: 1.25rem; }
 .hero p { margin: 0; font-size: clamp(1rem, 1.3vw, 1.125rem); line-height: 1.7; max-width: 34em; }
 
+/* ——— Canva line art (stencils tinted by currentColor) ——— */
+.brand-art { display: inline-block; flex: none; background: currentColor; -webkit-mask: var(--art) center / contain no-repeat; mask: var(--art) center / contain no-repeat; }
+.brand-art--cup { --art: url("/brand/icon-cup.png"); aspect-ratio: 274 / 320; }
+.brand-art--cutlery { --art: url("/brand/icon-cutlery.png"); aspect-ratio: 242 / 320; }
+.brand-art--sprig { --art: url("/brand/sprig.png"); aspect-ratio: 489 / 720; }
+
 /* ——— Menu sections ——— */
 .menu-section {
   position: relative; overflow: hidden;
@@ -129,11 +135,11 @@ h1, h2, h3 { margin: 0; }
 }
 .menu-section.is-coffee { background: var(--sand); --head: var(--brown); --tag: var(--ink); --text: var(--ink); --line: var(--cocoa); }
 .menu-section.is-food { background: var(--brown); --head: var(--cream); --tag: var(--gold); --text: var(--cream); --line: var(--cream); color: var(--cream); }
-.menu-sprig { position: absolute; left: -2.5rem; top: 50%; width: 7.5rem; translate: 0 -40%; rotate: -11deg; color: var(--line); opacity: 0.85; pointer-events: none; }
+.menu-sprig { position: absolute; left: -3.25rem; top: 50%; width: 9.5rem; translate: 0 -38%; rotate: -11deg; color: var(--line); pointer-events: none; }
 .menu-intro { position: relative; padding-left: clamp(0rem, 3vw, 3rem); }
 .menu-intro h2 { font-weight: 700; font-size: clamp(2.6rem, 5.4vw, 4.6rem); line-height: 0.95; letter-spacing: 0.01em; text-transform: uppercase; color: var(--head); }
-.menu-tagline { display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem 0.75rem; text-wrap: balance; margin: 0.6rem 0 1.5rem; font: 400 clamp(2rem, 3.2vw, 2.7rem)/1 var(--script); color: var(--tag); }
-.menu-tagline-icon { width: 2.6rem; height: auto; flex: none; color: var(--line); }
+.menu-tagline { display: block; max-width: 28rem; text-wrap: balance; margin: 0.6rem 0 1.5rem; font: 400 clamp(2rem, 3.2vw, 2.7rem)/1 var(--script); color: var(--tag); }
+.menu-tagline-icon { width: 3.2rem; margin-left: 0.6rem; vertical-align: middle; color: var(--head); }
 .menu-body { margin: 0 0 2.25rem; max-width: 26em; font-size: clamp(1.0625rem, 1.3vw, 1.25rem); line-height: 1.6; color: var(--text); }
 .menu-section .pill-btn { color: var(--head); }
 .menu-section .pill-btn:hover { background: var(--head); color: var(--sand); }
@@ -156,7 +162,7 @@ h1, h2, h3 { margin: 0; }
 .menu-card-photo { position: relative; aspect-ratio: 289 / 344; overflow: hidden; background: var(--cocoa); }
 .menu-card-photo img { object-fit: cover; }
 .menu-card-empty { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 0.9rem; background: var(--cocoa); color: var(--card); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
-.menu-card-empty svg { width: 3.5rem; height: auto; }
+.menu-card-empty .brand-art { width: 3.5rem; }
 .menu-card-label { padding: 1.1rem 1.1rem 1.4rem; }
 .menu-card-label h3 { font-weight: 700; font-size: 1.0625rem; letter-spacing: 0.12em; text-transform: uppercase; }
 .menu-card-label p { margin: 0.2rem 0 0; font-weight: 600; font-size: 1.0625rem; letter-spacing: 0.08em; }

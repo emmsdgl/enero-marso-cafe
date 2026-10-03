@@ -1,9 +1,8 @@
 import Image from "next/image";
 import { peso, type MenuItem } from "@/data/menu";
-import { CupIcon, CutleryIcon } from "./Icons";
+import BrandArt from "./BrandArt";
 
 export default function MenuCard({ item, kind }: { item: MenuItem; kind: "coffee" | "food" }) {
-  const Fallback = kind === "coffee" ? CupIcon : CutleryIcon;
   return (
     <article className="menu-card">
       <div className="menu-card-photo">
@@ -11,7 +10,7 @@ export default function MenuCard({ item, kind }: { item: MenuItem; kind: "coffee
           <Image src={item.photo} alt={item.name} fill sizes="(max-width: 40rem) 72vw, 18rem" />
         ) : (
           <div className="menu-card-empty">
-            <Fallback />
+            <BrandArt kind={kind === "coffee" ? "cup" : "cutlery"} />
             <span>Photo coming soon</span>
           </div>
         )}
