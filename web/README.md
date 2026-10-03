@@ -27,4 +27,4 @@ The gold logo loader plays once per browser visit (`src/components/Loader.tsx`).
 - Photos: `public/photos/`. Hero video: `public/video/`. Logo files: `public/brand/`.
 - Colors and fonts: top of `src/app/globals.css`. Brand fonts are Montserrat and Allura, matched to the logo.
 
-Still to add: opening hours, phone/email, social links, and the rest of the menu.
+Still to add: real photos of the menu items and the cafes.
