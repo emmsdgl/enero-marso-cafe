@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ChevronIcon } from "@/components/Icons";
 import MenuSearch from "@/components/MenuSearch";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
@@ -36,14 +34,6 @@ export default function MenuPage() {
             ]}
           />
 
-          <nav className="ml-course ml-tabs" aria-label="Next steps">
-            <Link className="ml-tab" href="/store">
-              Find a store <ChevronIcon />
-            </Link>
-            <Link className="ml-tab" href="/gallery">
-              See the gallery <ChevronIcon />
-            </Link>
-          </nav>
         </article>
 
         <p className="page-note">

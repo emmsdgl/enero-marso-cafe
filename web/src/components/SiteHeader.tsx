@@ -4,13 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CloseIcon, MenuIcon, SearchIcon } from "./Icons";
+import { CloseIcon, MenuIcon } from "./Icons";
 
 const links = [
   { href: "/home", label: "Home" },
+  { href: "/menu", label: "Menu" },
   { href: "/gallery", label: "Gallery" },
   { href: "/store", label: "Our Stores" },
-  { href: "/contact", label: "Contact" },
 ];
 
 export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
@@ -47,9 +47,6 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
       </nav>
 
       <div className="header-tools">
-        <Link href="/menu#search" className="icon-btn" aria-label="Search the menu">
-          <SearchIcon />
-        </Link>
         <button
           type="button"
           className="icon-btn nav-toggle"
