@@ -57,6 +57,13 @@ Later: an employee area for delivery operations.
 - Mission: To serve quality coffee with genuine warmth creating meaningful moments and memorable experiences in every visit.
 - Vision: To be a beloved coffee destination where great coffee, good people, and everyday moments come together.
 
+## Operations (confirmed by owner, Oct 2026)
+
+- POS: both stores use **Loyverse** for sales and stock. The website must not duplicate POS sales/inventory; staff features complement it.
+- Delivery: third-party only (**Lalamove**). No in-house riders, so no delivery role.
+- Payments: **GCash** and **cash** at both stores.
+- Staff portal (planned, inside the same Next.js app under /staff): roles Employee, Branch Manager, Admin. Wanted: employee clock in/out, online order queue, sold-out toggles, menu/price management, accounts, website content.
+
 ## Positioning
 
 Premium coffee quality is the differentiator: the coffee itself, not just the space. The brand name carries "Premier".
