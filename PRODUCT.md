@@ -62,7 +62,10 @@ Later: an employee area for delivery operations.
 - POS: both stores use **Loyverse** for sales and stock. The website must not duplicate POS sales/inventory; staff features complement it.
 - Delivery: third-party only (**Lalamove**). No in-house riders, so no delivery role.
 - Payments: **GCash** and **cash** at both stores.
-- Staff portal (planned, inside the same Next.js app under /staff): roles Employee, Branch Manager, Admin. Wanted: employee clock in/out, online order queue, sold-out toggles, menu/price management, accounts, website content.
+- Staff portal (inside the same Next.js app under /staff): roles Employee, Branch Manager, Admin. Built: accounts, clock in/out, time records. Planned: online order queue, sold-out toggles, menu/price management, website content.
+- People: owner/admin **Mr. Denzel**; branch managers **Mr. Karlo** (Enero Marso Cafe, main) and **Mr. Adrian** (Cafe Noir).
+- Clock-in rules (owner's choice): either the branch's registered counter tablet with a personal PIN, or the person's own phone while on the branch's registered Wi-Fi (matched by the connection's public IP).
+- Database: Neon project `enero-marso-cafe` (Singapore), Neon Auth for logins. Branches: `main` (production), `dev` (local development).
 
 ## Positioning
 

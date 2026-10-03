@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 const INTRO_MS = 3550; // until "Premier" finishes writing
@@ -10,13 +11,17 @@ const SEEN_KEY = "em-loaded";
 const LOGO_SRC = "/brand/enero-marso-logo.jpg";
 
 /** Gold logo intro. Progress follows real page loading and plays once per browser session. */
+/** Staff tools open straight to work, without the brand intro */
+const NO_INTRO = /^\/(staff|login|setup|kiosk)(\/|$)/;
+
 export default function Loader() {
   const ref = useRef<HTMLDivElement>(null);
+  const skip = NO_INTRO.test(usePathname());
 
   useEffect(() => {
     const loader = ref.current;
     const root = document.documentElement;
-    if (!loader || root.classList.contains("em-seen")) return;
+    if (skip || !loader || root.classList.contains("em-seen")) return;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const status = loader.querySelector<HTMLElement>("[data-em-status]");
@@ -88,8 +93,9 @@ export default function Loader() {
       timers.forEach(clearTimeout);
       root.classList.remove("em-locked");
     };
-  }, []);
+  }, [skip]);
 
+  if (skip) return null;
   return (
     <div
       ref={ref}
