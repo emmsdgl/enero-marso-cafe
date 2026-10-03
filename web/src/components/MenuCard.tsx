@@ -1,8 +1,8 @@
 import Image from "next/image";
-import { peso, type MenuItem } from "@/data/menu";
+import { peso, type Highlight } from "@/data/menu";
 import BrandArt from "./BrandArt";
 
-export default function MenuCard({ item, kind }: { item: MenuItem; kind: "coffee" | "food" }) {
+export default function MenuCard({ item, kind }: { item: Highlight; kind: "coffee" | "food" }) {
   return (
     <article className="menu-card">
       <div className="menu-card-photo">
@@ -17,7 +17,7 @@ export default function MenuCard({ item, kind }: { item: MenuItem; kind: "coffee
       </div>
       <div className="menu-card-label">
         <h3>{item.name}</h3>
-        <p>{peso(item.price)}</p>
+        <p>{item.from && <small>from </small>}{peso(item.price)}</p>
       </div>
     </article>
   );

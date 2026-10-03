@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { MenuItem } from "@/data/menu";
+import type { Highlight } from "@/data/menu";
 import { ChevronIcon } from "./Icons";
 import MenuCard from "./MenuCard";
 
 /** Horizontally scrolling row of menu cards with previous/next controls */
-export default function MenuRow({ items, kind, label }: { items: MenuItem[]; kind: "coffee" | "food"; label: string }) {
+export default function MenuRow({ items, kind, label }: { items: Highlight[]; kind: "coffee" | "food"; label: string }) {
   const track = useRef<HTMLUListElement>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);

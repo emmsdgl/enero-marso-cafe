@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { MenuItem } from "@/data/menu";
+import type { Highlight } from "@/data/menu";
 import BrandArt from "./BrandArt";
 import MenuRow from "./MenuRow";
 
@@ -9,7 +9,7 @@ type Props = {
   title: string;
   tagline: string;
   body: string;
-  items: MenuItem[];
+  items: Highlight[];
 };
 
 export default function MenuSection({ id, kind, title, tagline, body, items }: Props) {
@@ -30,7 +30,7 @@ export default function MenuSection({ id, kind, title, tagline, body, items }: P
           <BrandArt kind={kind === "coffee" ? "cup" : "cutlery"} className="menu-tagline-icon" />
         </p>
         <p className="menu-body">{body}</p>
-        <Link href={`/menu#${kind}`} className="pill-btn">View full menu</Link>
+        <Link href="/menu" className="pill-btn">View full menu</Link>
       </div>
       <MenuRow items={items} kind={kind} label={`${title} highlights`} />
     </section>

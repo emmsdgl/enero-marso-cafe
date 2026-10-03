@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import MenuSearch from "@/components/MenuSearch";
+import MenuBoard from "@/components/MenuBoard";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { coffee, food } from "@/data/menu";
 
 export const metadata: Metadata = { title: "Menu" };
 
@@ -27,19 +26,10 @@ export default function MenuPage() {
             <InkStamp />
           </header>
 
-          <MenuSearch
-            groups={[
-              { id: "coffee", title: "Coffee", art: "cup", items: coffee },
-              { id: "food", title: "Food", art: "cutlery", items: food },
-            ]}
-          />
+          <MenuBoard />
 
         </article>
 
-        <p className="page-note">
-          Food is served at Enero Marso Cafe in Western Bicutan. Cafe Noir, our coffee cart across Vista Mall Taguig,
-          serves the drinks. More items will be added as the full menu comes in.
-        </p>
       </main>
       <SiteFooter />
     </>

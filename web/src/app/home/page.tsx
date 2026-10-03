@@ -4,7 +4,7 @@ import MenuSection from "@/components/MenuSection";
 import MissionVision from "@/components/MissionVision";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { coffee, food } from "@/data/menu";
+import { homeDrinks, homeFood } from "@/data/menu";
 
 export const metadata: Metadata = { title: "Home" };
 
@@ -35,7 +35,7 @@ export default function Home() {
           title="Coffee"
           tagline="Rich flavors, real moments"
           body="From classic favorites to our signature blends, each cup is made to fuel your day and your dreams."
-          items={coffee}
+          items={homeDrinks}
         />
         <MenuSection
           id="food"
@@ -43,7 +43,7 @@ export default function Home() {
           title="Food"
           tagline="Simple ingredients, big comfort"
           body="Freshly made, always satisfying. Our food is the perfect pair for your favorite brew."
-          items={food}
+          items={homeFood}
         />
       </main>
       <SiteFooter />
