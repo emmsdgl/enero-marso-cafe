@@ -242,9 +242,59 @@ h1, h2, h3 { margin: 0; }
 .info-grid .pill-btn { color: var(--brown); }
 .info-grid .pill-btn:hover { background: var(--brown); color: var(--cream); }
 
+/* ——— Our stores: one label per branch; Noir is the same label printed in reverse ——— */
+.branches { max-width: 72rem; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: clamp(1.5rem, 3vw, 2.5rem); align-items: stretch; }
+.branch {
+  --b-bg: var(--cream); --b-ink: var(--ink); --b-head: var(--brown); --b-soft: var(--cocoa);
+  display: flex; flex-direction: column;
+  background: var(--b-bg); color: var(--b-ink);
+  border: 3px solid var(--ink); outline: 1px solid var(--ink); outline-offset: 6px;
+  padding: clamp(1.75rem, 4vw, 2.75rem);
+}
+.branch.is-noir { --b-bg: var(--ink); --b-ink: var(--cream); --b-head: var(--cream); --b-soft: var(--gold); }
+.branch-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.branch h2 { font-weight: 700; font-size: clamp(1.7rem, 3vw, 2.3rem); line-height: 1.05; text-transform: uppercase; letter-spacing: 0.03em; color: var(--b-head); max-width: 14ch; }
+.branch-tagline { margin: 0.6rem 0 1.75rem; font: 400 clamp(1.8rem, 3vw, 2.3rem)/1.1 var(--script); color: var(--b-soft); }
+.branch-facts { margin: 0 0 2rem; display: grid; border-top: 1px solid currentColor; }
+.branch-facts > div { display: grid; grid-template-columns: 6.5rem 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid currentColor; }
+.branch-facts dt { font-weight: 600; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--b-soft); padding-top: 0.2rem; }
+.branch-facts dd { margin: 0; font-weight: 500; }
+.branch-facts small { display: block; margin-top: 0.2rem; font-size: 0.9375rem; color: var(--b-soft); }
+.branch-hours { border-collapse: collapse; width: 100%; }
+.branch-hours th, .branch-hours td { padding: 0 0 0.35rem; text-align: left; font-weight: 500; vertical-align: baseline; }
+.branch-hours td { text-align: right; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.branch-actions { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.branch .pill-btn { color: var(--b-head); }
+.branch .pill-btn:hover { background: var(--b-head); color: var(--b-bg); }
+.social-btn { width: 3.1rem; height: 3.1rem; display: grid; place-items: center; border-radius: 50%; border: 2px solid currentColor; color: var(--b-head); transition: background-color 0.2s ease, color 0.2s ease; }
+.social-btn svg { width: 1.35rem; height: 1.35rem; }
+.social-btn:hover { background: var(--b-head); color: var(--b-bg); }
+
+/* Live status from the Manila clock */
+.open-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.85rem; border-radius: 999px; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.16em; text-transform: uppercase; white-space: nowrap; }
+.open-badge i { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: currentColor; }
+.open-badge.is-open { background: var(--b-head); color: var(--b-bg); }
+.open-badge.is-closed { border: 1.5px solid currentColor; color: var(--b-soft); }
+.open-badge.is-closed i { background: transparent; border: 1.5px solid currentColor; }
+.open-badge.is-pending { min-width: 7.5rem; min-height: 1.9rem; }
+
+/* ——— Mission & vision (home, after the hero) ——— */
+.purpose {
+  position: relative; overflow: hidden; background: var(--cream); color: var(--ink);
+  display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: clamp(2.5rem, 7vw, 7rem); align-items: center;
+  padding: clamp(4.5rem, 10vw, 8rem) var(--gutter);
+}
+.purpose h2 { font-weight: 700; font-size: 0.875rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--brown); margin-bottom: 1.25rem; }
+.purpose-vision p { margin: 0; font: 400 clamp(2.2rem, 4.2vw, 3.6rem)/1.12 var(--script); color: var(--brown); max-width: 20ch; text-wrap: balance; }
+.purpose-mission { padding-left: clamp(1.5rem, 3vw, 2.5rem); border-left: 2px solid var(--ink); }
+.purpose-mission p { margin: 0; font-size: clamp(1.125rem, 1.5vw, 1.3rem); line-height: 1.6; max-width: 30ch; }
+.purpose-sprig { position: absolute; right: -2.5rem; top: 50%; width: 9rem; translate: 0 -50%; rotate: 168deg; color: var(--cocoa); opacity: 0.55; pointer-events: none; }
+
+.contact-socials { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
 /* ——— Footer ——— */
 .site-footer { background: var(--ink); color: var(--cream); padding: clamp(3.5rem, 8vw, 5rem) var(--gutter) calc(env(safe-area-inset-bottom, 0px) + 2rem); }
-.footer-inner { display: grid; grid-template-columns: auto 1fr 1fr; gap: clamp(2rem, 6vw, 5rem); align-items: start; max-width: 72rem; }
+.footer-inner { display: grid; grid-template-columns: auto 1fr 1fr auto; gap: clamp(2rem, 5vw, 4rem); align-items: start; max-width: 80rem; }
 .footer-brand img { width: clamp(7rem, 12vw, 9.5rem); height: auto; }
 .site-footer h2 { font-weight: 600; font-size: 0.8125rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; }
 .site-footer p { margin: 0 0 0.75rem; max-width: 22rem; }
@@ -252,6 +302,13 @@ h1, h2, h3 { margin: 0; }
 .site-footer a:hover { color: var(--gold); }
 .site-footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
 .site-footer ul a { text-decoration: none; }
+.footer-branch p small { display: block; color: var(--card); }
+.footer-hours { margin-bottom: 1rem !important; max-width: 19rem; font-size: 0.9375rem; gap: 0.3rem !important; }
+.footer-hours li { display: flex; justify-content: space-between; gap: 1rem; }
+.footer-hours li span:last-child { font-variant-numeric: tabular-nums; }
+.footer-links { display: flex; align-items: center; gap: 1rem; }
+.footer-social { display: grid; place-items: center; }
+.footer-social svg { width: 1.25rem; height: 1.25rem; }
 .footer-fine { max-width: none !important; margin: 3rem 0 0; padding-top: 1.5rem; border-top: 1px solid rgb(250 241 225 / 0.15); font-size: 0.8125rem; letter-spacing: 0.08em; color: var(--card); }
 
 /* ——— Responsive ——— */
@@ -279,6 +336,8 @@ h1, h2, h3 { margin: 0; }
   .ml-tab + .ml-tab { border-left: 0; border-top: 2px dashed var(--ink); }
   .footer-inner { grid-template-columns: 1fr 1fr; }
   .footer-brand { grid-column: 1 / -1; }
+  .purpose { grid-template-columns: 1fr; }
+  .purpose-sprig { display: none; }
 }
 @media (max-width: 34rem) {
   .brand-word { display: none; }
@@ -287,6 +346,8 @@ h1, h2, h3 { margin: 0; }
   .hero-shade { background: linear-gradient(rgb(21 18 17 / 0.35), rgb(21 18 17 / 0.92) 62%); }
   .hero-copy { padding-top: 10rem; }
   .footer-inner { grid-template-columns: 1fr; }
+  .branch-facts > div { grid-template-columns: 1fr; gap: 0.35rem; }
+  .branch-actions .pill-btn { flex: 1 1 100%; }
   .ml-strip-mid { display: none; }
   .ml-title { flex-direction: column; align-items: flex-start; }
   .ml-stamp { align-self: flex-end; margin-top: -0.5rem; }

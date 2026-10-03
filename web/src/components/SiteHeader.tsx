@@ -9,7 +9,7 @@ import { CloseIcon, MenuIcon, SearchIcon } from "./Icons";
 const links = [
   { href: "/home", label: "Home" },
   { href: "/gallery", label: "Gallery" },
-  { href: "/store", label: "Our Store" },
+  { href: "/store", label: "Our Stores" },
   { href: "/contact", label: "Contact" },
 ];
 

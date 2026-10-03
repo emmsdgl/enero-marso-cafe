@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import HeroVideo from "@/components/HeroVideo";
 import MenuSection from "@/components/MenuSection";
+import MissionVision from "@/components/MissionVision";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { coffee, food } from "@/data/menu";
@@ -25,6 +26,8 @@ export default function Home() {
             </p>
           </div>
         </section>
+
+        <MissionVision />
 
         <MenuSection
           id="coffee"

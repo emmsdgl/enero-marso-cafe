@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronIcon, PinIcon } from "@/components/Icons";
-import { store } from "@/data/menu";
 
 // Landing page (Canva page 1)
 export default function Landing() {
@@ -17,13 +16,13 @@ export default function Landing() {
         <Link href="/home" className="ghost-btn">Order here</Link>
       </div>
 
-      <a className="landing-visit" href={store.mapsUrl} target="_blank" rel="noopener noreferrer">
+      <Link className="landing-visit" href="/store">
         <PinIcon />
         <span>
           <b>Visit us</b>
-          {store.address}
+          Western Bicutan &amp; Ususan, Taguig
         </span>
-      </a>
+      </Link>
 
       <Link href="/home" className="landing-enter">
         Enter the cafe <ChevronIcon />

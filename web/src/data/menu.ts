@@ -17,9 +17,4 @@ export const food: MenuItem[] = [
   { name: "Club Sandwich", price: 120, photo: "/photos/club-sandwich.jpg" },
 ];
 
-export const store = {
-  address: "126 Champaca St., Western Bicutan, Taguig",
-  mapsUrl: "https://www.google.com/maps/search/?api=1&query=126+Champaca+St.+Western+Bicutan+Taguig",
-};
-
 export const peso = (n: number) => `₱${n}`;

@@ -4,7 +4,7 @@ import { ChevronIcon } from "@/components/Icons";
 import MenuSearch from "@/components/MenuSearch";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { coffee, food, store } from "@/data/menu";
+import { coffee, food } from "@/data/menu";
 
 export const metadata: Metadata = { title: "Menu" };
 
@@ -18,7 +18,7 @@ export default function MenuPage() {
           <div className="ml-course ml-strip">
             <span>Enero Marso Cafe</span>
             <span className="ml-strip-mid">Coffee · Comfort · Good conversations</span>
-            <span>Western Bicutan, Taguig</span>
+            <span>2 locations in Taguig</span>
           </div>
 
           <header className="ml-course ml-title">
@@ -37,16 +37,19 @@ export default function MenuPage() {
           />
 
           <nav className="ml-course ml-tabs" aria-label="Next steps">
-            <a className="ml-tab" href={store.mapsUrl} target="_blank" rel="noopener noreferrer">
-              Get directions <ChevronIcon />
-            </a>
+            <Link className="ml-tab" href="/store">
+              Find a store <ChevronIcon />
+            </Link>
             <Link className="ml-tab" href="/gallery">
               See the gallery <ChevronIcon />
             </Link>
           </nav>
         </article>
 
-        <p className="page-note">More drinks and dishes will be added here as the full menu comes in.</p>
+        <p className="page-note">
+          Food is served at Enero Marso Cafe in Western Bicutan. Cafe Noir, our coffee cart across Vista Mall Taguig,
+          serves the drinks. More items will be added as the full menu comes in.
+        </p>
       </main>
       <SiteFooter />
     </>

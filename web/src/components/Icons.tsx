@@ -34,3 +34,17 @@ export const PinIcon = (p: P) => (
     <circle cx="12" cy="10" r="2.3" />
   </svg>
 );
+
+export const InstagramIcon = (p: P) => (
+  <svg viewBox="0 0 24 24" strokeWidth={1.7} {...base} aria-hidden="true" {...p}>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+    <circle cx="12" cy="12" r="4" />
+    <circle cx="17.2" cy="6.8" r="0.6" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const FacebookIcon = (p: P) => (
+  <svg viewBox="0 0 24 24" strokeWidth={1.7} {...base} aria-hidden="true" {...p}>
+    <path d="M14.5 8H16V4.5h-2.2C11.6 4.5 10 6.1 10 8.4V11H8v3.4h2V20h3.6v-5.6H16l.5-3.4h-2.9V8.9c0-.6.3-.9.9-.9z" />
+  </svg>
+);

@@ -39,6 +39,24 @@ Later: an employee area for delivery operations.
 - Site structure: separate landing page (Canva page 1) leading to the homepage (Canva page 2); nav Home, Gallery, Our Store, Contact.
 - Canva design: "ENERO MARSO CAFE" (DAHWajLGU78). The owner's Canva Pro account now has access. Clean assets were exported from a working copy (DAHW83WOkOg, text removed). The drink/food photos and barista video are Canva Pro stock; the cup photo is the cafe's own.
 
+## Branches (confirmed by owner, Oct 2026)
+
+1. **Enero Marso Cafe** (main): 126 Champaca St., Western Bicutan, Taguig. Full menu (coffee and food).
+   - Hours: Mon closed; Tue–Sun 6:00 PM – 1:00 AM (past midnight).
+   - Instagram: https://www.instagram.com/eneromarsocafe/
+   - Facebook: https://www.facebook.com/profile.php?id=61569139323409
+2. **Enero Marso Cafe Noir**: "Good Coffee, Great Conversations". A small trailer coffee cart that serves quality drinks. Cayetano Blvd. cor. Bagong Calzada, Ususan, Taguig (across Vista Mall Taguig).
+   - Serves drinks only (no food).
+   - Hours: Mon, Wed, Thu, Fri, Sat, Sun 9:00 AM – 1:00 AM (past midnight); Tue 1:00 PM – 10:00 PM.
+   - The Instagram and Facebook pages below are Noir's own, not the whole brand's.
+   - Instagram: https://www.instagram.com/eneromarsonoir/
+   - Facebook: https://www.facebook.com/1216769311528466
+
+## Mission and Vision (owner's wording)
+
+- Mission: To serve quality coffee with genuine warmth creating meaningful moments and memorable experiences in every visit.
+- Vision: To be a beloved coffee destination where great coffee, good people, and everyday moments come together.
+
 ## Positioning
 
 Premium coffee quality is the differentiator: the coffee itself, not just the space. The brand name carries "Premier".
