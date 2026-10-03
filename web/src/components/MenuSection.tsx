@@ -21,7 +21,12 @@ export default function MenuSection({ id, kind, title, tagline, body, items }: P
           <span>Our</span> {title}
         </h2>
         <p className="menu-tagline">
-          {tagline}
+          <span className="menu-tagline-text">
+            {/* Two lines broken at the comma, as in the Canva design */}
+            {tagline.split(/(?<=,)\s+/).map((line, i) => (
+              <span key={i}>{line}</span>
+            ))}
+          </span>
           <BrandArt kind={kind === "coffee" ? "cup" : "cutlery"} className="menu-tagline-icon" />
         </p>
         <p className="menu-body">{body}</p>

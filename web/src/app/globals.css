@@ -138,8 +138,10 @@ h1, h2, h3 { margin: 0; }
 .menu-sprig { position: absolute; left: -3.25rem; top: 50%; width: 9.5rem; translate: 0 -38%; rotate: -11deg; color: var(--line); pointer-events: none; }
 .menu-intro { position: relative; padding-left: clamp(0rem, 3vw, 3rem); }
 .menu-intro h2 { font-weight: 700; font-size: clamp(2.6rem, 5.4vw, 4.6rem); line-height: 0.95; letter-spacing: 0.01em; text-transform: uppercase; color: var(--head); }
-.menu-tagline { display: block; max-width: 28rem; text-wrap: balance; margin: 0.6rem 0 1.5rem; font: 400 clamp(2rem, 3.2vw, 2.7rem)/1 var(--script); color: var(--tag); }
-.menu-tagline-icon { width: 3.2rem; margin-left: 0.6rem; vertical-align: middle; color: var(--head); }
+/* Script line and its icon stand side by side, icon centred on the two lines (as in the Canva) */
+.menu-tagline { display: flex; align-items: center; gap: 1rem; margin: 0.6rem 0 1.5rem; font: 400 clamp(2rem, 3.2vw, 2.7rem)/1 var(--script); color: var(--tag); }
+.menu-tagline-text { display: grid; justify-items: center; }
+.menu-tagline-icon { width: 3.6rem; color: var(--head); }
 .menu-body { margin: 0 0 2.25rem; max-width: 26em; font-size: clamp(1.0625rem, 1.3vw, 1.25rem); line-height: 1.6; color: var(--text); }
 .menu-section .pill-btn { color: var(--head); }
 .menu-section .pill-btn:hover { background: var(--head); color: var(--sand); }
