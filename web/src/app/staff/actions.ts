@@ -154,6 +154,8 @@ export async function saveEntry(_: ActionState, form: FormData): Promise<ActionS
   if (!clockIn) return { error: "Clock-in time is required." };
   if (clockOut && clockOut <= clockIn) return { error: "Clock-out must be after clock-in." };
   if (clockOut && clockOut.getTime() - clockIn.getTime() > 20 * 3_600_000) return { error: "That shift is over 20 hours. Check the dates." };
+  const soon = Date.now() + 5 * 60_000;
+  if (clockIn.getTime() > soon || (clockOut && clockOut.getTime() > soon)) return { error: "That time hasn't happened yet. Check the date." };
 
   if (id) {
     const [e] = await db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
