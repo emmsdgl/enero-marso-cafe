@@ -25,6 +25,8 @@ export type Offer = {
 };
 
 export const CONTACT = { phone: "0915 954 1360", tel: "+639159541360" };
+/** Owner confirmed (Oct 2026): charged on top of every booth package */
+export const BARISTA_FEE = 3000;
 export const SAMPLE_NOTE = "Sample packages and prices. Final offers are coming soon.";
 
 const booth = (n: number, oz: 12 | 16, count: number, price: number): Offer => ({
@@ -112,7 +114,7 @@ export const boothDrinks: { title: string; items: string[] }[] = [
 /** The contract's terms, in plain words */
 export const boothTerms: string[] = [
   "Three baristas serve for 2 to 4 hours, depending on stock",
-  "Barista service fee of ₱1,000 per barista",
+  "Plus a ₱3,000 barista fee (₱1,000 for each of the three baristas), not included in the package price",
   "You provide a 2 × 3 m space and a standard table",
   "We arrive 2 hours early to set up and stay 1.5 hours after to pack up",
   "You cover the round-trip transport and meals for the three baristas",

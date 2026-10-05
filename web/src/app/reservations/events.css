@@ -96,7 +96,9 @@
 }
 .iv-pkg-stub button:hover { background: var(--ink); color: var(--cream); }
 
-.iv-booth-info { max-width: 72rem; margin: clamp(2.5rem, 5vw, 3.5rem) auto 0; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(1.25rem, 3vw, 2rem); }
+.iv-booth-fee { max-width: 72rem; margin: clamp(1.5rem, 3vw, 2rem) auto 0; text-align: right; color: var(--sand); }
+.iv-booth-fee b { color: var(--cream); }
+.iv-booth-info { max-width: 72rem; margin: clamp(2rem, 4vw, 3rem) auto 0; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(1.25rem, 3vw, 2rem); }
 .iv-sheet { padding: clamp(1.5rem, 3.5vw, 2.25rem); background: var(--cream); color: var(--ink); border: 1px solid var(--ink); }
 .iv-sheet h3 { padding-bottom: 0.7rem; margin-bottom: 1.1rem; border-bottom: 2px solid var(--ink); font-weight: 700; font-size: 0.875rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--brown); }
 .iv-drinks { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1.25rem 1.5rem; }
@@ -163,6 +165,7 @@
 /* ——— Responsive ——— */
 @media (max-width: 56rem) {
   .iv-booth-info { grid-template-columns: minmax(0, 1fr); }
+  .iv-booth-fee { text-align: left; }
   .iv-size { grid-template-columns: minmax(0, 1fr); gap: 0.85rem; }
   .iv-size-label { grid-auto-flow: column; align-items: baseline; gap: 0.6rem; justify-content: start; }
 }

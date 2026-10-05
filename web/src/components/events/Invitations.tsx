@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import BrandArt from "@/components/BrandArt";
 import RequestForm from "@/components/RequestForm";
-import { CONTACT, SAMPLE_NOTE, boothDrinks, boothTerms, guestsText, offers, priceText, type Offer } from "@/data/events";
+import { BARISTA_FEE, CONTACT, SAMPLE_NOTE, boothDrinks, boothTerms, guestsText, offers, priceText, type Offer } from "@/data/events";
 
 /**
  * Reserve & Cater: the coffee booth (from the owner's contract) leads as tear-off tickets,
@@ -70,6 +70,10 @@ export default function Invitations() {
             </div>
           ))}
         </div>
+
+        <p className="iv-booth-fee">
+          Package prices cover the drinks. Add <b>₱{BARISTA_FEE.toLocaleString("en-PH")}</b> for the three baristas.
+        </p>
 
         <div className="iv-booth-info">
           <section className="iv-sheet" aria-labelledby="iv-drinks">
