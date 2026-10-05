@@ -1,6 +1,10 @@
-import { redirect } from "next/navigation";
+import Invitations from "@/components/events/Invitations";
 
-// Until the owner picks a design, the nav link opens option A
+// Reservations as printed invitations, catering as tickets with a tear-off stub
 export default function ReservationsPage() {
-  redirect("/reservations/a");
+  return (
+    <main className="iv">
+      <Invitations />
+    </main>
+  );
 }
