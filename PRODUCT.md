@@ -67,6 +67,15 @@ Later: an employee area for delivery operations.
 - Clock-in rules (owner's choice): either the branch's registered counter tablet with a personal PIN, or the person's own phone while on the branch's registered Wi-Fi (matched by the connection's public IP).
 - Database: Neon project `enero-marso-cafe` (Singapore), Neon Auth for logins. Branches: `main` (production), `dev` (local development).
 
+## Events: coffee booth, reservations, trays (owner's contract, Oct 2026)
+
+Source: "Copy of Enero Marso Contract.pdf" (Canva DAHXHycoKlI). Shown on /reservations ("Reserve & Cater", replaced Gallery).
+- Coffee booth packages: 12 oz 100/120/150 cups ₱10,500 / ₱11,500 / ₱13,500; 16 oz 100/120/150 cups ₱12,000 / ₱14,500 / ₱16,500.
+- Booth drinks: Spanish Latte, Cafe Latte, Americano, Matcha Latte; flavored macchiato (salted caramel, caramel, hazelnut); Hazelnut Chocolate, Chocolate Milk, Sakura Milk, Blood Moon.
+- Terms: 3 baristas for 2–4 hours; ₱1,000 service fee per barista; client gives a 2×3 m space and a table, access 2 h before and 1.5 h after, round-trip transport allowance and meals for the baristas; 20% non-refundable deposit, balance 3 days before; cash, GCash or bank transfer; cancel 14 days ahead.
+- Contact on the contract: phone 0915 954 1360, Facebook "EneroMarso".
+- Table reservation, private night and the coffee/snack trays are still SAMPLE offers (owner-approved placeholders) until final.
+
 ## Positioning
 
 Premium coffee quality is the differentiator: the coffee itself, not just the space. The brand name carries "Premier".

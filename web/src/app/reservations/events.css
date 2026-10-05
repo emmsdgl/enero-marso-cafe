@@ -7,6 +7,7 @@
 }
 .rq-wide { grid-column: 1 / -1; }
 .rq label { display: grid; gap: 0.45rem; align-content: start; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--rq-label); }
+.rq label > span { display: flex; align-items: baseline; gap: 0.6rem; }
 .rq label small { font-weight: 500; font-size: 0.8125rem; letter-spacing: 0.02em; text-transform: none; color: var(--rq-soft); }
 .rq input, .rq select, .rq textarea {
   width: 100%; min-height: 3.1rem; padding: 0.75rem 0.9rem; border: 1.5px solid var(--rq-line); border-radius: 0;
@@ -65,6 +66,46 @@
 .iv-band-tag { display: flex; align-items: center; gap: 0.9rem; font: 400 clamp(1.9rem, 3vw, 2.5rem)/1 var(--script); color: var(--gold) !important; }
 .iv-band-icon { width: 2.6rem; color: var(--cream); }
 
+/* Coffee booth (owner's contract): six packages as tickets, a row per cup size, the stub carries the price */
+.iv-sizes { max-width: 72rem; margin: 0 auto; display: grid; gap: clamp(1.25rem, 3vw, 2rem); }
+.iv-size { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 1.5rem; align-items: center; }
+.iv-size-label { margin: 0; display: grid; justify-items: start; padding-left: 1.1rem; border-left: 1px solid rgb(250 241 225 / 0.45); }
+.iv-size-label b { white-space: nowrap; font-weight: 700; font-size: clamp(2rem, 3.6vw, 2.75rem); line-height: 1; letter-spacing: 0.02em; color: var(--cream); font-variant-numeric: tabular-nums; }
+.iv-size-label small { margin-top: 0.3rem; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
+.iv-pkgs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(0.85rem, 2vw, 1.5rem); }
+.iv-pkg { --notch: 0.8rem; display: grid; background: var(--cream); color: var(--ink); border: 1px solid var(--ink); transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease); }
+.iv-pkg:hover { transform: translateY(-4px); box-shadow: 0 1rem 2rem -1.25rem rgb(21 18 17 / 0.6); }
+.iv-pkg-top { padding: 1.25rem 1.25rem 1.1rem; }
+.iv-pkg h3 { font-weight: 700; font-size: 0.8125rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--brown); }
+.iv-pkg-top p { margin: 0.35rem 0 0; font-weight: 600; font-size: 0.875rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cocoa); }
+.iv-pkg-top p b { font-size: clamp(2.2rem, 3.6vw, 2.9rem); line-height: 1; letter-spacing: 0; color: var(--ink); font-variant-numeric: tabular-nums; margin-right: 0.15em; }
+.iv-pkg-stub {
+  position: relative; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  padding: 1rem 1.25rem; background: var(--sand); border-top: 2px dashed var(--ink);
+}
+.iv-pkg-stub::before, .iv-pkg-stub::after {
+  content: ""; position: absolute; top: calc(var(--notch) * -1 - 1px); width: calc(var(--notch) * 2); height: calc(var(--notch) * 2);
+  border-radius: 50%; background: var(--brown); border: 1px solid var(--ink);
+}
+.iv-pkg-stub::before { left: calc(var(--notch) * -1 - 1px); }
+.iv-pkg-stub::after { right: calc(var(--notch) * -1 - 1px); }
+.iv-pkg-stub b { font-size: 1.4rem; line-height: 1.1; color: var(--brown); font-variant-numeric: tabular-nums; }
+.iv-pkg-stub button {
+  padding: 0.6rem 1rem; border: 2px solid var(--ink); border-radius: 999px; background: none; color: var(--ink); cursor: pointer;
+  font: 700 0.6875rem/1 var(--brand); letter-spacing: 0.18em; text-transform: uppercase; transition: background-color 0.2s ease, color 0.2s ease;
+}
+.iv-pkg-stub button:hover { background: var(--ink); color: var(--cream); }
+
+.iv-booth-info { max-width: 72rem; margin: clamp(2.5rem, 5vw, 3.5rem) auto 0; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(1.25rem, 3vw, 2rem); }
+.iv-sheet { padding: clamp(1.5rem, 3.5vw, 2.25rem); background: var(--cream); color: var(--ink); border: 1px solid var(--ink); }
+.iv-sheet h3 { padding-bottom: 0.7rem; margin-bottom: 1.1rem; border-bottom: 2px solid var(--ink); font-weight: 700; font-size: 0.875rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--brown); }
+.iv-drinks { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1.25rem 1.5rem; }
+.iv-drinks h4 { margin: 0 0 0.5rem; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--cocoa); }
+.iv-drinks ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; font-weight: 500; }
+.iv-terms { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; font-size: 0.9375rem; }
+.iv-terms li { display: flex; gap: 0.7rem; align-items: baseline; }
+.iv-terms li::before { content: ""; flex: none; width: 0.4rem; height: 0.4rem; background: var(--brown); translate: 0 -0.1rem; }
+
 /* Reservations: two invitation cards, double-ruled like a printed card */
 .iv-cards { max-width: 72rem; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: clamp(1.5rem, 3vw, 2.5rem); }
 .iv-card { background: var(--cream); border: 1px solid var(--ink); padding: 0.6rem; }
@@ -116,9 +157,17 @@
 
 .iv-band--ink .rq { max-width: 72rem; margin: 0 auto; }
 .iv-band--ink .iv-band-head p { color: var(--card); }
+.iv-band-head a { color: var(--gold); font-weight: 600; text-underline-offset: 0.2em; }
+.iv-band--brown .iv-band-head p:not(.iv-band-tag) { color: var(--sand); }
 
 /* ——— Responsive ——— */
+@media (max-width: 56rem) {
+  .iv-booth-info { grid-template-columns: minmax(0, 1fr); }
+  .iv-size { grid-template-columns: minmax(0, 1fr); gap: 0.85rem; }
+  .iv-size-label { grid-auto-flow: column; align-items: baseline; gap: 0.6rem; justify-content: start; }
+}
 @media (max-width: 34rem) {
+  .iv-pkgs { grid-template-columns: minmax(0, 1fr); }
   .rq { grid-template-columns: minmax(0, 1fr); }
   .rq-submit { width: 100%; }
   .iv-ticket { grid-template-columns: minmax(0, 1fr); }
@@ -127,6 +176,6 @@
   .iv-ticket-stub button { grid-column: 2; grid-row: 1 / span 3; align-self: center; margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .iv-ticket { transition: none; }
-  .iv-ticket:hover { transform: none; }
+  .iv-ticket, .iv-pkg { transition: none; }
+  .iv-ticket:hover, .iv-pkg:hover { transform: none; }
 }

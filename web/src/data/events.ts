@@ -1,32 +1,51 @@
 /**
- * Reservations and catering offers.
- * SAMPLE CONTENT: every package, price and inclusion below is a placeholder agreed with the owner
- * (Oct 2026) until the final offers are set. The pages say so on screen.
+ * Reservations, the coffee booth and catering.
+ * The coffee booth packages, drinks and terms come from the owner's "Enero Marso Contract" (Canva, Oct 2026).
+ * Offers marked `sample` are placeholders agreed with the owner until final offers are set; the page says so.
  */
-export type OfferGroup = "reserve" | "cater";
+export type OfferGroup = "booth" | "reserve" | "cater";
 
 export type Offer = {
   id: string;
   group: OfferGroup;
   name: string;
-  /** One short line on who it is for */
+  /** One short line on what it is */
   line: string;
-  guests: { min: number; max: number };
   /** null = free */
   price: number | null;
-  /** What the price covers, e.g. "consumable", "per tray" */
+  /** What the price covers, e.g. "consumable", "per tray of 10" */
   unit: string;
   where: string;
   includes: string[];
-  /** Needs the guest's venue address (cart or delivery) */
-  atVenue: boolean;
-  /** Priced per this many guests (trays); otherwise one flat price */
-  per?: number;
+  /** Booth cups */
+  cups?: { oz: 12 | 16; count: number };
+  guests?: { min: number; max: number };
+  /** Placeholder until the owner sets the final offer */
+  sample?: boolean;
 };
 
+export const CONTACT = { phone: "0915 954 1360", tel: "+639159541360" };
 export const SAMPLE_NOTE = "Sample packages and prices. Final offers are coming soon.";
 
+const booth = (n: number, oz: 12 | 16, count: number, price: number): Offer => ({
+  id: `booth-${n}`,
+  group: "booth",
+  name: `Package ${n}`,
+  line: `${oz} oz · ${count} cups`,
+  price,
+  unit: `${count} cups, ${oz} oz`,
+  where: "Your venue",
+  includes: [],
+  cups: { oz, count },
+});
+
 export const offers: Offer[] = [
+  booth(1, 12, 100, 10500),
+  booth(2, 12, 120, 11500),
+  booth(3, 12, 150, 13500),
+  booth(4, 16, 100, 12000),
+  booth(5, 16, 120, 14500),
+  booth(6, 16, 150, 16500),
   {
     id: "table",
     group: "reserve",
@@ -37,7 +56,7 @@ export const offers: Offer[] = [
     unit: "no fee",
     where: "Enero Marso Cafe",
     includes: ["Your table held 15 minutes past your time", "Order from the full menu", "Tuesday to Sunday, 6 PM to 1 AM"],
-    atVenue: false,
+    sample: true,
   },
   {
     id: "private",
@@ -49,31 +68,7 @@ export const offers: Offer[] = [
     unit: "consumable",
     where: "Enero Marso Cafe",
     includes: ["Cafe closed to walk-ins for 3 hours", "Spend the full amount on food and drinks", "Bring your own decor and playlist"],
-    atVenue: false,
-  },
-  {
-    id: "cart-classic",
-    group: "cater",
-    name: "Noir Cart · Classic",
-    line: "Our coffee cart at your party",
-    guests: { min: 30, max: 50 },
-    price: 9500,
-    unit: "50 cups",
-    where: "Your venue in Metro Manila",
-    includes: ["One barista for 2 hours", "Choose 4 drinks from the Noir menu", "Cups, straws and setup"],
-    atVenue: true,
-  },
-  {
-    id: "cart-premier",
-    group: "cater",
-    name: "Noir Cart · Premier",
-    line: "Weddings, debuts, launches",
-    guests: { min: 60, max: 100 },
-    price: 17500,
-    unit: "100 cups",
-    where: "Your venue in Metro Manila",
-    includes: ["Two baristas for 3 hours", "Choose 6 drinks, signatures included", "Branded cup sleeves"],
-    atVenue: true,
+    sample: true,
   },
   {
     id: "coffee-tray",
@@ -83,10 +78,9 @@ export const offers: Offer[] = [
     guests: { min: 10, max: 60 },
     price: 1100,
     unit: "per 10 cups",
-    per: 10,
     where: "Pickup or Lalamove",
     includes: ["Mix any drinks from the menu", "Labelled cups, packed to travel", "Order a day ahead"],
-    atVenue: true,
+    sample: true,
   },
   {
     id: "snack-tray",
@@ -96,34 +90,36 @@ export const offers: Offer[] = [
     guests: { min: 10, max: 30 },
     price: 1800,
     unit: "per tray of 10",
-    per: 10,
     where: "Pickup or Lalamove",
     includes: ["Pick 3 finger snacks", "Two dipping sauces", "Order a day ahead"],
-    atVenue: true,
-  },
-  {
-    id: "office-morning",
-    group: "cater",
-    name: "Office coffee break",
-    line: "Coffee and snacks for the team",
-    guests: { min: 15, max: 40 },
-    price: 4500,
-    unit: "serves 15",
-    where: "Pickup or Lalamove",
-    includes: ["15 drinks of your choice", "One party snack tray", "Delivered at the time you set"],
-    atVenue: true,
+    sample: true,
   },
 ];
 
-export const offerGroups: { id: OfferGroup; title: string; line: string }[] = [
-  { id: "reserve", title: "Reserve", line: "A table or the whole cafe" },
-  { id: "cater", title: "Catering", line: "Our coffee, at your event" },
+export const offerGroups: { id: OfferGroup; title: string }[] = [
+  { id: "booth", title: "Coffee booth" },
+  { id: "reserve", title: "Reserve" },
+  { id: "cater", title: "Trays" },
+];
+
+/** Drinks guests can order at the booth (contract: Inclusions) */
+export const boothDrinks: { title: string; items: string[] }[] = [
+  { title: "Caffeinated", items: ["Spanish Latte", "Cafe Latte", "Americano", "Matcha Latte"] },
+  { title: "Flavored macchiato", items: ["Salted Caramel", "Caramel", "Hazelnut"] },
+  { title: "Non-caffeinated", items: ["Hazelnut Chocolate", "Chocolate Milk", "Sakura Milk", "Blood Moon"] },
+];
+
+/** The contract's terms, in plain words */
+export const boothTerms: string[] = [
+  "Three baristas serve for 2 to 4 hours, depending on stock",
+  "Barista service fee of ₱1,000 per barista",
+  "You provide a 2 × 3 m space and a standard table",
+  "We arrive 2 hours early to set up and stay 1.5 hours after to pack up",
+  "You cover the round-trip transport and meals for the three baristas",
+  "A 20% non-refundable deposit reserves your date; the balance is due 3 days before",
+  "Pay by cash, GCash or bank transfer",
+  "Cancel at least 14 days before the event",
 ];
 
 export const priceText = (o: Offer) => (o.price === null ? "Free" : `₱${o.price.toLocaleString("en-PH")}`);
-export const guestsText = (o: Offer) => `${o.guests.min}–${o.guests.max} guests`;
-
-/** Sample estimate for a guest count: trays scale by the tray, everything else is one price */
-export const estimate = (o: Offer, guests: number) =>
-  o.price === null ? null : o.per ? Math.ceil(guests / o.per) * o.price : o.price;
-export const peso = (n: number | null) => (n === null ? "Free" : `₱${n.toLocaleString("en-PH")}`);
+export const guestsText = (o: Offer) => (o.guests ? `${o.guests.min}–${o.guests.max} guests` : "");
