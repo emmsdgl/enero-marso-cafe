@@ -12,7 +12,7 @@ export default function SiteFooter() {
         </Link>
         <nav className="footer-nav" aria-label="Footer">
           <Link href="/menu">Menu</Link>
-          <Link href="/gallery">Gallery</Link>
+          <Link href="/reservations">Reserve &amp; cater</Link>
           <Link href="/store">Our stores</Link>
         </nav>
         <p className="footer-follow">

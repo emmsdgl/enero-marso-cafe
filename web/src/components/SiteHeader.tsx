@@ -9,7 +9,7 @@ import { CloseIcon, MenuIcon } from "./Icons";
 const links = [
   { href: "/home", label: "Home" },
   { href: "/menu", label: "Menu" },
-  { href: "/gallery", label: "Gallery" },
+  { href: "/reservations", label: "Reserve & Cater" },
   { href: "/store", label: "Our Stores" },
 ];
 
@@ -40,7 +40,7 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
 
       <nav id="site-nav" className="site-nav" aria-label="Main">
         {links.map((l) => (
-          <Link key={l.href} href={l.href} aria-current={path === l.href ? "page" : undefined}>
+          <Link key={l.href} href={l.href} aria-current={path === l.href || path.startsWith(`${l.href}/`) ? "page" : undefined}>
             {l.label}
           </Link>
         ))}
