@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Delegated, recommended and accepted in principle: Next.js (App Router) deployed on Vercel. Reason: the owner plans employee login and delivery task management, which need auth, server routes, and a database alongside the public site. Style explorations may be static HTML prototypes; the chosen direction is built in Next.js.
+Decided for the long term (Oct 2026): Next.js 16 (App Router) on Vercel (Pro before real orders: Hobby is non-commercial only), Neon Postgres with Drizzle, Neon Auth. Laravel and a native staff app were considered and declined; reasons are in `cafe-order-platform-brief.md`. Style explorations may be static HTML prototypes; the chosen direction is built in Next.js.
 
 ## Users
 
@@ -18,7 +18,7 @@ Enero Marso Cafe is a small cafe in the Philippines serving a mixed crowd, all c
 - Families and friends hanging out, especially on weekends, dining in.
 - Couples and guests on dates or special occasions who come for the ambience and the "Premier" experience.
 
-Future users: cafe employees (login, delivery tasks).
+Staff: employees, branch managers and the admin use the staff portal (clock-in now, online orders next).
 
 ## Product Purpose
 
@@ -28,7 +28,7 @@ The website must do all of these:
 - Drive orders: delivery and pickup / pre-order.
 - Show the place and its vibe: interior, events, social media.
 
-Later: an employee area for delivery operations.
+Online ordering (pickup and delivery, with a chat per order) is being built; see Online ordering below.
 
 ## Confirmed facts (from the owner's Canva design, Oct 2026)
 
@@ -60,7 +60,7 @@ Later: an employee area for delivery operations.
 ## Operations (confirmed by owner, Oct 2026)
 
 - POS: both stores use **Loyverse** for sales and stock. The website must not duplicate POS sales/inventory; staff features complement it.
-- Delivery: third-party only (**Lalamove**). No in-house riders, so no delivery role.
+- Delivery: third-party only (**Lalamove**). No in-house riders yet, so no delivery role; the owner may hire riders if online ordering succeeds.
 - Payments: **GCash** and **cash** at both stores.
 - Staff portal (inside the same Next.js app under /staff): roles Employee, Branch Manager, Admin. Built: accounts, clock in/out, time records. Planned: online order queue, sold-out toggles, menu/price management, website content.
 - People: owner/admin **Mr. Denzel**; branch managers **Mr. Karlo** (Enero Marso Cafe, main) and **Mr. Adrian** (Cafe Noir).
@@ -76,6 +76,16 @@ Source: "Copy of Enero Marso Contract.pdf" (Canva DAHXHycoKlI). Shown on /reserv
 - Contact on the contract: phone 0915 954 1360, Facebook "EneroMarso".
 - Table reservation, private night and the coffee/snack trays are still SAMPLE offers (owner-approved placeholders) until final.
 
+## Online ordering (decided Oct 2026, being built)
+
+Full spec: `cafe-order-platform-brief.md`. In short:
+- Both branches, **pickup and delivery** from launch; orders only while open, until 30 minutes before closing.
+- Pickup pays at the counter (cash/GCash). Delivery: staff quote the Lalamove fee in the order's chat from the customer's map pin, the customer prepays by GCash and enters the reference number, staff verify it by hand, then book Lalamove and share the tracking link.
+- **One chat per order**: open while the order is in progress and 30 minutes after it is done, then read-only (enforced by the server). Kept 1 year, then personal details anonymized (Data Privacy Act).
+- No customer accounts: a private tracking link (shown on screen, remembered on the phone, re-issued by staff if lost). No SMS.
+- Staff side is the `/staff` portal made installable, with a live board (sound on the counter tablets) and web push. No native app for now.
+- Later options: PayMongo QR Ph for automatic payment checks, own riders, Lalamove API quotes, Loyverse sync.
+
 ## Positioning
 
 Premium coffee quality is the differentiator: the coffee itself, not just the space. The brand name carries "Premier".
@@ -83,8 +93,8 @@ Premium coffee quality is the differentiator: the coffee itself, not just the sp
 ## Capabilities and Constraints
 
 - Owner is preparing a full web design in Canva (made by a friend); when it arrives it becomes the authority for the public site's look.
-- Delivery partners, ordering mechanism, and payment flow are undecided.
-- Employee login is planned, not built.
+- Online ordering is decided (see Online ordering) but not built yet.
+- Payments are checked by hand: the cafe uses a personal GCash account, which has no API.
 
 ## Brand Commitments
 
@@ -97,7 +107,8 @@ Premium coffee quality is the differentiator: the coffee itself, not just the sp
 ## Evidence on Hand
 
 - Logo artwork, the Canva design, and the confirmed facts above.
-- Still missing: opening hours, phone/email, social handles, and the full menu. Do not invent them; placeholders say "to be announced" or "photo coming soon".
+- Known since: opening hours, socials, both full menus, the cafe phone 0915 954 1360 (from the contract).
+- Still missing: email, food and drink photos, final reservation/tray offers, GCash numbers per branch. Do not invent them; placeholders say "to be announced" or "photo coming soon".
 
 ## Product Principles
 

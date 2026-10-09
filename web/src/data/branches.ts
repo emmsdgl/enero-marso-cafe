@@ -63,13 +63,40 @@ export const branches: Branch[] = [
   },
 ];
 
-/** Is the branch open at this Manila day/minute? Checks today's window and last night's spill past midnight. */
-export function isOpen(b: Branch, weekday: number, minute: number): boolean {
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** Weekday (0 = Sunday) and minute of the day in the Philippines, whatever the device's own time zone */
+export function manilaClock(at: Date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila", weekday: "short", hour: "numeric", minute: "numeric", hourCycle: "h23",
+  }).formatToParts(at);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "0";
+  return { weekday: DAYS.indexOf(get("weekday")), minute: Number(get("hour")) * 60 + Number(get("minute")) };
+}
+
+/**
+ * Minutes until the branch closes, or null when it's closed at this Manila day/minute.
+ * Checks today's window and last night's spill past midnight.
+ */
+export function minutesToClose(b: Branch, weekday: number, minute: number): number | null {
   const today = b.week[weekday];
-  if (today) {
-    const overnight = today.close < today.open;
-    if (minute >= today.open && (overnight || minute < today.close)) return true;
+  if (today && minute >= today.open) {
+    if (today.close < today.open) return today.close + 24 * 60 - minute;
+    if (minute < today.close) return today.close - minute;
   }
   const yesterday = b.week[(weekday + 6) % 7];
-  return !!yesterday && yesterday.close < yesterday.open && minute < yesterday.close;
+  if (yesterday && yesterday.close < yesterday.open && minute < yesterday.close) return yesterday.close - minute;
+  return null;
+}
+
+export function isOpen(b: Branch, weekday: number, minute: number): boolean {
+  return minutesToClose(b, weekday, minute) !== null;
+}
+
+/** Online orders stop this long before closing, so the last order can still be made */
+export const ORDER_CUTOFF_MINUTES = 30;
+
+export function takingOrders(b: Branch, weekday: number, minute: number, cutoff = ORDER_CUTOFF_MINUTES): boolean {
+  const left = minutesToClose(b, weekday, minute);
+  return left !== null && left > cutoff;
 }

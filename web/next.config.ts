@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -12,4 +13,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Error alerts stay off until NEXT_PUBLIC_SENTRY_DSN is set; source maps upload only with SENTRY_AUTH_TOKEN
+const uploads = Boolean(process.env.SENTRY_AUTH_TOKEN);
+
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  sourcemaps: { disable: !uploads },
+  release: { create: uploads },
+  silent: !process.env.CI,
+  telemetry: false,
+});

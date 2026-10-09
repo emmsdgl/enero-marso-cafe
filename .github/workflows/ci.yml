@@ -1,0 +1,38 @@
+# Runs on every push and pull request: lint, type-check, unit tests and a production build,
+# so a broken change (or a Next.js upgrade that breaks something) is caught before Vercel deploys it.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    # The build never connects to these; they only need to exist. Real values live in Vercel.
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      NEON_AUTH_BASE_URL: https://ci.invalid/neondb/auth
+      NEON_AUTH_COOKIE_SECRET: ci-only-cookie-secret-not-used-anywhere-000000
+      KIOSK_SECRET: ci-only-kiosk-secret-not-used-anywhere-0000000000
+      SETUP_CODE: "000000"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
