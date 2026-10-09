@@ -3,11 +3,15 @@ import InkStamp from "@/components/InkStamp";
 import MenuBoard from "@/components/MenuBoard";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import { getMenus } from "@/lib/menu-store";
 
 export const metadata: Metadata = { title: "Menu" };
+// Rendered per visit (the menu data itself is cached), so sold-out changes show straight away
+export const dynamic = "force-dynamic";
 
 // The full menu as a printed label (adapted from the Roast Label style preview)
-export default function MenuPage() {
+export default async function MenuPage() {
+  const menus = await getMenus();
   return (
     <>
       <SiteHeader />
@@ -27,7 +31,7 @@ export default function MenuPage() {
             <InkStamp />
           </header>
 
-          <MenuBoard />
+          <MenuBoard menus={menus} />
 
         </article>
 

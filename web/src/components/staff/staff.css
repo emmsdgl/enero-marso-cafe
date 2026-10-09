@@ -12,7 +12,7 @@
 .staff-brand img { width: 1.9rem; height: auto; }
 .staff-brand small { color: var(--gold); margin-left: 0.25rem; }
 .staff-nav { display: flex; gap: 0.25rem; flex: 1; flex-wrap: wrap; }
-.staff-nav a { padding: 0.55rem 0.85rem; border-radius: 999px; text-decoration: none; font-weight: 500; font-size: 0.9375rem; transition: background-color 0.2s ease; }
+.staff-nav a { padding: 0.55rem 0.75rem; border-radius: 999px; text-decoration: none; font-weight: 500; font-size: 0.9375rem; transition: background-color 0.2s ease; }
 .staff-nav a:hover { background: rgb(250 241 225 / 0.08); }
 .staff-nav a[aria-current="page"] { background: var(--cream); color: var(--ink); font-weight: 600; }
 .staff-who { display: flex; align-items: center; gap: 1rem; }
@@ -95,6 +95,7 @@
 .tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; background: rgb(21 18 17 / 0.08); font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
 .tag.is-ok { background: #dcebd5; color: #24461a; }
 .tag.is-off { background: rgb(21 18 17 / 0.12); }
+.tag.is-sold { background: #f6dcd8; color: #6e1710; }
 
 /* ——— Today ——— */
 .clock-status { display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem 0.6rem; margin: 0 0 1.25rem; font-size: 1.125rem; }
@@ -119,6 +120,24 @@
 .totals li > span:first-child { display: flex; align-items: center; gap: 0.5rem; font-weight: 500; }
 .totals li > span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 .totals small { display: block; color: var(--cocoa); font-size: 0.8125rem; }
+
+/* ——— Menu ——— */
+.menu-cat-note { font-weight: 500; font-size: 0.875rem; color: var(--cocoa); }
+.menu-table tr.is-sold-out th, .menu-table tr.is-sold-out td.num { color: var(--cocoa); }
+.menu-table tr.is-sold-out td.num { text-decoration: line-through; }
+.menu-prices { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); gap: 0.6rem; }
+/* On a phone each item becomes a small card: name and status on top, prices, then the buttons */
+@media (max-width: 40rem) {
+  .menu-table thead { display: none; }
+  .menu-table, .menu-table tbody { display: block; }
+  .menu-table tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 1rem; padding: 0.85rem 0; border-bottom: 1px solid rgb(21 18 17 / 0.1); }
+  .menu-table th, .menu-table td { display: block; padding: 0; border: 0; }
+  .menu-table th[scope="row"] { flex: 1 0 calc(100% - 9rem); min-width: 0; }
+  .menu-table .menu-status { order: 1; }
+  .menu-table td.num { order: 2; text-align: left; }
+  .menu-table td.num[data-size]::before { content: attr(data-size) " "; color: var(--cocoa); font-size: 0.8125rem; }
+  .menu-table .menu-do { order: 3; flex-basis: 100%; margin-top: 0.25rem; }
+}
 
 /* ——— Branch setup ——— */
 .branch-setup h2 { font-size: 1.25rem; color: var(--brown); }

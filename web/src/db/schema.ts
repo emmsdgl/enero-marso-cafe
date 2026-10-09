@@ -1,10 +1,12 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 /** The two locations. Ids match src/data/branches.ts. */
 export const branches = pgTable("branches", {
   id: text("id").primaryKey(), // "main" | "noir"
   name: text("name").notNull(),
+  /** Fine print under the menu, e.g. "All espresso drinks come with 2 shots of espresso." */
+  menuNotes: jsonb("menu_notes").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
 });
 
 /**
@@ -90,6 +92,51 @@ export const auditLog = pgTable(
   },
   (t) => [index("audit_log_at").on(t.at)],
 );
+
+/** A branch's menu sections (Caffeinated, Signature…). Prices in the section line up with its sizes. */
+export const menuCategories = pgTable(
+  "menu_categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    branchId: text("branch_id").notNull().references(() => branches.id),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    note: text("note"),
+    sizes: jsonb("sizes").$type<string[]>(), // null = one price per item
+    kind: text("kind", { enum: ["drink", "food"] }).notNull(),
+    sort: integer("sort").notNull(),
+  },
+  (t) => [uniqueIndex("menu_categories_branch_slug").on(t.branchId, t.slug)],
+);
+
+/** One drink or dish. prices[i] is its price in the section's sizes[i]; null = not offered in that size. */
+export const menuItems = pgTable(
+  "menu_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    categoryId: uuid("category_id").notNull().references(() => menuCategories.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    note: text("note"),
+    prices: jsonb("prices").$type<(number | null)[]>().notNull(),
+    star: boolean("star").notNull().default(false), // marked ★ on the printed menu
+    available: boolean("available").notNull().default(true), // false = sold out
+    homePick: integer("home_pick"), // featured on the homepage, in this order
+    sort: integer("sort").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => staff.id),
+  },
+  (t) => [index("menu_items_category").on(t.categoryId, t.sort)],
+);
+
+/** Extras that go on a drink (extra shot, sinkers, oat milk…), per branch */
+export const menuAddons = pgTable("menu_addons", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  branchId: text("branch_id").notNull().references(() => branches.id),
+  name: text("name").notNull(),
+  price: integer("price").notNull(),
+  available: boolean("available").notNull().default(true),
+  sort: integer("sort").notNull(),
+});
 
 export type Staff = typeof staff.$inferSelect;
 export type Role = Staff["role"];

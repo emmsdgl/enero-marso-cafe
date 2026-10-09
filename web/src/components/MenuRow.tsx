@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Highlight } from "@/data/menu";
+import type { Highlight } from "@/lib/menu";
 import { ChevronIcon } from "./Icons";
 import MenuCard from "./MenuCard";
 

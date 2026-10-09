@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Highlight } from "@/data/menu";
+import type { Highlight } from "@/lib/menu";
 import BrandArt from "./BrandArt";
 import MenuRow from "./MenuRow";
 

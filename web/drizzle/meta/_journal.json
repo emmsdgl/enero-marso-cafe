@@ -15,6 +15,20 @@
       "when": 1791044968234,
       "tag": "0001_seed_branches",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791578557205,
+      "tag": "0002_menu",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791578579737,
+      "tag": "0003_seed_menus",
+      "breakpoints": true
     }
   ]
 }

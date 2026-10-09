@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { branches } from "@/data/branches";
-import { menus, peso, type Category } from "@/data/menu";
+import { peso, type MenuCategory, type Menus } from "@/lib/menu";
 import { SearchIcon } from "./Icons";
 
 type BranchId = "main" | "noir";
 
 /** The label's working courses: branch switch, search, the categories, then add-ons */
-export default function MenuBoard() {
+export default function MenuBoard({ menus }: { menus: Menus }) {
   const [branch, setBranch] = useState<BranchId>("main");
   const [q, setQ] = useState("");
 
@@ -23,7 +23,7 @@ export default function MenuBoard() {
   const menu = menus[branch];
   const info = branches.find((b) => b.id === branch)!;
   const term = q.trim().toLowerCase();
-  const shown = useMemo<Category[]>(
+  const shown = useMemo<MenuCategory[]>(
     () =>
       menu.categories
         .map((c) => ({
@@ -77,7 +77,7 @@ export default function MenuBoard() {
             <button type="button" onClick={() => setQ("")}>show everything</button>.
           </p>
         ) : (
-          shown.map((c) => <MenuCategory key={c.id} category={c} />)
+          shown.map((c) => <CategoryTable key={c.id} category={c} />)
         )}
       </div>
 
@@ -86,7 +86,10 @@ export default function MenuBoard() {
           <h2 id="addons">Add-ons</h2>
           <ul>
             {menu.addOns.map((a) => (
-              <li key={a.name}><span>{a.name}</span><span>+{peso(a.price)}</span></li>
+              <li key={a.id} className={a.available ? undefined : "is-sold-out"}>
+                <span>{a.name}{!a.available && <small> · sold out</small>}</span>
+                <span>+{peso(a.price)}</span>
+              </li>
             ))}
           </ul>
         </section>
@@ -100,7 +103,7 @@ export default function MenuBoard() {
   );
 }
 
-function MenuCategory({ category: c }: { category: Category }) {
+function CategoryTable({ category: c }: { category: MenuCategory }) {
   const id = `cat-${c.id}`;
   return (
     <section className={`ml-cat${c.sizes ? " is-sized" : ""}`} aria-labelledby={id}>
@@ -119,12 +122,13 @@ function MenuCategory({ category: c }: { category: Category }) {
         )}
         <tbody>
           {c.items.map((i) => (
-            <tr key={i.name}>
+            <tr key={i.id} className={i.available ? undefined : "is-sold-out"}>
               <th scope="row">
                 <span className="ml-name">
                   {i.name}
                   {i.star && <span className="ml-star" aria-label="Recommended"> ★</span>}
                 </span>
+                {!i.available && <span className="ml-sold">Sold out</span>}
                 {i.note && <small>{i.note}</small>}
               </th>
               {i.prices.map((p, n) => (

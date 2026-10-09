@@ -4,12 +4,15 @@ import MenuSection from "@/components/MenuSection";
 import MissionVision from "@/components/MissionVision";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { homeDrinks, homeFood } from "@/data/menu";
+import { getHighlights } from "@/lib/menu-store";
 
 export const metadata: Metadata = { title: "Home" };
+// Rendered per visit (the menu data itself is cached), so builds never need the database
+export const dynamic = "force-dynamic";
 
 // Homepage (Canva page 2)
-export default function Home() {
+export default async function Home() {
+  const { drinks, food } = await getHighlights();
   return (
     <>
       <SiteHeader overlay />
@@ -35,7 +38,7 @@ export default function Home() {
           title="Coffee"
           tagline="Rich flavors, real moments"
           body="From classic favorites to our signature blends, each cup is made to fuel your day and your dreams."
-          items={homeDrinks}
+          items={drinks}
         />
         <MenuSection
           id="food"
@@ -43,7 +46,7 @@ export default function Home() {
           title="Food"
           tagline="Simple ingredients, big comfort"
           body="Freshly made, always satisfying. Our food is the perfect pair for your favorite brew."
-          items={homeFood}
+          items={food}
         />
       </main>
       <SiteFooter />

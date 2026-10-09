@@ -17,8 +17,9 @@ export default async function StaffLayout({ children }: LayoutProps<"/staff">) {
   const branch = branches.find((b) => b.id === me.branchId);
   const links = [
     { href: "/staff", label: "Today" },
+    { href: "/staff/menu", label: "Menu" },
     { href: "/staff/time", label: "Time records" },
-    ...(me.role !== "employee" ? [{ href: "/staff/team", label: "Team" }, { href: "/staff/branch", label: "Branch setup" }] : []),
+    ...(me.role !== "employee" ? [{ href: "/staff/team", label: "Team" }, { href: "/staff/branch", label: "Branch" }] : []),
     { href: "/staff/account", label: "My account" },
   ];
   return (
