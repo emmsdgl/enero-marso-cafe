@@ -3,7 +3,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { branchNetworks, db, kiosks, staff, timeEntries } from "@/db";
+import { branchNetworks, branches, db, kiosks, staff, timeEntries } from "@/db";
 import { auth } from "@/lib/auth/server";
 import { toggleClock } from "@/lib/clock";
 import {
@@ -178,4 +178,29 @@ export async function saveEntry(_: ActionState, form: FormData): Promise<ActionS
   revalidatePath("/staff/time");
   revalidatePath("/staff");
   return { ok: "Saved." };
+}
+
+// ——— Online orders: managers (their branch) and the admin ———
+export async function setOrdersOpen(branchId: string, open: boolean): Promise<ActionState> {
+  const me = await requireStaff(["admin", "manager"]);
+  if (!BRANCHES.includes(branchId) || !canActOnBranch(me, branchId)) return { error: "You can't change that branch." };
+  await db.update(branches).set({ ordersOpen: open }).where(eq(branches.id, branchId));
+  await audit(me.id, open ? "orders.start" : "orders.pause", { branchId });
+  revalidatePath("/staff/branch");
+  revalidatePath("/staff/orders");
+  return { ok: open ? "Online orders are on." : "Online orders are paused." };
+}
+
+const CUTOFFS: Record<number, string> = { 30: "30 minutes", 45: "45 minutes", 60: "1 hour" };
+
+export async function saveOrderCutoff(_: ActionState, form: FormData): Promise<ActionState> {
+  const me = await requireStaff(["admin", "manager"]);
+  const branchId = s(form.get("branch"));
+  const minutes = Number(form.get("cutoff"));
+  if (!BRANCHES.includes(branchId) || !canActOnBranch(me, branchId)) return { error: "You can't change that branch." };
+  if (!CUTOFFS[minutes]) return { error: "Choose 30 minutes, 45 minutes or 1 hour." };
+  await db.update(branches).set({ orderCutoffMinutes: minutes }).where(eq(branches.id, branchId));
+  await audit(me.id, "orders.cutoff", { branchId, minutes });
+  revalidatePath("/staff/branch");
+  return { ok: `Online orders now stop ${CUTOFFS[minutes]} before closing.` };
 }

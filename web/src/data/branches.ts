@@ -78,7 +78,7 @@ export function manilaClock(at: Date = new Date()) {
  * Minutes until the branch closes, or null when it's closed at this Manila day/minute.
  * Checks today's window and last night's spill past midnight.
  */
-export function minutesToClose(b: Branch, weekday: number, minute: number): number | null {
+export function minutesToClose(b: Pick<Branch, "week">, weekday: number, minute: number): number | null {
   const today = b.week[weekday];
   if (today && minute >= today.open) {
     if (today.close < today.open) return today.close + 24 * 60 - minute;
@@ -89,14 +89,14 @@ export function minutesToClose(b: Branch, weekday: number, minute: number): numb
   return null;
 }
 
-export function isOpen(b: Branch, weekday: number, minute: number): boolean {
+export function isOpen(b: Pick<Branch, "week">, weekday: number, minute: number): boolean {
   return minutesToClose(b, weekday, minute) !== null;
 }
 
 /** Online orders stop this long before closing, so the last order can still be made */
 export const ORDER_CUTOFF_MINUTES = 30;
 
-export function takingOrders(b: Branch, weekday: number, minute: number, cutoff = ORDER_CUTOFF_MINUTES): boolean {
+export function takingOrders(b: Pick<Branch, "week">, weekday: number, minute: number, cutoff = ORDER_CUTOFF_MINUTES): boolean {
   const left = minutesToClose(b, weekday, minute);
   return left !== null && left > cutoff;
 }

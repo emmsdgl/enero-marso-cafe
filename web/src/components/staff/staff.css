@@ -139,6 +139,48 @@
   .menu-table .menu-do { order: 3; flex-basis: 100%; margin-top: 0.25rem; }
 }
 
+/* ——— Orders board: New, In progress, Ready, side by side on a tablet ——— */
+.board-tools { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.board-tools small { color: var(--cocoa); font-size: 0.875rem; }
+.staff-btn.is-on { background: var(--ink); border-color: var(--ink); color: var(--cream); }
+.board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+.board-col { display: grid; gap: 0.75rem; padding: 0.75rem; border-radius: 0.75rem; background: rgb(21 18 17 / 0.05); }
+.board-col h2 { display: flex; align-items: center; gap: 0.5rem; padding: 0.2rem 0.25rem 0; font-weight: 700; font-size: 0.875rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cocoa); }
+.board-count { min-width: 1.6rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: var(--ink); color: var(--cream); font-size: 0.75rem; text-align: center; letter-spacing: 0; }
+.board-col.is-new .board-count { background: var(--brown); }
+.board-empty { margin: 0; padding: 0.25rem 0.25rem 0.75rem; color: var(--cocoa); font-size: 0.9375rem; }
+.order-card { display: grid; gap: 0.55rem; padding: 1rem; background: var(--cream); border: 1px solid rgb(21 18 17 / 0.14); border-radius: 0.75rem; }
+.order-card.is-pending { border: 2px solid var(--brown); }
+.order-card.is-new { outline: 3px solid var(--gold); outline-offset: 2px; animation: card-in 0.6s var(--ease); }
+@keyframes card-in { from { opacity: 0; translate: 0 -0.5rem; } }
+.order-card header { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.order-card h3 { font-weight: 700; font-size: 1.25rem; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
+.order-card-when { padding: 0.2rem 0.6rem; border-radius: 999px; background: var(--sand); font-weight: 700; font-size: 0.875rem; white-space: nowrap; }
+.order-card-meta { margin: 0; font-size: 0.8125rem; color: var(--cocoa); }
+.order-card-who { margin: 0; }
+.order-card-who a { color: var(--brown); font-weight: 600; text-underline-offset: 0.2em; white-space: nowrap; }
+.order-card-items { list-style: none; margin: 0; padding: 0.55rem 0; display: grid; gap: 0.3rem; border-block: 1px solid rgb(21 18 17 / 0.1); }
+.order-card-items small { display: block; margin-left: 1.75rem; font-size: 0.8125rem; color: var(--cocoa); }
+.order-card-notes { margin: 0; padding: 0.5rem 0.65rem; border-radius: 0.4rem; background: #f7e7cf; font-size: 0.9375rem; }
+.order-card-total { margin: 0; display: flex; justify-content: space-between; align-items: baseline; font-size: 0.875rem; color: var(--cocoa); }
+.order-card-total b { color: var(--ink); font-size: 1.0625rem; font-variant-numeric: tabular-nums; }
+.order-card-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.order-card-actions .is-primary { flex: 1; padding-block: 0.8rem; font-size: 1rem; }
+.order-card-cancel { display: grid; gap: 0.6rem; }
+.order-card-cancel label { display: grid; gap: 0.35rem; font-weight: 600; font-size: 0.875rem; }
+.order-card-cancel select { padding: 0.6rem 0.7rem; border: 1.5px solid rgb(21 18 17 / 0.35); border-radius: 0.5rem; background: #fffaf1; font: inherit; font-weight: 500; }
+.board-done summary { cursor: pointer; font-weight: 700; }
+.board-done ul { list-style: none; margin: 0.75rem 0 0; padding: 0; }
+.board-done li { display: grid; grid-template-columns: 7rem minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: 0.75rem; padding: 0.55rem 0; border-top: 1px solid rgb(21 18 17 / 0.1); font-size: 0.9375rem; }
+.board-done li.is-cancelled { color: var(--cocoa); }
+.board-done .num { text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 64rem) { .board { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 40rem) { .board-done li { grid-template-columns: minmax(0, 1fr) auto; } }
+
+/* Online orders switch on the branch page */
+.orders-setup { display: grid; gap: 0.75rem; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid rgb(21 18 17 / 0.1); }
+.orders-setup-row { display: flex; align-items: flex-end; gap: 1rem 1.5rem; flex-wrap: wrap; }
+
 /* ——— Branch setup ——— */
 .branch-setup h2 { font-size: 1.25rem; color: var(--brown); }
 .setup-list { list-style: none; margin: 0 0 1rem; padding: 0; }

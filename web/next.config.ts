@@ -3,6 +3,18 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.1.13"],
+  // A customer's order link carries their private token: never pass it on, never index it
+  async headers() {
+    return [
+      {
+        source: "/order/:code",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+    ];
+  },
   // Contact details now live on Our Stores
   async redirects() {
     return [

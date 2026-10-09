@@ -27,6 +27,7 @@ export async function loadMenus(): Promise<Menus> {
         note: c.note,
         sizes: c.sizes,
         kind: c.kind,
+        upsizePrice: c.upsizePrice,
         items: items
           .filter((i) => i.categoryId === c.id)
           .map((i) => ({ id: i.id, name: i.name, note: i.note, prices: i.prices, star: i.star, available: i.available, homePick: i.homePick })),

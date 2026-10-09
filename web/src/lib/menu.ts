@@ -22,6 +22,8 @@ export type MenuCategory = {
   note: string | null;
   sizes: string[] | null;
   kind: "drink" | "food";
+  /** "Upsize +₱15": the extra for a bigger cup; null = no upsize in this section */
+  upsizePrice: number | null;
   items: MenuItem[];
 };
 

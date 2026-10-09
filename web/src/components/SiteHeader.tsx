@@ -47,6 +47,7 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
       </nav>
 
       <div className="header-tools">
+        <Link href="/order" className="header-order" aria-current={path.startsWith("/order") ? "page" : undefined}>Order</Link>
         <button
           type="button"
           className="icon-btn nav-toggle"

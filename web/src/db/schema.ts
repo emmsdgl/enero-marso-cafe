@@ -1,13 +1,22 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, doublePrecision, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { ORDER_STATUSES } from "@/lib/order-rules";
 
 /** The two locations. Ids match src/data/branches.ts. */
-export const branches = pgTable("branches", {
-  id: text("id").primaryKey(), // "main" | "noir"
-  name: text("name").notNull(),
-  /** Fine print under the menu, e.g. "All espresso drinks come with 2 shots of espresso." */
-  menuNotes: jsonb("menu_notes").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
-});
+export const branches = pgTable(
+  "branches",
+  {
+    id: text("id").primaryKey(), // "main" | "noir"
+    name: text("name").notNull(),
+    /** Fine print under the menu, e.g. "All espresso drinks come with 2 shots of espresso." */
+    menuNotes: jsonb("menu_notes").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    /** Managers switch online ordering on for launch, and off on a night they can't keep up */
+    ordersOpen: boolean("orders_open").notNull().default(false),
+    /** Online orders stop this many minutes before closing */
+    orderCutoffMinutes: integer("order_cutoff_minutes").notNull().default(30),
+  },
+  (t) => [check("branches_order_cutoff", sql`${t.orderCutoffMinutes} in (30, 45, 60)`)],
+);
 
 /**
  * One row per person who works for Enero Marso. Access comes from this table, not from having a login:
@@ -104,6 +113,7 @@ export const menuCategories = pgTable(
     note: text("note"),
     sizes: jsonb("sizes").$type<string[]>(), // null = one price per item
     kind: text("kind", { enum: ["drink", "food"] }).notNull(),
+    upsizePrice: integer("upsize_price"), // "Upsize +₱15"; null = no upsize in this section
     sort: integer("sort").notNull(),
   },
   (t) => [uniqueIndex("menu_categories_branch_slug").on(t.branchId, t.slug)],
@@ -138,6 +148,79 @@ export const menuAddons = pgTable("menu_addons", {
   sort: integer("sort").notNull(),
 });
 
+/**
+ * An online order. The customer's link carries a secret token; only its hash is stored here.
+ * Names and prices are copied into order_items, so later menu edits never change an order.
+ */
+export const orders = pgTable(
+  "orders",
+  {
+    id: uuid("id").primaryKey(),
+    code: text("code").notNull().unique(), // "EM-7KQ4P2", said out loud at the counter
+    branchId: text("branch_id").notNull().references(() => branches.id),
+    tokenHash: text("token_hash").notNull(),
+    status: text("status", { enum: ORDER_STATUSES }).notNull().default("pending"),
+    fulfillment: text("fulfillment", { enum: ["pickup", "delivery"] }).notNull(),
+    wantedAt: timestamp("wanted_at", { withTimezone: true }), // null = as soon as possible
+    customerName: text("customer_name").notNull(),
+    customerPhone: text("customer_phone").notNull(),
+    notes: text("notes"),
+    // Delivery (Lalamove) — filled from milestone 4
+    address: text("address"),
+    landmark: text("landmark"),
+    lat: doublePrecision("lat"),
+    lng: doublePrecision("lng"),
+    plusCode: text("plus_code"),
+    deliveryProvider: text("delivery_provider", { enum: ["lalamove", "own_rider"] }),
+    deliveryFee: integer("delivery_fee"),
+    trackingUrl: text("tracking_url"),
+    // Money, in whole pesos
+    subtotal: integer("subtotal").notNull(),
+    total: integer("total").notNull(),
+    paymentMethod: text("payment_method", { enum: ["cash", "gcash"] }),
+    paymentStatus: text("payment_status", { enum: ["unpaid", "submitted", "verified", "refunded"] }).notNull().default("unpaid"),
+    gcashRef: text("gcash_ref"),
+    // Timeline
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    readyAt: timestamp("ready_at", { withTimezone: true }),
+    outAt: timestamp("out_at", { withTimezone: true }),
+    doneAt: timestamp("done_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    cancelReason: text("cancel_reason"),
+    acceptedBy: uuid("accepted_by").references(() => staff.id),
+    createdIp: text("created_ip"),
+  },
+  (t) => [
+    index("orders_branch_created").on(t.branchId, t.createdAt),
+    index("orders_phone_created").on(t.customerPhone, t.createdAt),
+    index("orders_ip_created").on(t.createdIp, t.createdAt),
+  ],
+);
+
+export type OrderAddon = { name: string; price: number };
+
+export const orderItems = pgTable(
+  "order_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+    itemId: uuid("item_id").references(() => menuItems.id, { onDelete: "set null" }),
+    name: text("name").notNull(),
+    size: text("size"), // "Medium", "16 oz"; null for one-price items
+    upsized: boolean("upsized").notNull().default(false),
+    addons: jsonb("addons").$type<OrderAddon[]>().notNull().default(sql`'[]'::jsonb`),
+    unitPrice: integer("unit_price").notNull(), // size price + upsize + add-ons
+    qty: integer("qty").notNull(),
+    lineTotal: integer("line_total").notNull(),
+    sort: integer("sort").notNull(),
+  },
+  (t) => [index("order_items_order").on(t.orderId, t.sort), check("order_items_qty", sql`${t.qty} between 1 and 20`)],
+);
+
 export type Staff = typeof staff.$inferSelect;
 export type Role = Staff["role"];
 export type TimeEntry = typeof timeEntries.$inferSelect;
+export type Order = typeof orders.$inferSelect;
+export type OrderItem = typeof orderItems.$inferSelect;

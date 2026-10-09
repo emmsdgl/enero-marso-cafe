@@ -11,8 +11,8 @@ const SEEN_KEY = "em-loaded";
 const LOGO_SRC = "/brand/enero-marso-logo.jpg";
 
 /** Gold logo intro. Progress follows real page loading and plays once per browser session. */
-/** Staff tools open straight to work, without the brand intro */
-const NO_INTRO = /^\/(staff|login|setup|kiosk)(\/|$)/;
+/** Staff tools and ordering open straight to the task, without the brand intro */
+const NO_INTRO = /^\/(staff|login|setup|kiosk|order)(\/|$)/;
 
 export default function Loader() {
   const ref = useRef<HTMLDivElement>(null);

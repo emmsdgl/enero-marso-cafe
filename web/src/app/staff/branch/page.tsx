@@ -6,8 +6,9 @@ import ActionButton from "@/components/staff/ActionButton";
 import ActionForm from "@/components/staff/ActionForm";
 import { branchNetworks, db, kiosks } from "@/db";
 import { branches } from "@/data/branches";
+import { getOrderSettings } from "@/lib/orders";
 import { clientIp, hashKioskToken, KIOSK_COOKIE, manila, requireStaff } from "@/lib/staff";
-import { registerKiosk, registerNetwork, removeNetwork, revokeKiosk } from "../actions";
+import { registerKiosk, registerNetwork, removeNetwork, revokeKiosk, saveOrderCutoff, setOrdersOpen } from "../actions";
 
 export const metadata: Metadata = { title: "Branch setup" };
 
@@ -18,9 +19,10 @@ export default async function BranchSetupPage() {
   const token = (await cookies()).get(KIOSK_COOKIE)?.value;
   const thisDeviceHash = token ? hashKioskToken(token) : null;
 
-  const [nets, tabs] = await Promise.all([
+  const [nets, tabs, orderSettings] = await Promise.all([
     db.select().from(branchNetworks).orderBy(asc(branchNetworks.createdAt)),
     db.select().from(kiosks).where(isNull(kiosks.revokedAt)).orderBy(asc(kiosks.createdAt)),
+    getOrderSettings(),
   ]);
   const thisDevice = tabs.find((t) => t.tokenHash === thisDeviceHash);
 
@@ -28,7 +30,7 @@ export default async function BranchSetupPage() {
     <div className="staff-page">
       <header className="staff-head">
         <h1>Branch setup</h1>
-        <p>Where staff are allowed to clock in</p>
+        <p>Online orders, and where staff are allowed to clock in</p>
       </header>
 
       {mine.map((b) => {
@@ -38,6 +40,32 @@ export default async function BranchSetupPage() {
         return (
           <section key={b.id} className="staff-card branch-setup" aria-labelledby={`b-${b.id}`}>
             <h2 id={`b-${b.id}`}>{b.name}</h2>
+            <div className="orders-setup">
+              <h3>Online orders</h3>
+              {orderSettings[b.id].ordersOpen ? (
+                <p className="staff-note is-ok">Taking online orders. Pause them on a night you can&rsquo;t keep up; the order page tells customers right away.</p>
+              ) : (
+                <p className="staff-note is-warn">Not taking online orders. Customers see this branch as unavailable on the order page.</p>
+              )}
+              <div className="orders-setup-row">
+                <ActionButton
+                  action={setOrdersOpen.bind(null, b.id, !orderSettings[b.id].ordersOpen)}
+                  label={orderSettings[b.id].ordersOpen ? "Pause online orders" : "Start taking online orders"}
+                  confirm={orderSettings[b.id].ordersOpen ? "Pause online orders?" : undefined}
+                />
+                <ActionForm action={saveOrderCutoff} submit="Save" className="is-row" resetOnOk={false}>
+                  <input type="hidden" name="branch" value={b.id} />
+                  <label>
+                    Last online order
+                    <select name="cutoff" defaultValue={orderSettings[b.id].cutoff}>
+                      <option value={30}>30 minutes before closing</option>
+                      <option value={45}>45 minutes before closing</option>
+                      <option value={60}>1 hour before closing</option>
+                    </select>
+                  </label>
+                </ActionForm>
+              </div>
+            </div>
             <div className="staff-grid">
               <div>
                 <h3>Branch Wi-Fi</h3>

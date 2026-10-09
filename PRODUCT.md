@@ -62,7 +62,7 @@ Online ordering (pickup and delivery, with a chat per order) is being built; see
 - POS: both stores use **Loyverse** for sales and stock. The website must not duplicate POS sales/inventory; staff features complement it.
 - Delivery: third-party only (**Lalamove**). No in-house riders yet, so no delivery role; the owner may hire riders if online ordering succeeds.
 - Payments: **GCash** and **cash** at both stores.
-- Staff portal (inside the same Next.js app under /staff): roles Employee, Branch Manager, Admin. Built: accounts, clock in/out, time records, and the menu page (anyone marks items sold out; managers and the admin edit names and prices). Planned: online order queue, website content.
+- Staff portal (inside the same Next.js app under /staff): roles Employee, Branch Manager, Admin. Built: accounts, clock in/out, time records, the menu page (anyone marks items sold out; managers and the admin edit names and prices), and the Orders board for online pickup orders. Planned: per-order chat, delivery, push notifications, website content.
 - The menus live in the database (seeded from the printed menus in Oct 2026); the website reads them, so edits on /staff/menu show on /menu and the homepage right away.
 - People: owner/admin **Mr. Denzel**; branch managers **Mr. Karlo** (Enero Marso Cafe, main) and **Mr. Adrian** (Cafe Noir).
 - Clock-in rules (owner's choice): either the branch's registered counter tablet with a personal PIN, or the person's own phone while on the branch's registered Wi-Fi (matched by the connection's public IP).
@@ -78,6 +78,8 @@ Source: "Copy of Enero Marso Contract.pdf" (Canva DAHXHycoKlI). Shown on /reserv
 - Table reservation, private night and the coffee/snack trays are still SAMPLE offers (owner-approved placeholders) until final.
 
 ## Online ordering (decided Oct 2026, being built)
+
+Status: pickup ordering is built (customers order at /order, pick a time later that day or as soon as possible, and follow it at a private link; staff work the Orders board). Each branch has an online-orders switch (off by default, so nothing goes public until a manager turns it on) and a cutoff of 30, 45 or 60 minutes before closing, both on Staff > Branch. Chat, delivery and push notifications come next.
 
 Full spec: `cafe-order-platform-brief.md`. In short:
 - Both branches, **pickup and delivery** from launch; orders only while open, until 30 minutes before closing.
