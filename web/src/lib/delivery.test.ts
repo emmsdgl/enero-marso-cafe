@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkDelivery, distanceMeters, formatDistance, mapsLink, plusCode, type DeliverySettings } from "./delivery";
+import { checkDelivery, circleRing, distanceMeters, formatDistance, mapsLink, plusCode, type DeliverySettings } from "./delivery";
 
 const store = { lat: 14.4985, lng: 121.0436 };
 const settings: DeliverySettings = { open: true, store, freeWithin: 500, maxDistance: 5000, minOrder: 0 };
@@ -52,5 +52,15 @@ describe("pin helpers for staff", () => {
 
   it("links the pin to Google Maps", () => {
     expect(mapsLink(near)).toBe("https://www.google.com/maps/search/?api=1&query=14.501500,121.043600");
+  });
+});
+
+describe("free delivery area on the map", () => {
+  it("draws a closed ring whose points are all the radius away", () => {
+    const ring = circleRing(store, 500);
+    expect(ring).toHaveLength(65);
+    expect(ring[0][0]).toBeCloseTo(ring[64][0], 9);
+    expect(ring[0][1]).toBeCloseTo(ring[64][1], 9);
+    for (const [lng, lat] of ring) expect(Math.abs(distanceMeters(store, { lat, lng }) - 500)).toBeLessThanOrEqual(1);
   });
 });

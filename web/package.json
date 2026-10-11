@@ -19,6 +19,7 @@
     "@neondatabase/serverless": "^1.2.0",
     "@sentry/nextjs": "^11.6.0",
     "drizzle-orm": "^0.45.3",
+    "maplibre-gl": "^5.24.0",
     "next": "16.3.8",
     "pusher": "^5.3.4",
     "pusher-js": "^8.6.0",
@@ -29,7 +30,6 @@
     "zxing-wasm": "^2.2.4"
   },
   "devDependencies": {
-    "@types/google.maps": "^3.66.6",
     "@types/node": "^24.19.2",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",

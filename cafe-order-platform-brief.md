@@ -131,10 +131,12 @@ Both branches take online orders from launch, each with its own menu and order b
 - **Logins:** Neon Auth (managed Better Auth), kept behind `web/src/lib/auth/server.ts`.
 - **Realtime:** Pusher Channels (free tier), behind `lib/realtime.ts` so the provider can change.
 - **Push:** standard Web Push (VAPID) from the installable staff portal. No Firebase needed.
-- **Maps:** Google Maps JavaScript API for the delivery pin.
-  - The map loads only when Delivery is chosen. It's free under 10,000 map loads a month.
-  - It needs a Google Cloud billing account; the key is restricted to the site with a daily quota cap.
-  - The Plus Code is computed from the pin locally, at no cost.
+- **Maps:** OpenStreetMap for the delivery pin, drawn with MapLibre from OpenFreeMap's free public tiles.
+  - No key, account or usage limit, and commercial use is allowed. Changed from Google Maps, which
+    needs a billing account; without one it allows only a few map loads a day.
+  - The map loads only on pages that show one. If it can't load, "use my location" still sets the pin.
+  - Distances, the free-delivery area and the Plus Code are computed from the pin locally, at no cost.
+  - Staff still open the pin in Google Maps with a plain link, which needs no key.
 - **Quality:**
   - Vitest unit tests for the rules.
   - GitHub Actions CI on every push: lint, type-check, tests and build.
@@ -187,7 +189,6 @@ Both branches take online orders from launch, each with its own menu and order b
 - **M4:**
   - The GCash number or QR and account name for each branch (or one shared).
   - The delivery area or maximum distance, any minimum order, and whether Cafe Noir delivers.
-  - A Google Cloud billing account for the Maps key.
 - **M6:** upgrade to Vercel Pro, and name the privacy contact person.
 - **Optional:** a custom domain, which unlocks email links.
 - **Sentry:**

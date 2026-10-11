@@ -1,8 +1,19 @@
 "use client";
 
+import "maplibre-gl/dist/maplibre-gl.css";
+import type { Map as MapLibreMap, Marker } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
-import { formatDistance, type LatLng } from "@/lib/delivery";
-import { loadGoogleMaps, MAP_ID, mapsConfigured, whenMapsRefused } from "@/lib/google-maps";
+import { circleRing, formatDistance, type LatLng } from "@/lib/delivery";
+
+/**
+ * OpenFreeMap's street map (OpenStreetMap data): free, with no key, account or usage limit.
+ * The pin's coordinates are what matter; staff still open them in Google Maps with a plain link.
+ */
+const MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+
+// The cafe's brown pin with a cream dot, tip at the bottom
+const PIN_SVG =
+  '<svg viewBox="0 0 30 40" width="30" height="40" aria-hidden="true"><path d="M15 1C7.3 1 1 7.1 1 14.8 1 25.4 15 39 15 39s14-13.6 14-24.2C29 7.1 22.7 1 15 1z" fill="#834a22" stroke="#faf1e1" stroke-width="2"/><circle cx="15" cy="15" r="5.5" fill="#faf1e1"/></svg>';
 
 type Props = {
   /** The pin; null until the customer (or manager) sets one */
@@ -21,80 +32,113 @@ type Props = {
 };
 
 /**
- * A map with one pin: drag it, tap the map to move it, or use the phone's location (free, no
- * Google needed). If Google Maps can't load, the location button still works on its own.
+ * A map with one pin: drag it, tap the map to move it, or use the phone's location. If the map
+ * can't load (no WebGL, tiles down), the location button still works on its own.
  */
 export default function PinMap({ pin, onPin, center, store, freeRadius = 0, label, locateLabel = "Use my location" }: Props) {
   const box = useRef<HTMLDivElement>(null);
-  const map = useRef<google.maps.Map | null>(null);
-  const marker = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
+  const map = useRef<MapLibreMap | null>(null);
+  const marker = useRef<Marker | null>(null);
+  const placed = useRef(false);
   const setPin = useRef(onPin);
   useEffect(() => {
     setPin.current = onPin;
   });
-  const [state, setState] = useState<"loading" | "ready" | "failed">(mapsConfigured ? "loading" : "failed");
+  const [state, setState] = useState<"loading" | "ready" | "failed">("loading");
   const [locating, setLocating] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const editable = Boolean(onPin);
   const start = pin ?? center;
 
-  // Build the map once
+  // Build the map once; later pin changes move the marker below
   useEffect(() => {
-    if (!mapsConfigured) return;
     let cancelled = false;
-    const stopListening = whenMapsRefused(() => setState("failed"));
-    loadGoogleMaps()
-      .then(async () => {
-        const [{ Map, Circle }, { AdvancedMarkerElement }] = await Promise.all([
-          google.maps.importLibrary("maps") as Promise<google.maps.MapsLibrary>,
-          google.maps.importLibrary("marker") as Promise<google.maps.MarkerLibrary>,
-        ]);
+    let built: MapLibreMap | null = null;
+    let giveUp = 0;
+    import("maplibre-gl")
+      .then(({ default: maplibregl }) => {
         if (cancelled || !box.current) return;
-        const m = new Map(box.current, {
-          center: start, zoom: 16, mapId: MAP_ID, disableDefaultUI: true, zoomControl: true, clickableIcons: false,
-          gestureHandling: editable ? "greedy" : "cooperative",
+        const m = new maplibregl.Map({
+          container: box.current,
+          style: MAP_STYLE,
+          center: [start.lng, start.lat],
+          zoom: 16,
+          attributionControl: { compact: true },
+          // On a page you scroll, a look-only map needs two fingers to pan
+          cooperativeGestures: !editable,
+          dragRotate: false,
+          pitchWithRotate: false,
+          touchPitch: false,
         });
+        built = m;
+        m.touchZoomRotate.disableRotation();
+        m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+        // A map that hasn't drawn within 20 seconds isn't coming: offer the location button instead
+        giveUp = window.setTimeout(() => !cancelled && !m.loaded() && setState("failed"), 20_000);
+        m.on("error", () => {
+          if (!m.isStyleLoaded()) setState("failed");
+        });
+        m.on("load", () => {
+          window.clearTimeout(giveUp);
+          if (store && freeRadius > 0) {
+            m.addSource("free-area", {
+              type: "geojson",
+              data: { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [circleRing(store, freeRadius)] } },
+            });
+            m.addLayer({ id: "free-area-fill", type: "fill", source: "free-area", paint: { "fill-color": "#cf9d57", "fill-opacity": 0.14 } });
+            m.addLayer({ id: "free-area-line", type: "line", source: "free-area", paint: { "line-color": "#834a22", "line-opacity": 0.6, "line-width": 1.5 } });
+          }
+          setState("ready");
+        });
+
         if (store) {
           const badge = document.createElement("div");
           badge.className = "pin-map-store";
           badge.textContent = "EM";
           badge.title = "The cafe";
-          new AdvancedMarkerElement({ map: m, position: store, content: badge, title: "The cafe" });
-          if (freeRadius > 0) {
-            new Circle({ map: m, center: store, radius: freeRadius, clickable: false, strokeColor: "#834a22", strokeOpacity: 0.6, strokeWeight: 1.5, fillColor: "#cf9d57", fillOpacity: 0.14 });
-          }
+          new maplibregl.Marker({ element: badge }).setLngLat([store.lng, store.lat]).addTo(m);
         }
-        const mk = new AdvancedMarkerElement({ map: pin ? m : null, position: start, gmpDraggable: editable, title: label });
+        const dot = document.createElement("div");
+        dot.className = "pin-map-pin";
+        dot.innerHTML = PIN_SVG;
+        const mk = new maplibregl.Marker({ element: dot, anchor: "bottom", draggable: editable }).setLngLat([start.lng, start.lat]);
+        if (pin) {
+          mk.addTo(m);
+          placed.current = true;
+        }
         if (editable) {
-          mk.addListener("dragend", () => {
-            const p = mk.position as google.maps.LatLngLiteral | null;
-            if (p) setPin.current?.({ lat: Number(p.lat), lng: Number(p.lng) });
+          mk.on("dragend", () => {
+            const p = mk.getLngLat();
+            setPin.current?.({ lat: p.lat, lng: p.lng });
           });
-          m.addListener("click", (e: google.maps.MapMouseEvent) => {
-            if (e.latLng) setPin.current?.({ lat: e.latLng.lat(), lng: e.latLng.lng() });
-          });
+          m.on("click", (e) => setPin.current?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }));
         }
         map.current = m;
         marker.current = mk;
-        setState("ready");
       })
       .catch(() => !cancelled && setState("failed"));
     return () => {
       cancelled = true;
-      stopListening();
+      window.clearTimeout(giveUp);
+      built?.remove();
+      map.current = null;
+      marker.current = null;
+      placed.current = false;
     };
-    // The map is built once; later pin changes move the marker below
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Follow the pin when it changes from outside (location button, a typed fix)
+  // Follow the pin when it changes from outside (location button, a tap on the map)
   useEffect(() => {
     const m = map.current;
     const mk = marker.current;
     if (!m || !mk || !pin) return;
-    mk.position = pin;
-    if (!mk.map) mk.map = m;
-    if (!m.getBounds()?.contains(pin)) m.panTo(pin);
+    mk.setLngLat([pin.lng, pin.lat]);
+    if (!placed.current) {
+      mk.addTo(m);
+      placed.current = true;
+    }
+    if (!m.getBounds().contains([pin.lng, pin.lat])) m.panTo([pin.lng, pin.lat]);
   }, [pin, state]);
 
   const locate = () => {
@@ -106,8 +150,7 @@ export default function PinMap({ pin, onPin, center, store, freeRadius = 0, labe
         setLocating(false);
         const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         onPin?.(p);
-        map.current?.panTo(p);
-        map.current?.setZoom(17);
+        map.current?.easeTo({ center: [p.lng, p.lat], zoom: 17 });
         setNote(`Found within about ${formatDistance(pos.coords.accuracy)}.${state === "ready" ? " Drag the pin if it's off." : ""}`);
       },
       (err) => {

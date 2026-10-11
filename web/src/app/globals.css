@@ -519,6 +519,9 @@ h1, h2, h3 { margin: 0; }
 }
 .pin-map-locate:hover:not(:disabled) { background: var(--brown); color: var(--cream); }
 .pin-map-locate:disabled { opacity: 0.6; cursor: default; }
+.pin-map-pin { width: 30px; height: 40px; cursor: grab; filter: drop-shadow(0 2px 3px rgb(21 18 17 / 0.45)); }
+.pin-map-pin svg { display: block; }
+.pin-map .maplibregl-ctrl-attrib { font: 500 0.6875rem/1.4 var(--brand); }
 .pin-map-store {
   display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border: 2px solid var(--gold); border-radius: 50%;
   background: var(--ink); color: var(--gold); font: 700 0.6875rem/1 var(--brand); letter-spacing: 0.08em; box-shadow: 0 2px 6px rgb(21 18 17 / 0.4);

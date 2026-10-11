@@ -53,6 +53,22 @@ export function checkDelivery(s: DeliverySettings, pin: LatLng | null, subtotal:
   return { ok: true, distance, free: distance <= s.freeWithin };
 }
 
+/** The free delivery area as a closed ring of [lng, lat] points, for drawing on the map */
+export function circleRing(center: LatLng, radius: number, steps = 64): [number, number][] {
+  const rad = Math.PI / 180;
+  const d = radius / 6_371_000;
+  const lat1 = center.lat * rad;
+  const lng1 = center.lng * rad;
+  const ring: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const bearing = (i / steps) * 2 * Math.PI;
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(bearing));
+    const lng2 = lng1 + Math.atan2(Math.sin(bearing) * Math.sin(d) * Math.cos(lat1), Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+    ring.push([lng2 / rad, lat2 / rad]);
+  }
+  return ring;
+}
+
 /** Opens the pin in Google Maps (no API key needed): staff use it, and paste it into Lalamove */
 export const mapsLink = (p: LatLng) => `https://www.google.com/maps/search/?api=1&query=${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
 
