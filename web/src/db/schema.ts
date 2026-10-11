@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, doublePrecision, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, date, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { ORDER_STATUSES } from "@/lib/order-rules";
 
 /** The two locations. Ids match src/data/branches.ts. */
@@ -28,6 +28,43 @@ export const branches = pgTable(
     check("branches_max_delivery", sql`${t.maxDeliveryMeters} in (2000, 3000, 5000, 8000, 10000)`),
     check("branches_delivery_min_order", sql`${t.deliveryMinOrder} in (0, 200, 300, 500)`),
   ],
+);
+
+/** A day's hours are both times (minutes from midnight; a close before the open runs past midnight) or neither (closed) */
+const hoursCheck = (opensAt: unknown, closesAt: unknown) =>
+  sql`(${opensAt} is null and ${closesAt} is null) or (${opensAt} between 0 and 1439 and ${closesAt} between 0 and 1439 and ${opensAt} <> ${closesAt})`;
+
+/** Each branch's weekly opening hours, one row per weekday. Managers edit them on Staff > Branch. */
+export const branchHours = pgTable(
+  "branch_hours",
+  {
+    branchId: text("branch_id").notNull().references(() => branches.id),
+    weekday: integer("weekday").notNull(), // 0 = Sunday … 6 = Saturday
+    opensAt: integer("opens_at"), // null with closes_at = closed that day
+    closesAt: integer("closes_at"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedBy: uuid("updated_by"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.branchId, t.weekday] }),
+    check("branch_hours_weekday", sql`${t.weekday} between 0 and 6`),
+    check("branch_hours_times", hoursCheck(t.opensAt, t.closesAt)),
+  ],
+);
+
+/** A date with different hours from the usual week: closed for a holiday, or open late for an event */
+export const branchSpecialDays = pgTable(
+  "branch_special_days",
+  {
+    branchId: text("branch_id").notNull().references(() => branches.id),
+    day: date("day", { mode: "string" }).notNull(), // the Manila calendar date
+    opensAt: integer("opens_at"), // both null = closed all day
+    closesAt: integer("closes_at"),
+    note: text("note"), // "Christmas Day"
+    createdBy: uuid("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.branchId, t.day] }), check("branch_special_days_times", hoursCheck(t.opensAt, t.closesAt))],
 );
 
 /**

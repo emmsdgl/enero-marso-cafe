@@ -4,6 +4,8 @@ import { and, asc, count, desc, eq, gte, inArray } from "drizzle-orm";
 import { branches as branchDefs } from "@/data/branches";
 import { branches, db, orderItems, orderMessages, orders, paymentAccounts, type Order, type OrderItem, type Staff } from "@/db";
 import { checkDelivery, isLatLng, MAX_DELIVERY_FEE, plusCode, type DeliverySettings } from "./delivery";
+import type { Schedule } from "./hours";
+import { loadSchedules } from "./hours-store";
 import { isBranchId, peso, type BranchId } from "./menu";
 import { loadMenus } from "./menu-store";
 import { canMove, cleanPaymentRef, statusNote, type OrderStatus } from "./order-rules";
@@ -13,17 +15,18 @@ import { normalizePhone, priceCart, type CartLine } from "./pricing";
 import { announce, channels } from "./realtime";
 import { audit, canActOnBranch } from "./staff";
 
-export type BranchOrderSettings = { ordersOpen: boolean; cutoff: number; delivery: DeliverySettings };
+export type BranchOrderSettings = { ordersOpen: boolean; cutoff: number; schedule: Schedule; delivery: DeliverySettings };
 export type OrderSettings = Record<BranchId, BranchOrderSettings>;
 
-/** Whether each branch takes online orders right now, when they stop, and its delivery rules */
+/** Whether each branch takes online orders right now, its hours and when orders stop, and its delivery rules */
 export async function getOrderSettings(): Promise<OrderSettings> {
-  const rows = await db.select().from(branches);
+  const [rows, schedules] = await Promise.all([db.select().from(branches), loadSchedules()]);
   const of = (id: BranchId): BranchOrderSettings => {
     const r = rows.find((x) => x.id === id);
     return {
       ordersOpen: r?.ordersOpen ?? false,
       cutoff: r?.orderCutoffMinutes ?? 30,
+      schedule: schedules[id],
       delivery: {
         open: r?.deliveryOpen ?? false,
         store: r?.lat != null && r?.lng != null ? { lat: r.lat, lng: r.lng } : null,
@@ -68,7 +71,7 @@ export async function placeOrder(input: PlaceOrderInput, ip: string): Promise<{ 
   const now = new Date();
   const wanted = input.wantedAt ? new Date(input.wantedAt) : null;
   if (wanted && Number.isNaN(wanted.getTime())) return fail(`Choose a ${fulfillment} time.`);
-  if (!pickupAllowed(branch, now, settings.cutoff, wanted)) return fail(`That ${fulfillment} time isn't available any more. Please choose another.`);
+  if (!pickupAllowed(settings.schedule, now, settings.cutoff, wanted)) return fail(`That ${fulfillment} time isn't available any more. Please choose another.`);
 
   const name = String(input.name ?? "").trim().replace(/\s+/g, " ");
   const phone = normalizePhone(String(input.phone ?? ""));

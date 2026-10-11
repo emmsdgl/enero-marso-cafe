@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { branches } from "@/data/branches";
+import type { Schedule, Window } from "./hours";
 import { pickupAllowed, pickupWindow } from "./pickup";
 
-const main = branches.find((b) => b.id === "main")!;
-const noir = branches.find((b) => b.id === "noir")!;
+const t = (h: number, m = 0) => h * 60 + m;
+const evening: Window = { open: t(18), close: t(1) };
+const day: Window = { open: t(9), close: t(1) };
+const tuesday: Window = { open: t(13), close: t(22) };
+const main: Schedule = { week: [evening, null, evening, evening, evening, evening, evening], special: {} };
+const noir: Schedule = { week: [day, day, tuesday, day, day, day, day], special: {} };
 /** A Manila wall-clock time on a given date, e.g. manila("2026-10-13", "19:07") — 13 Oct 2026 is a Tuesday */
 const manila = (date: string, time: string) => new Date(`${date}T${time}:00+08:00`);
 const hm = (d: Date) => d.toLocaleTimeString("en-GB", { timeZone: "Asia/Manila", hour: "2-digit", minute: "2-digit" });
@@ -60,5 +64,14 @@ describe("checking a chosen time on the server", () => {
   });
   it("refuses ASAP before opening", () => {
     expect(pickupAllowed(main, manila("2026-10-13", "14:00"), 30, null)).toBe(false);
+  });
+
+  it("follows special days: none on a holiday closure, the day's own hours otherwise", () => {
+    const closed = { ...main, special: { "2026-10-13": null } };
+    expect(pickupWindow(closed, manila("2026-10-13", "14:00"), 30)).toMatchObject({ asap: false, slots: [], opensAt: null });
+    const early = { ...main, special: { "2026-10-13": { open: t(16), close: t(20) } } };
+    const w = pickupWindow(early, manila("2026-10-13", "17:00"), 30);
+    expect(w.asap).toBe(true);
+    expect(hm(w.slots.at(-1)!)).toBe("19:30"); // closes 8 PM that day
   });
 });

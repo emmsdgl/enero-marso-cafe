@@ -7,6 +7,7 @@ import { branchNetworks, branches, db, kiosks, paymentAccounts, staff, timeEntri
 import { auth } from "@/lib/auth/server";
 import { toggleClock } from "@/lib/clock";
 import { FREE_DELIVERY_OPTIONS, formatDistance, inPhilippines, isLatLng, MAX_DELIVERY_OPTIONS, MIN_ORDER_OPTIONS } from "@/lib/delivery";
+import { removeSpecialDay, saveSpecialDay, saveWeek } from "@/lib/hours-store";
 import { peso } from "@/lib/menu";
 import { savePaymentAccount, setPaymentAccountActive } from "@/lib/payments";
 import {
@@ -279,5 +280,38 @@ export async function setPaymentAccountActiveAction(id: string, active: boolean)
   const me = await requireStaff(["admin", "manager"]);
   const r = await setPaymentAccountActive(me, String(id), active);
   revalidatePath("/staff/branch");
+  return r.ok ? { ok: r.message } : { error: r.error };
+}
+
+// ——— Opening hours: managers (their branch) and the admin ———
+export async function saveWeeklyHours(_: ActionState, form: FormData): Promise<ActionState> {
+  const me = await requireStaff(["admin", "manager"]);
+  const branchId = s(form.get("branch"));
+  if (!BRANCHES.includes(branchId)) return { error: "You can't change that branch." };
+  const days = Array.from({ length: 7 }, (_, d) => ({ closed: form.get(`closed-${d}`) === "on", open: s(form.get(`open-${d}`)), close: s(form.get(`close-${d}`)) }));
+  const r = await saveWeek(me, branchId, days);
+  revalidatePath("/staff/branch");
+  revalidatePath("/store");
+  return r.ok ? { ok: r.message } : { error: r.error };
+}
+
+export async function saveSpecialDayAction(_: ActionState, form: FormData): Promise<ActionState> {
+  const me = await requireStaff(["admin", "manager"]);
+  const branchId = s(form.get("branch"));
+  if (!BRANCHES.includes(branchId)) return { error: "You can't change that branch." };
+  const r = await saveSpecialDay(me, branchId, {
+    day: s(form.get("day")), closed: form.get("closed") === "on", open: s(form.get("open")), close: s(form.get("close")), note: s(form.get("note")),
+  });
+  revalidatePath("/staff/branch");
+  revalidatePath("/store");
+  return r.ok ? { ok: r.message } : { error: r.error };
+}
+
+export async function removeSpecialDayAction(branchId: string, day: string): Promise<ActionState> {
+  const me = await requireStaff(["admin", "manager"]);
+  if (!BRANCHES.includes(branchId)) return { error: "You can't change that branch." };
+  const r = await removeSpecialDay(me, branchId, String(day));
+  revalidatePath("/staff/branch");
+  revalidatePath("/store");
   return r.ok ? { ok: r.message } : { error: r.error };
 }

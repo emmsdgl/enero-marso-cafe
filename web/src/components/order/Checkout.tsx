@@ -27,7 +27,7 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
   }, []);
 
   const windows = useMemo(
-    () => (now ? (Object.fromEntries(branches.map((b) => [b.id, pickupWindow(b, now, settings[b.id].cutoff)])) as Record<BranchId, PickupWindow>) : null),
+    () => (now ? (Object.fromEntries(branches.map((b) => [b.id, pickupWindow(settings[b.id].schedule, now, settings[b.id].cutoff)])) as Record<BranchId, PickupWindow>) : null),
     [now, settings],
   );
   const canOrder = (id: BranchId) => !!windows && settings[id].ordersOpen && (windows[id].asap || windows[id].slots.length > 0);

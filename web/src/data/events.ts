@@ -57,7 +57,7 @@ export const offers: Offer[] = [
     price: null,
     unit: "no fee",
     where: "Enero Marso Cafe",
-    includes: ["Your table held 15 minutes past your time", "Order from the full menu", "Tuesday to Sunday, 6 PM to 1 AM"],
+    includes: ["Your table held 15 minutes past your time", "Order from the full menu", "Any time the cafe is open"],
     sample: true,
   },
   {

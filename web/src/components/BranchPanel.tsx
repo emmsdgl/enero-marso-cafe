@@ -1,15 +1,18 @@
 import type { Branch } from "@/data/branches";
+import { describeWeek, type Schedule } from "@/lib/hours";
 import { FacebookIcon, InstagramIcon, PinIcon } from "./Icons";
 import OpenBadge from "./OpenBadge";
 
-/** One branch: name, what it is, where, when, and how to get there */
-export default function BranchPanel({ branch }: { branch: Branch }) {
+type Upcoming = { day: string; label: string; hours: string };
+
+/** One branch: name, what it is, where, when (including holidays coming up), and how to get there */
+export default function BranchPanel({ branch, schedule, upcoming }: { branch: Branch; schedule: Schedule; upcoming: Upcoming[] }) {
   const id = `branch-${branch.id}`;
   return (
     <section className={`branch is-${branch.id}`} aria-labelledby={id}>
       <div className="branch-head">
         <h2 id={id}>{branch.name}</h2>
-        <OpenBadge branchId={branch.id} />
+        <OpenBadge schedule={schedule} />
       </div>
       <p className="branch-tagline">{branch.tagline}</p>
 
@@ -32,7 +35,7 @@ export default function BranchPanel({ branch }: { branch: Branch }) {
           <dd>
             <table className="branch-hours">
               <tbody>
-                {branch.hoursText.map((r) => (
+                {describeWeek(schedule.week).map((r) => (
                   <tr key={r.days}>
                     <th scope="row">{r.days}</th>
                     <td>{r.time}</td>
@@ -40,6 +43,15 @@ export default function BranchPanel({ branch }: { branch: Branch }) {
                 ))}
               </tbody>
             </table>
+            {upcoming.length > 0 && (
+              <ul className="branch-special">
+                {upcoming.map((u) => (
+                  <li key={u.day}>
+                    <b>{u.label}</b> {u.hours}
+                  </li>
+                ))}
+              </ul>
+            )}
           </dd>
         </div>
       </dl>

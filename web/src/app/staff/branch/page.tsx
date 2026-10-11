@@ -6,11 +6,13 @@ import ActionButton from "@/components/staff/ActionButton";
 import ActionForm from "@/components/staff/ActionForm";
 import { branchNetworks, db, kiosks, staff } from "@/db";
 import { branches } from "@/data/branches";
+import { upcomingSpecialDays } from "@/lib/hours-store";
 import { getOrderSettings } from "@/lib/orders";
 import { listPaymentAccounts, qrSvg } from "@/lib/payments";
 import { clientIp, hashKioskToken, KIOSK_COOKIE, manila, requireStaff } from "@/lib/staff";
 import { registerKiosk, registerNetwork, removeNetwork, revokeKiosk, saveOrderCutoff, setOrdersOpen } from "../actions";
 import DeliverySetup, { type AccountRow } from "./DeliverySetup";
+import HoursSetup from "./HoursSetup";
 
 export const metadata: Metadata = { title: "Branch setup" };
 
@@ -21,11 +23,12 @@ export default async function BranchSetupPage() {
   const token = (await cookies()).get(KIOSK_COOKIE)?.value;
   const thisDeviceHash = token ? hashKioskToken(token) : null;
 
-  const [nets, tabs, orderSettings, accountList] = await Promise.all([
+  const [nets, tabs, orderSettings, accountList, special] = await Promise.all([
     db.select().from(branchNetworks).orderBy(asc(branchNetworks.createdAt)),
     db.select().from(kiosks).where(isNull(kiosks.revokedAt)).orderBy(asc(kiosks.createdAt)),
     getOrderSettings(),
     listPaymentAccounts(mine.map((b) => b.id)),
+    upcomingSpecialDays(mine.map((b) => b.id)),
   ]);
   const thisDevice = tabs.find((t) => t.tokenHash === thisDeviceHash);
   const editorIds = [...new Set(accountList.flatMap((a) => (a.updatedBy ? [a.updatedBy] : [])))];
@@ -38,7 +41,7 @@ export default async function BranchSetupPage() {
     <div className="staff-page">
       <header className="staff-head">
         <h1>Branch setup</h1>
-        <p>Online orders, delivery, and where staff are allowed to clock in</p>
+        <p>Opening hours, online orders, delivery, and where staff are allowed to clock in</p>
       </header>
 
       {mine.map((b) => {
@@ -48,6 +51,7 @@ export default async function BranchSetupPage() {
         return (
           <section key={b.id} className="staff-card branch-setup" aria-labelledby={`b-${b.id}`}>
             <h2 id={`b-${b.id}`}>{b.name}</h2>
+            <HoursSetup branchId={b.id} schedule={orderSettings[b.id].schedule} special={special[b.id] ?? []} />
             <div className="orders-setup">
               <h3>Online orders</h3>
               {orderSettings[b.id].ordersOpen ? (

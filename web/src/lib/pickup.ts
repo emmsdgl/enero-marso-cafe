@@ -1,4 +1,4 @@
-import { manilaClock, minutesToClose, type Branch } from "@/data/branches";
+import { manilaClock, minutesToClose, windowOn, type Schedule } from "./hours";
 
 /** Kitchen time before the earliest pickup, and the spacing of the time choices */
 export const PICKUP_LEAD_MINUTES = 20;
@@ -16,12 +16,14 @@ export type PickupWindow = {
 const MIN = 60_000;
 
 /**
- * When can a pickup order placed now be collected? Open now: as soon as possible, or a time
- * up to the cutoff before closing. Closed now but opening later today: a time after opening.
+ * When can an order placed now be collected (or delivered)? Open now: as soon as possible, or a
+ * time up to the cutoff before closing. Closed now but opening later today: a time after opening.
+ * Today's hours include special days (holidays) from the branch's schedule.
  */
-export function pickupWindow(b: Pick<Branch, "week">, now: Date, cutoff: number): PickupWindow {
+export function pickupWindow(s: Schedule, now: Date, cutoff: number): PickupWindow {
   const base = Math.floor(now.getTime() / MIN) * MIN; // Manila is a whole-hour offset, so minutes line up
-  const { weekday, minute } = manilaClock(now);
+  const clock = manilaClock(now);
+  const { minute } = clock;
   const slotsBetween = (firstMinuteOfDay: number, lastOffset: number) => {
     const out: Date[] = [];
     let offset = Math.ceil(firstMinuteOfDay / PICKUP_STEP_MINUTES) * PICKUP_STEP_MINUTES - minute;
@@ -29,13 +31,13 @@ export function pickupWindow(b: Pick<Branch, "week">, now: Date, cutoff: number)
     return out;
   };
 
-  const left = minutesToClose(b, weekday, minute);
+  const left = minutesToClose(s, clock);
   if (left !== null && left > cutoff) {
     return { asap: true, slots: slotsBetween(minute + PICKUP_LEAD_MINUTES, left - cutoff), opensAt: null };
   }
 
   // Closed (or past the cutoff): offer today's window if it hasn't started yet
-  const today = b.week[weekday];
+  const today = windowOn(s, clock.date, clock.weekday);
   if (today && today.open > minute) {
     const untilOpen = today.open - minute;
     const length = today.close > today.open ? today.close - today.open : today.close + 24 * 60 - today.open;
@@ -49,8 +51,8 @@ export function pickupWindow(b: Pick<Branch, "week">, now: Date, cutoff: number)
  * Server check for a chosen pickup time. A few minutes of slack, because the customer may have
  * picked the earliest time a little while before pressing "Place order".
  */
-export function pickupAllowed(b: Pick<Branch, "week">, now: Date, cutoff: number, wanted: Date | null): boolean {
-  const w = pickupWindow(b, new Date(now.getTime() - 10 * MIN), cutoff);
-  if (wanted === null) return pickupWindow(b, now, cutoff).asap;
+export function pickupAllowed(s: Schedule, now: Date, cutoff: number, wanted: Date | null): boolean {
+  const w = pickupWindow(s, new Date(now.getTime() - 10 * MIN), cutoff);
+  if (wanted === null) return pickupWindow(s, now, cutoff).asap;
   return w.slots.some((s) => s.getTime() === wanted.getTime()) && wanted.getTime() > now.getTime();
 }

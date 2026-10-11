@@ -50,6 +50,13 @@
       "when": 1791737747845,
       "tag": "0006_delivery",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791746487670,
+      "tag": "0007_opening_hours",
+      "breakpoints": true
     }
   ]
 }
