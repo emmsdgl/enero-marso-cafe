@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
       },
+      // The staff app's service worker: phones check for a new version on every visit
+      { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache" }] },
+      { source: "/staff.webmanifest", headers: [{ key: "Content-Type", value: "application/manifest+json" }] },
     ];
   },
   // Contact details now live on Our Stores

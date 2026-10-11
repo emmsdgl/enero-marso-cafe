@@ -326,6 +326,29 @@ export const orderMessages = pgTable(
   ],
 );
 
+/**
+ * A staff phone, tablet or computer that gets notifications. Each browser on each device has its
+ * own subscription (endpoint + keys from the browser's push service); it's removed when the push
+ * service says it has expired.
+ */
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    staffId: uuid("staff_id").notNull().references(() => staff.id),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    device: text("device").notNull(), // "Chrome on Android"
+    orders: boolean("orders").notNull().default(true), // new orders and payments to check
+    messages: boolean("messages").notNull().default(true), // customer messages
+    onShiftOnly: boolean("on_shift_only").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
+  },
+  (t) => [index("push_subscriptions_staff").on(t.staffId)],
+);
+
 export type Staff = typeof staff.$inferSelect;
 export type Role = Staff["role"];
 export type TimeEntry = typeof timeEntries.$inferSelect;
@@ -333,3 +356,4 @@ export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type OrderMessage = typeof orderMessages.$inferSelect;
 export type PaymentAccount = typeof paymentAccounts.$inferSelect;
+export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;

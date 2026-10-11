@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import StaffApp from "@/components/staff/StaffApp";
 import StaffNav from "@/components/staff/StaffNav";
 import { branches } from "@/data/branches";
 import { requireStaff } from "@/lib/staff";
 import { signOut } from "../login/actions";
 import "@/components/staff/staff.css";
 
-export const metadata: Metadata = { title: { default: "Staff", template: "%s · Staff · Enero Marso" }, robots: { index: false } };
+export const metadata: Metadata = {
+  title: { default: "Staff", template: "%s · Staff · Enero Marso" },
+  robots: { index: false },
+  // The staff portal installs as its own app ("EM Staff") on phones and tablets
+  manifest: "/staff.webmanifest",
+  appleWebApp: { capable: true, title: "EM Staff", statusBarStyle: "black-translucent" },
+  icons: { icon: "/favicon.ico", apple: "/icons/staff-180.png" },
+};
 export const dynamic = "force-dynamic";
 
 const ROLE_LABEL = { employee: "Employee", manager: "Branch manager", admin: "Admin" } as const;
@@ -25,6 +33,7 @@ export default async function StaffLayout({ children }: LayoutProps<"/staff">) {
   ];
   return (
     <div className="staff-shell">
+      <StaffApp />
       <header className="staff-top">
         <Link href="/staff" className="staff-brand">
           <Image src="/brand/enero-marso-monogram-gold.png" alt="" width={439} height={500} />

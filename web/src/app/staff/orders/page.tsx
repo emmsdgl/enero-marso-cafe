@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LiveRefresh from "@/components/LiveRefresh";
 import OrderBoard from "@/components/staff/OrderBoard";
+import PushNudge from "@/components/staff/PushNudge";
+import { pushConfigured } from "@/lib/push";
 import { branches } from "@/data/branches";
 import { staffUnread } from "@/lib/order-chat";
 import { getOrderSettings, listBranchOrders } from "@/lib/orders";
@@ -48,6 +50,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/staff/ord
         </p>
       )}
 
+      <PushNudge configured={pushConfigured} />
       <OrderBoard orders={orders} unread={unread} showBranch={shown.length > 1} context={context} />
     </div>
   );

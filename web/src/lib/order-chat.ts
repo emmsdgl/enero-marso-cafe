@@ -4,6 +4,8 @@ import { db, orderMessages, orders, staff, type Staff } from "@/db";
 import { chatState, cleanMessage, type Fulfillment, type OrderStatus, type Sender } from "./order-rules";
 import { tokenMatches } from "./order-token";
 import { getCustomerOrder, getStaffOrder, isOrderId } from "./orders";
+import { notifyBranch } from "./push";
+import { messagePayload } from "./push-rules";
 import { announce, channels } from "./realtime";
 import { canActOnBranch } from "./staff";
 
@@ -49,6 +51,7 @@ export async function postCustomerMessage(code: string, token: string, body: unk
     db.update(orders).set({ customerLastReadAt: sql`now()` }).where(eq(orders.id, o.id)),
   ]);
   await announce([channels.branch(o.branchId), channels.order(o.id)]);
+  notifyBranch(o.branchId, "message", messagePayload(o, msg.text));
   return { ok: true };
 }
 

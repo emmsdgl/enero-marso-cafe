@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import ActionForm from "@/components/staff/ActionForm";
+import PushSetup from "@/components/staff/PushSetup";
+import { myDevices, pushConfigured } from "@/lib/push";
 import { requireStaff, signedInWithPin } from "@/lib/staff";
 import { changeMyPassword, setMyPin } from "../actions";
 
@@ -7,13 +9,17 @@ export const metadata: Metadata = { title: "My account" };
 
 export default async function AccountPage() {
   const me = await requireStaff();
-  const viaPin = await signedInWithPin();
+  const [viaPin, devices] = await Promise.all([signedInWithPin(), myDevices(me)]);
   return (
     <div className="staff-page">
       <header className="staff-head">
         <h1>My account</h1>
         <p>{me.email}</p>
       </header>
+      <section id="notifications" className="staff-card" aria-labelledby="push-title">
+        <h2 id="push-title">Phone notifications</h2>
+        <PushSetup devices={devices} configured={pushConfigured} />
+      </section>
       <div className="staff-grid">
         <section className="staff-card" aria-labelledby="pin-title">
           <h2 id="pin-title">Clock-in PIN</h2>

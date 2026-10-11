@@ -12,6 +12,8 @@ import { canMove, cleanPaymentRef, statusNote, type OrderStatus } from "./order-
 import { hashOrderToken, newOrderCode, newOrderToken, tokenMatches } from "./order-token";
 import { pickupAllowed } from "./pickup";
 import { normalizePhone, priceCart, type CartLine } from "./pricing";
+import { notifyBranch } from "./push";
+import { newOrderPayload, paymentPayload } from "./push-rules";
 import { announce, channels } from "./realtime";
 import { audit, canActOnBranch } from "./staff";
 
@@ -125,6 +127,10 @@ export async function placeOrder(input: PlaceOrderInput, ip: string): Promise<{ 
         ),
       ]);
       await announce([channels.branch(input.branch)]);
+      notifyBranch(input.branch, "order", newOrderPayload({
+        id, code, branchId: input.branch, fulfillment, wantedAt: wanted, total: priced.subtotal,
+        items: priced.lines.reduce((n, l) => n + l.qty, 0), distanceMeters: delivery.distanceMeters ?? null,
+      }));
       return { ok: true, code, token };
     } catch (e) {
       if (!isCodeClash(e)) throw e;
@@ -284,6 +290,7 @@ export async function submitPayment(code: string, token: string, accountId: unkn
     .returning({ id: orders.id });
   if (done.length === 0) return fail("Your order changed in the meantime. Check the page and try again.");
   await noteAndAnnounce(o, `The customer sent payment reference ${ref} (paid to ${account.label}). The cafe is checking it.`);
+  notifyBranch(o.branchId, "payment", paymentPayload(o, account.label));
   return { ok: true };
 }
 
