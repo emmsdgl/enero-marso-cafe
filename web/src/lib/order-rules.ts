@@ -20,6 +20,18 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type Fulfillment = "pickup" | "delivery";
 export type PaymentStatus = "unpaid" | "submitted" | "verified" | "refunded";
 
+/** What staff call each status on the board */
+export const STATUS_LABEL: Record<OrderStatus, string> = {
+  pending: "New",
+  awaiting_payment: "Awaiting payment",
+  accepted: "Accepted",
+  preparing: "Preparing",
+  ready: "Ready",
+  out_for_delivery: "Out for delivery",
+  done: "Picked up",
+  cancelled: "Cancelled",
+};
+
 /** The chat stays open this long after the order is done, for "missing item" messages */
 export const CHAT_GRACE_MINUTES = 30;
 /** An order nobody finished after this long counts as closed (forgotten on the board) */
@@ -70,4 +82,52 @@ export function chatState(o: ChatClock, now: Date = new Date()): ChatState {
   }
   const closesAt = new Date(o.createdAt.getTime() + STALE_HOURS * 3_600_000);
   return now < closesAt ? { open: true, closesAt, reason: "active" } : { open: false, closesAt, reason: "stale" };
+}
+
+export type Sender = "customer" | "staff" | "system";
+
+/** Longest chat message, about three text messages' worth */
+export const MESSAGE_MAX = 500;
+
+/**
+ * Tidies a chat message before it's stored: no control characters or hidden text-direction
+ * tricks, no trailing spaces, at most one blank line in a row.
+ */
+export function cleanMessage(input: unknown): { ok: true; text: string } | { ok: false; error: string } {
+  if (typeof input !== "string") return { ok: false, error: "Type a message first." };
+  const text = input
+    .replace(/\r\n?/g, "\n")
+    .replace(/[\u0000-\u0008\u000B-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (!text) return { ok: false, error: "Type a message first." };
+  if (text.length > MESSAGE_MAX) return { ok: false, error: `Keep messages under ${MESSAGE_MAX} characters.` };
+  return { ok: true, text };
+}
+
+/** The line the chat shows when an order moves on. Both sides read it, so it says who did what. */
+export function statusNote(to: OrderStatus, fulfillment: Fulfillment, reason?: string | null): string | null {
+  switch (to) {
+    case "accepted":
+      return "The cafe accepted the order.";
+    case "preparing":
+      return "The order is being prepared.";
+    case "ready":
+      return fulfillment === "pickup" ? "The order is ready for pickup." : "The order is ready and waiting for the rider.";
+    case "out_for_delivery":
+      return "The order is on its way.";
+    case "done":
+      return `${fulfillment === "pickup" ? "Picked up" : "Delivered"}. This chat stays open for ${CHAT_GRACE_MINUTES} minutes in case anything's missing.`;
+    case "cancelled":
+      return reason ? `The cafe cancelled the order: ${reason}` : "The order was cancelled.";
+    default:
+      return null;
+  }
+}
+
+/** Messages from the other side that arrived after this side last looked. System lines never count. */
+export function unreadCount(messages: { sender: Sender; createdAt: Date }[], side: "customer" | "staff", lastReadAt: Date | null) {
+  const from: Sender = side === "staff" ? "customer" : "staff";
+  return messages.filter((m) => m.sender === from && (!lastReadAt || m.createdAt > lastReadAt)).length;
 }

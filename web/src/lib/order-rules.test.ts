@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHAT_GRACE_MINUTES, STALE_HOURS, canMove, chatState, nextStatuses } from "./order-rules";
+import { CHAT_GRACE_MINUTES, MESSAGE_MAX, STALE_HOURS, canMove, chatState, cleanMessage, nextStatuses, statusNote, unreadCount } from "./order-rules";
 
 const at = (iso: string) => new Date(iso);
 
@@ -72,5 +72,39 @@ describe("per-order chat", () => {
     const order = { status: "ready" as const, createdAt: created, doneAt: null, cancelledAt: null };
     expect(chatState(order, at("2026-10-10T22:59:00Z")).open).toBe(true);
     expect(chatState(order, at("2026-10-10T23:00:00Z"))).toMatchObject({ open: false, reason: "stale" });
+  });
+});
+
+describe("chat messages", () => {
+  it("trims, drops hidden characters and squeezes blank lines", () => {
+    expect(cleanMessage("  Can I add a latte?  \r\n\r\n\r\n\r\nThanks \u202Eevil\u0007 ")).toEqual({ ok: true, text: "Can I add a latte?\n\nThanks evil" });
+  });
+
+  it("refuses empty, blank and over-long messages", () => {
+    expect(cleanMessage("")).toMatchObject({ ok: false });
+    expect(cleanMessage(" \n\t ")).toMatchObject({ ok: false });
+    expect(cleanMessage(undefined)).toMatchObject({ ok: false });
+    expect(cleanMessage("a".repeat(MESSAGE_MAX))).toMatchObject({ ok: true });
+    expect(cleanMessage("a".repeat(MESSAGE_MAX + 1))).toMatchObject({ ok: false });
+  });
+
+  it("writes a line for each step, naming who cancelled and why", () => {
+    expect(statusNote("ready", "pickup")).toBe("The order is ready for pickup.");
+    expect(statusNote("done", "pickup")).toContain(`${CHAT_GRACE_MINUTES} minutes`);
+    expect(statusNote("cancelled", "pickup", "An item ran out")).toBe("The cafe cancelled the order: An item ran out");
+    expect(statusNote("pending", "pickup")).toBeNull();
+  });
+
+  it("counts only the other side's messages since this side last looked", () => {
+    const msgs = [
+      { sender: "customer" as const, createdAt: at("2026-10-10T11:01:00Z") },
+      { sender: "system" as const, createdAt: at("2026-10-10T11:02:00Z") },
+      { sender: "staff" as const, createdAt: at("2026-10-10T11:03:00Z") },
+      { sender: "customer" as const, createdAt: at("2026-10-10T11:04:00Z") },
+    ];
+    expect(unreadCount(msgs, "staff", null)).toBe(2);
+    expect(unreadCount(msgs, "staff", at("2026-10-10T11:01:00Z"))).toBe(1);
+    expect(unreadCount(msgs, "customer", null)).toBe(1);
+    expect(unreadCount(msgs, "customer", at("2026-10-10T11:03:00Z"))).toBe(0);
   });
 });

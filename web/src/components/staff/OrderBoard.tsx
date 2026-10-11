@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { moveOrderAction } from "@/app/staff/orders/actions";
 import { branches } from "@/data/branches";
 import { peso } from "@/lib/menu";
-import { nextStatuses, type OrderStatus } from "@/lib/order-rules";
+import type { Unread } from "@/lib/order-chat";
+import { STATUS_LABEL, nextStatuses, type OrderStatus } from "@/lib/order-rules";
 import { formatPhone } from "@/lib/pricing";
 import type { FullOrder } from "@/lib/orders";
 
@@ -15,19 +17,17 @@ const STEP_LABEL: Partial<Record<OrderStatus, string>> = {
   out_for_delivery: "Out for delivery",
   done: "Picked up",
 };
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  pending: "New",
-  awaiting_payment: "Awaiting payment",
-  accepted: "Accepted",
-  preparing: "Preparing",
-  ready: "Ready",
-  out_for_delivery: "Out for delivery",
-  done: "Picked up",
-  cancelled: "Cancelled",
-};
 const REASONS = ["An item ran out", "Too busy right now", "We're closing soon", "Customer asked to cancel", "Couldn't reach the customer"];
 
 const noSubscribe = () => () => {};
+// A shared clock for "12 min ago": ticks every 15 s, and is blank in the server render
+const subscribeClock = (tick: () => void) => {
+  const t = window.setInterval(tick, 15_000);
+  return () => window.clearInterval(t);
+};
+const clockNow = () => Math.floor(Date.now() / 15_000) * 15_000;
+const useNow = () => useSyncExternalStore(subscribeClock, clockNow, () => null);
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const time = (d: Date) => d.toLocaleTimeString("en-PH", { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" });
 const due = (o: FullOrder) => (o.wantedAt ?? o.createdAt).getTime();
 
@@ -35,10 +35,11 @@ const due = (o: FullOrder) => (o.wantedAt ?? o.createdAt).getTime();
 function useChime() {
   const ctx = useRef<AudioContext | null>(null);
   const [on, setOn] = useState(false);
-  const play = useCallback(() => {
+  // Two rising notes for a new order, one softer note for a new message
+  const play = useCallback((kind: "order" | "message" = "order") => {
     const c = ctx.current;
     if (!c || c.state !== "running") return;
-    [784, 1047].forEach((freq, i) => {
+    (kind === "order" ? [784, 1047] : [659]).forEach((freq, i) => {
       const t = c.currentTime + i * 0.2;
       const osc = c.createOscillator();
       const gain = c.createGain();
@@ -82,19 +83,13 @@ function useWakeLock() {
   return { supported, awake, toggle: () => setAwake((a) => !a) };
 }
 
-export default function OrderBoard({ orders, showBranch }: { orders: FullOrder[]; showBranch: boolean }) {
+type Props = { orders: FullOrder[]; unread: Record<string, Unread>; showBranch: boolean };
+
+export default function OrderBoard({ orders, unread, showBranch }: Props) {
   const chime = useChime();
   const screen = useWakeLock();
-  const [now, setNow] = useState<number | null>(null);
   const [fresh, setFresh] = useState<string[]>([]);
   const seen = useRef<Set<string> | null>(null);
-
-  useEffect(() => {
-    const tick = () => setNow(Date.now());
-    tick();
-    const t = window.setInterval(tick, 30_000);
-    return () => window.clearInterval(t);
-  }, []);
 
   // Chime and highlight when an order arrives that wasn't on the board before
   const { play } = chime;
@@ -110,6 +105,15 @@ export default function OrderBoard({ orders, showBranch }: { orders: FullOrder[]
     window.setTimeout(() => setFresh((f) => f.filter((id) => !arrived.includes(id))), 15_000);
   }, [orders, play]);
 
+  // A softer chime when a customer writes (not for messages already waiting when the board opened)
+  const unreadTotal = Object.values(unread).reduce((n, u) => n + u.count, 0);
+  const lastUnread = useRef<number | null>(null);
+  useEffect(() => {
+    const before = lastUnread.current;
+    lastUnread.current = unreadTotal;
+    if (before !== null && unreadTotal > before) play("message");
+  }, [unreadTotal, play]);
+
   const waiting = orders.filter((o) => o.status === "pending");
   const oldestWaiting = waiting.length ? Math.min(...waiting.map((o) => o.createdAt.getTime())) : null;
   // Keep reminding while a new order sits unaccepted for more than a minute
@@ -121,15 +125,18 @@ export default function OrderBoard({ orders, showBranch }: { orders: FullOrder[]
     return () => window.clearInterval(t);
   }, [chime.on, oldestWaiting, play]);
 
-  // The tab title counts waiting orders; Next sets its own title after us, so keep ours in place
+  // The tab title counts waiting orders and chats; Next sets its own title after us, so keep ours in place
+  const chats = Object.keys(unread).length;
   useEffect(() => {
-    const want = waiting.length ? `(${waiting.length}) New order${waiting.length > 1 ? "s" : ""} · Orders` : "Orders · Staff · Enero Marso";
+    const n = waiting.length + chats;
+    const what = waiting.length && chats ? "New orders & messages" : waiting.length ? `New order${waiting.length > 1 ? "s" : ""}` : `New message${chats > 1 ? "s" : ""}`;
+    const want = n ? `(${n}) ${what} · Orders` : "Orders · Staff · Enero Marso";
     const apply = () => { if (document.title !== want) document.title = want; };
     apply();
     const watch = new MutationObserver(apply);
     watch.observe(document.head, { subtree: true, childList: true, characterData: true });
     return () => watch.disconnect();
-  }, [waiting.length]);
+  }, [waiting.length, chats]);
 
   const byDue = (list: FullOrder[]) => [...list].sort((a, b) => due(a) - due(b));
   const columns = [
@@ -138,6 +145,8 @@ export default function OrderBoard({ orders, showBranch }: { orders: FullOrder[]
     { key: "ready", title: "Ready", empty: "Nothing waiting for pickup.", list: byDue(orders.filter((o) => o.status === "ready" || o.status === "out_for_delivery")) },
   ];
   const finished = orders.filter((o) => o.status === "done" || o.status === "cancelled");
+  // A message on a finished order ("my fries are missing") must not hide in the collapsed list
+  const finishedNews = finished.filter((o) => unread[o.id]);
 
   return (
     <>
@@ -153,6 +162,15 @@ export default function OrderBoard({ orders, showBranch }: { orders: FullOrder[]
         {!chime.on && <small>Turn on sound so new orders ring, even when you&rsquo;re not looking.</small>}
       </div>
 
+      {finishedNews.map((o) => (
+        <p key={o.id} className="staff-note is-warn board-alert">
+          <Link href={`/staff/orders/${o.id}`}>
+            {plural(unread[o.id].count, "new message")} on finished order {o.code}
+          </Link>
+          <span>&ldquo;{unread[o.id].last}&rdquo;</span>
+        </p>
+      ))}
+
       <div className="board">
         {columns.map((c) => (
           <section key={c.key} className={`board-col is-${c.key}`} aria-labelledby={`col-${c.key}`}>
@@ -160,7 +178,7 @@ export default function OrderBoard({ orders, showBranch }: { orders: FullOrder[]
             {c.list.length === 0 ? (
               <p className="board-empty">{c.empty}</p>
             ) : (
-              c.list.map((o) => <OrderCard key={o.id} order={o} showBranch={showBranch} now={now} isNew={fresh.includes(o.id)} />)
+              c.list.map((o) => <OrderCard key={o.id} order={o} showBranch={showBranch} isNew={fresh.includes(o.id)} unread={unread[o.id]} />)
             )}
           </section>
         ))}
@@ -172,7 +190,7 @@ export default function OrderBoard({ orders, showBranch }: { orders: FullOrder[]
           <ul>
             {finished.map((o) => (
               <li key={o.id} className={o.status === "cancelled" ? "is-cancelled" : undefined}>
-                <b>{o.code}</b>
+                <Link href={`/staff/orders/${o.id}`}>{o.code}</Link>
                 <span>{o.customerName}</span>
                 <span>{STATUS_LABEL[o.status]} {time(o.doneAt ?? o.cancelledAt ?? o.updatedAt)}{o.cancelReason && ` · ${o.cancelReason}`}</span>
                 <span className="num">{peso(o.total)}</span>
@@ -185,7 +203,11 @@ export default function OrderBoard({ orders, showBranch }: { orders: FullOrder[]
   );
 }
 
-function OrderCard({ order: o, showBranch, now, isNew }: { order: FullOrder; showBranch: boolean; now: number | null; isNew: boolean }) {
+type CardProps = { order: FullOrder; showBranch: boolean; isNew?: boolean; unread?: Unread; detail?: boolean };
+
+/** One order: on the board, and again at the top of its own page (detail) */
+export function OrderCard({ order: o, showBranch, isNew = false, unread, detail = false }: CardProps) {
+  const now = useNow();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
@@ -205,9 +227,15 @@ function OrderCard({ order: o, showBranch, now, isNew }: { order: FullOrder; sho
   return (
     <article className={`order-card is-${o.status}${isNew ? " is-new" : ""}`} aria-labelledby={`o-${o.id}`}>
       <header>
-        <h3 id={`o-${o.id}`}>{o.code}</h3>
+        <h3 id={`o-${o.id}`}>{detail ? o.code : <Link href={`/staff/orders/${o.id}`}>{o.code}</Link>}</h3>
         <span className="order-card-when">{o.wantedAt ? `For ${time(o.wantedAt)}` : "ASAP"}</span>
       </header>
+      {unread && !detail && (
+        <Link href={`/staff/orders/${o.id}`} className="order-card-unread">
+          <b>{plural(unread.count, "new message")}</b>
+          <span>&ldquo;{unread.last}&rdquo;</span>
+        </Link>
+      )}
       <p className="order-card-meta">
         {showBranch && <>{branches.find((b) => b.id === o.branchId)?.name.replace("Enero Marso ", "")} · </>}
         Placed {time(o.createdAt)}
@@ -253,6 +281,7 @@ function OrderCard({ order: o, showBranch, now, isNew }: { order: FullOrder; sho
         </div>
       )}
       {error && <p className="staff-msg is-error" role="alert">{error}</p>}
+      {!detail && !unread && <Link href={`/staff/orders/${o.id}`} className="order-card-open">Details &amp; chat</Link>}
     </article>
   );
 }

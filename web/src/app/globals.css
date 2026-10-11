@@ -456,8 +456,80 @@ h1, h2, h3 { margin: 0; }
 .track-items li > span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .track-items small { display: block; font-size: 0.8125rem; color: var(--cocoa); }
 .track-items .track-total { font-weight: 700; border-bottom: 2px solid var(--ink); }
-.track-pay, .track-help { margin: 0; font-size: 0.875rem; color: var(--cocoa); }
-.track-help a { color: var(--brown); font-weight: 600; text-underline-offset: 0.2em; }
+.track-pay { margin: 0; font-size: 0.875rem; color: var(--cocoa); }
+.track-alert {
+  display: inline-flex; margin-top: 0.85rem; padding: 0.55rem 1rem; border-radius: 999px; background: var(--gold); color: var(--ink); text-decoration: none;
+  font-weight: 700; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.track-alert:hover { background: var(--ink); color: var(--cream); }
+.track-chat { display: grid; gap: 0.85rem; padding-top: 1.25rem; border-top: 2px solid var(--ink); scroll-margin-top: 6rem; }
+.track-chat h2 { font-weight: 700; font-size: 0.75rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--brown); }
+.track-lost { margin: 0; }
+.track-lost-list { margin: 0; padding-left: 1.2rem; }
+.track-lost-list a { color: var(--brown); font-weight: 600; text-underline-offset: 0.2em; }
+
+/* ——— Order chat: the customer's page, and the staff order page (staff.css adjusts it there) ——— */
+.chat { display: grid; gap: 0.85rem; }
+.chat-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.7rem; }
+.chat-line { display: grid; gap: 0.2rem; max-width: min(85%, 30rem); }
+.chat-line small { padding: 0 0.3rem; font-size: 0.75rem; color: var(--cocoa); }
+.chat-bubble { margin: 0; padding: 0.6rem 0.9rem; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.9375rem; line-height: 1.45; }
+.chat-line.is-mine { justify-self: end; }
+.chat-line.is-mine small { text-align: right; }
+.chat-line.is-mine .chat-bubble { background: var(--brown); color: var(--cream); border-radius: 1rem 1rem 0.25rem 1rem; }
+.chat-line.is-theirs { justify-self: start; }
+.chat-line.is-theirs .chat-bubble { background: var(--sand); color: var(--ink); border-radius: 1rem 1rem 1rem 0.25rem; }
+.chat-line.is-sending { opacity: 0.6; }
+.chat-line.is-system { justify-self: center; max-width: 100%; text-align: center; }
+.chat-line.is-system p { margin: 0; font-size: 0.8125rem; font-weight: 600; color: var(--cocoa); text-wrap: balance; }
+.chat-line.is-system small { padding: 0; font-weight: 500; white-space: nowrap; }
+.chat-empty, .chat-closed { margin: 0; font-size: 0.9375rem; color: var(--cocoa); }
+.chat-closed { padding: 0.85rem 1rem; background: var(--sand); }
+.chat-closed a { color: var(--brown); font-weight: 600; text-underline-offset: 0.2em; }
+.chat-compose { display: grid; gap: 0.5rem; }
+.chat-box { display: flex; align-items: flex-end; gap: 0.5rem; padding: 0.35rem; border: 1.5px solid var(--ink); background: #fffaf1; }
+.chat-box:focus-within { outline: 2px solid var(--gold); outline-offset: 1px; }
+.chat-box textarea {
+  flex: 1; min-width: 0; min-height: 2.9rem; max-height: 10rem; padding: 0.5rem 0.55rem; border: 0; background: none; color: var(--ink); resize: none;
+  field-sizing: content; font: 500 1rem/1.4 var(--brand);
+}
+.chat-box textarea:focus { outline: none; }
+.chat-box textarea::placeholder { color: #7a5a44; }
+.chat-send {
+  flex: none; padding: 0.8rem 1.25rem; border: 0; border-radius: 999px; background: var(--brown); color: var(--cream); cursor: pointer;
+  font: 700 0.75rem/1 var(--brand); letter-spacing: 0.16em; text-transform: uppercase; transition: background-color 0.2s ease;
+}
+.chat-send:hover:not(:disabled) { background: var(--ink); }
+.chat-send:disabled { background: var(--card); color: var(--cocoa); cursor: default; }
+.chat-left { font-size: 0.75rem; color: var(--cocoa); }
+.chat-error { margin: 0; padding: 0.6rem 0.85rem; background: #f6dcd8; color: #6e1710; font-size: 0.875rem; font-weight: 500; }
+
+/* "Your order is being prepared": while this phone has an order in progress */
+body:has(.order-bar) { padding-bottom: 5.5rem; }
+.order-bar {
+  position: fixed; z-index: 30; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem); translate: -50% 0;
+  display: flex; width: min(calc(100% - 2rem), 34rem); border: 1px solid rgb(207 157 87 / 0.45); border-radius: 999px;
+  background: var(--ink); color: var(--cream); box-shadow: 0 1rem 2rem -1rem rgb(21 18 17 / 0.75);
+  animation: order-bar-in 0.5s var(--ease);
+}
+.order-bar-link {
+  flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 0.85rem; align-items: center;
+  padding: 0.6rem 0.25rem 0.6rem 1.35rem; text-decoration: none;
+}
+.order-bar-code { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--card); }
+.order-bar-code b { color: var(--gold); letter-spacing: 0.1em; }
+.order-bar-status { grid-column: 1; font-weight: 600; font-size: 0.9375rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.order-bar-status em { font-style: normal; color: var(--gold); }
+.order-bar-go {
+  grid-column: 2; grid-row: 1 / 3; padding: 0.6rem 1rem; border-radius: 999px; background: var(--gold); color: var(--ink);
+  font-weight: 700; font-size: 0.75rem; letter-spacing: 0.16em; text-transform: uppercase; transition: background-color 0.2s ease;
+}
+.order-bar-link:hover .order-bar-go { background: var(--cream); }
+.order-bar-hide { flex: none; width: 2.9rem; display: grid; place-items: center; border: 0; border-radius: 0 999px 999px 0; background: none; color: var(--card); cursor: pointer; }
+.order-bar-hide svg { width: 1.1rem; height: 1.1rem; }
+.order-bar-hide:hover { color: var(--cream); }
+@keyframes order-bar-in { from { opacity: 0; translate: -50% 1rem; } }
+@media (prefers-reduced-motion: reduce) { .order-bar { animation: none; } }
 .track-link { display: grid; gap: 0.85rem; padding: 1.1rem 1.2rem; background: var(--sand); }
 .track-link p { margin: 0; font-size: 0.9375rem; }
 .track-link-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }

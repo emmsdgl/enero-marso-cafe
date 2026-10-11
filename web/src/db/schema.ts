@@ -191,6 +191,9 @@ export const orders = pgTable(
     cancelReason: text("cancel_reason"),
     acceptedBy: uuid("accepted_by").references(() => staff.id),
     createdIp: text("created_ip"),
+    // Chat: when each side last looked, so the other side's newer messages count as unread
+    staffLastReadAt: timestamp("staff_last_read_at", { withTimezone: true }),
+    customerLastReadAt: timestamp("customer_last_read_at", { withTimezone: true }),
   },
   (t) => [
     index("orders_branch_created").on(t.branchId, t.createdAt),
@@ -219,8 +222,29 @@ export const orderItems = pgTable(
   (t) => [index("order_items_order").on(t.orderId, t.sort), check("order_items_qty", sql`${t.qty} between 1 and 20`)],
 );
 
+/**
+ * The order's chat between the customer and the branch. System lines record each status change.
+ * Whether the chat still takes messages is worked out from the order (see chatState), not stored.
+ */
+export const orderMessages = pgTable(
+  "order_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+    sender: text("sender", { enum: ["customer", "staff", "system"] }).notNull(),
+    staffId: uuid("staff_id").references(() => staff.id), // who replied, for staff messages
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("order_messages_order").on(t.orderId, t.createdAt),
+    check("order_messages_body", sql`char_length(${t.body}) between 1 and 1000`),
+  ],
+);
+
 export type Staff = typeof staff.$inferSelect;
 export type Role = Staff["role"];
 export type TimeEntry = typeof timeEntries.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
+export type OrderMessage = typeof orderMessages.$inferSelect;

@@ -3,6 +3,7 @@ import Link from "next/link";
 import LiveRefresh from "@/components/LiveRefresh";
 import OrderBoard from "@/components/staff/OrderBoard";
 import { branches } from "@/data/branches";
+import { staffUnread } from "@/lib/order-chat";
 import { getOrderSettings, listBranchOrders } from "@/lib/orders";
 import { channels } from "@/lib/realtime";
 import { requireStaff } from "@/lib/staff";
@@ -16,6 +17,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/staff/ord
   const shown = mine.length > 1 && (want === "main" || want === "noir") ? mine.filter((b) => b.id === want) : mine;
   const ids = shown.map((b) => b.id);
   const [orders, settings] = await Promise.all([listBranchOrders(ids), getOrderSettings()]);
+  const unread = await staffUnread(orders.map((o) => o.id));
   const paused = shown.filter((b) => !settings[b.id].ordersOpen);
 
   return (
@@ -45,7 +47,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/staff/ord
         </p>
       )}
 
-      <OrderBoard orders={orders} showBranch={shown.length > 1} />
+      <OrderBoard orders={orders} unread={unread} showBranch={shown.length > 1} />
     </div>
   );
 }

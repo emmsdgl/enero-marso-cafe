@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import LiveRefresh from "@/components/LiveRefresh";
+import CustomerChat from "@/components/order/CustomerChat";
 import { CancelOrder, OrderLink } from "@/components/order/OrderLink";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { branches } from "@/data/branches";
 import { peso } from "@/lib/menu";
-import type { OrderStatus } from "@/lib/order-rules";
+import { listMessages } from "@/lib/order-chat";
+import { chatState, unreadCount, type OrderStatus } from "@/lib/order-rules";
 import { getCustomerOrder } from "@/lib/orders";
 import { formatPhone } from "@/lib/pricing";
 import { channels } from "@/lib/realtime";
@@ -32,6 +34,15 @@ export default async function TrackOrderPage({ params, searchParams }: PageProps
   if (!order || !token) notFound();
 
   const branch = branches.find((b) => b.id === order.branchId)!;
+  const cafe = order.branchId === "noir" ? "Cafe Noir" : "Enero Marso";
+  const messages = await listMessages(order.id);
+  const chat = chatState(order);
+  const unread = unreadCount(messages, "customer", order.customerLastReadAt);
+  // Staff names stay at the cafe: the customer sees the branch
+  const lines = messages.map((m) => ({
+    id: m.id, sender: m.sender, body: m.body, time: at(m.createdAt),
+    who: m.sender === "customer" ? "You" : m.sender === "staff" ? cafe : null,
+  }));
   const step = order.status === "done" ? STEPS.length : STEPS.findIndex((s) => s.status === order.status);
   const when = order.wantedAt ? `Today, ${at(order.wantedAt)}` : "As soon as it's ready";
   const codeTag = <span className="nowrap">{order.code}</span>;
@@ -56,6 +67,11 @@ export default async function TrackOrderPage({ params, searchParams }: PageProps
             <p className="track-code">Order <b>{order.code}</b></p>
             <h1 id="track-title" aria-live="polite">{headline[order.status]}</h1>
             {order.status === "cancelled" && order.cancelReason && <p className="track-reason">Reason: {order.cancelReason}</p>}
+            {unread > 0 && (
+              <a href="#messages" className="track-alert">
+                {unread === 1 ? "New message" : `${unread} new messages`} from {cafe}
+              </a>
+            )}
           </header>
 
           {order.status !== "cancelled" && (
@@ -96,12 +112,26 @@ export default async function TrackOrderPage({ params, searchParams }: PageProps
           </ul>
           {order.status !== "cancelled" && order.status !== "done" && <p className="track-pay">Pay at the counter when you pick up: cash or GCash.</p>}
 
+          <section id="messages" className="track-chat" aria-labelledby="messages-title">
+            <h2 id="messages-title">Messages</h2>
+            <CustomerChat
+              code={order.code}
+              token={token}
+              lines={lines}
+              open={chat.open}
+              unread={unread}
+              branchName={cafe}
+              closedNote={
+                <>
+                  {chat.reason === "cancelled" ? "This chat closed when the order was cancelled." : `This chat closed at ${at(chat.closesAt)}.`}{" "}
+                  For anything else, message <a href={branch.socials.facebook} target="_blank" rel="noopener noreferrer">{branch.name}</a> on Facebook.
+                </>
+              }
+            />
+          </section>
+
           {order.status !== "done" && order.status !== "cancelled" && <OrderLink code={order.code} />}
           {order.status === "pending" && <CancelOrder code={order.code} token={token} />}
-          <p className="track-help">
-            Questions about your order? Message{" "}
-            <a href={branch.socials.facebook} target="_blank" rel="noopener noreferrer">{branch.name}</a> on Facebook.
-          </p>
         </article>
       </main>
       <SiteFooter />

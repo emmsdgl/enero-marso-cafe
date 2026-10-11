@@ -173,8 +173,45 @@
 .board-done ul { list-style: none; margin: 0.75rem 0 0; padding: 0; }
 .board-done li { display: grid; grid-template-columns: 7rem minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: 0.75rem; padding: 0.55rem 0; border-top: 1px solid rgb(21 18 17 / 0.1); font-size: 0.9375rem; }
 .board-done li.is-cancelled { color: var(--cocoa); }
+.board-done li a { font-weight: 600; color: var(--brown); text-underline-offset: 0.2em; }
+.board-alert { display: grid; gap: 0.2rem; }
+.board-alert span { overflow-wrap: anywhere; }
+.order-card h3 a { text-decoration: none; }
+.order-card h3 a:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+.order-card-unread { display: grid; gap: 0.1rem; padding: 0.55rem 0.75rem; border-radius: 0.5rem; background: var(--gold); color: var(--ink); text-decoration: none; }
+.order-card-unread b { font-size: 0.875rem; }
+.order-card-unread span { font-size: 0.875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.order-card-unread:hover { background: #dfb06b; }
+.order-card-open { justify-self: start; color: var(--brown); font-weight: 600; font-size: 0.875rem; text-underline-offset: 0.2em; }
+
+/* ——— One order: details on the left, the chat on the right ——— */
+.staff-back { display: inline-block; margin-bottom: 0.5rem; color: var(--brown); font-weight: 600; font-size: 0.9375rem; text-decoration: none; }
+.staff-back:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+.order-detail {
+  display: grid; grid-template-columns: minmax(0, 24rem) minmax(0, 1fr); grid-template-rows: auto 1fr;
+  grid-template-areas: "card chat" "link chat"; gap: 1.25rem; align-items: start;
+}
+.order-detail-card { grid-area: card; }
+.order-detail-link { grid-area: link; }
+.order-detail-chat { grid-area: chat; }
+.relink { display: grid; gap: 0.75rem; }
+.relink .staff-help { margin: 0; }
+.relink-url { width: 100%; padding: 0.65rem 0.75rem; border: 1.5px solid rgb(21 18 17 / 0.3); border-radius: 0.5rem; background: #fffaf1; color: var(--ink); font: 500 0.875rem var(--brand); }
+.relink-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.chat.is-staff .chat-line.is-theirs .chat-bubble { background: #fffaf1; border: 1px solid rgb(21 18 17 / 0.14); }
+.chat.is-staff .chat-box { border-radius: 0.5rem; border-color: rgb(21 18 17 / 0.3); }
+.chat.is-staff .chat-send { border-radius: 0.4rem; letter-spacing: 0.08em; font-size: 0.8125rem; }
+.chat.is-staff .chat-closed { border-radius: 0.5rem; }
+.chat-quick { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.chat-quick button {
+  padding: 0.45rem 0.8rem; border: 1px solid rgb(21 18 17 / 0.25); border-radius: 999px; background: #fffaf1; color: var(--ink);
+  font: 500 0.8125rem/1.3 var(--brand); text-align: left; cursor: pointer; transition: border-color 0.15s ease;
+}
+.chat-quick button:hover { border-color: var(--ink); }
 .board-done .num { text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 64rem) { .board { grid-template-columns: minmax(0, 1fr); } }
+/* On a phone the chat comes right after the order: replying matters more than the link */
+@media (max-width: 56rem) { .order-detail { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: "card" "chat" "link"; } }
 @media (max-width: 40rem) { .board-done li { grid-template-columns: minmax(0, 1fr) auto; } }
 
 /* Online orders switch on the branch page */

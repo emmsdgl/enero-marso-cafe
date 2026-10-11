@@ -4,17 +4,33 @@ import { useEffect, useState, useSyncExternalStore, useTransition } from "react"
 import { cancelOrderAction } from "@/app/order/actions";
 
 const KEY = "em-orders";
-type Remembered = { code: string; url: string; at: number };
+export type Remembered = { code: string; url: string; at: number };
 
-/** Saves this order's private link on the phone, so the customer can get back to it */
-export function rememberOrder(code: string, url: string) {
+export function rememberedOrders(): Remembered[] {
   try {
-    const list: Remembered[] = JSON.parse(localStorage.getItem(KEY) ?? "[]");
-    const next = [{ code, url, at: Date.now() }, ...list.filter((o) => o.code !== code)].slice(0, 5);
-    localStorage.setItem(KEY, JSON.stringify(next));
+    const list = JSON.parse(localStorage.getItem(KEY) ?? "[]");
+    return Array.isArray(list) ? list.filter((o) => typeof o?.code === "string" && typeof o?.url === "string" && typeof o?.at === "number") : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRemembered(list: Remembered[]) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(list));
   } catch {
     // Private mode or storage blocked: the copy and share buttons still work
   }
+}
+
+/** Saves this order's private link on the phone, so the customer can get back to it */
+export function rememberOrder(code: string, url: string) {
+  saveRemembered([{ code, url, at: Date.now() }, ...rememberedOrders().filter((o) => o.code !== code)].slice(0, 5));
+}
+
+/** Drops links that no longer open (old, or replaced by a new link from the cafe) */
+export function forgetOrders(codes: string[]) {
+  if (codes.length) saveRemembered(rememberedOrders().filter((o) => !codes.includes(o.code)));
 }
 
 const noSubscribe = () => () => {};

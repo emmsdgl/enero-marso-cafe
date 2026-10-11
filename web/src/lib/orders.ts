@@ -2,10 +2,10 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, gte, inArray } from "drizzle-orm";
 import { branches as branchDefs } from "@/data/branches";
-import { branches, db, orderItems, orders, type Order, type OrderItem, type Staff } from "@/db";
+import { branches, db, orderItems, orderMessages, orders, type Order, type OrderItem, type Staff } from "@/db";
 import { isBranchId, type BranchId } from "./menu";
 import { loadMenus } from "./menu-store";
-import { canMove, type OrderStatus } from "./order-rules";
+import { canMove, statusNote, type OrderStatus } from "./order-rules";
 import { hashOrderToken, newOrderCode, newOrderToken, tokenMatches } from "./order-token";
 import { pickupAllowed } from "./pickup";
 import { normalizePhone, priceCart, type CartLine } from "./pricing";
@@ -119,6 +119,17 @@ export async function getCustomerOrder(code: string, token: string | undefined):
   return (await withItems([o]))[0];
 }
 
+/** Order ids come from URLs; anything that isn't a UUID would only make the database complain */
+export const isOrderId = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+/** One order for the staff detail page; null if it doesn't exist or belongs to the other branch */
+export async function getStaffOrder(me: Staff, orderId: string): Promise<FullOrder | null> {
+  if (!isOrderId(orderId)) return null;
+  const [o] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+  if (!o || !canActOnBranch(me, o.branchId)) return null;
+  return (await withItems([o]))[0];
+}
+
 /** The branch board: everything from the last 18 hours, so a night's orders stay in view */
 export async function listBranchOrders(branchIds: string[]): Promise<FullOrder[]> {
   const since = new Date(Date.now() - 18 * 3_600_000);
@@ -153,7 +164,11 @@ export async function moveOrder(me: Staff, orderId: string, from: OrderStatus, t
 
   const done = await db.update(orders).set(changes).where(and(eq(orders.id, o.id), eq(orders.status, from))).returning({ id: orders.id });
   if (done.length === 0) return { ok: false, error: "Someone already updated this order. The board now shows the latest." };
-  if (to === "cancelled") await audit(me.id, "order.cancel", { orderId: o.id, code: o.code, reason: why });
+  const note = statusNote(to, o.fulfillment, why);
+  await Promise.all([
+    note && db.insert(orderMessages).values({ orderId: o.id, sender: "system", body: note }),
+    to === "cancelled" && audit(me.id, "order.cancel", { orderId: o.id, code: o.code, reason: why }),
+  ]);
   await announce([channels.branch(o.branchId), channels.order(o.id)]);
   return { ok: true };
 }
@@ -170,6 +185,25 @@ export async function cancelByCustomer(code: string, token: string): Promise<{ o
     .where(and(eq(orders.id, o.id), eq(orders.status, "pending")))
     .returning({ id: orders.id });
   if (done.length === 0) return { ok: false, error: "The cafe has already accepted your order, so please call them to change it." };
+  await db.insert(orderMessages).values({ orderId: o.id, sender: "system", body: "The customer cancelled the order." });
   await announce([channels.branch(o.branchId), channels.order(o.id)]);
   return { ok: true };
+}
+
+/**
+ * The customer lost their link, or it reached someone it shouldn't have: staff make a new one.
+ * The old link stops working at once. The new one is shown to staff once, to text to the customer.
+ */
+export async function reissueOrderLink(me: Staff, orderId: string): Promise<{ ok: true; path: string } | Fail> {
+  const o = await getStaffOrder(me, orderId);
+  if (!o) return { ok: false, error: "That order isn't on your branch's board." };
+  const token = newOrderToken();
+  await db.batch([
+    db.update(orders).set({ tokenHash: hashOrderToken(token), updatedAt: new Date() }).where(eq(orders.id, o.id)),
+    db.insert(orderMessages).values({ orderId: o.id, sender: "system", body: "The cafe made a new link to this order. Older links no longer work." }),
+  ]);
+  await audit(me.id, "order.relink", { orderId: o.id, code: o.code });
+  // The old link's page refreshes and finds it no longer opens
+  await announce([channels.order(o.id)]);
+  return { ok: true, path: `/order/${o.code}?t=${encodeURIComponent(token)}` };
 }
