@@ -3,9 +3,12 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { branchNetworks, branches, db, kiosks, staff, timeEntries } from "@/db";
+import { branchNetworks, branches, db, kiosks, paymentAccounts, staff, timeEntries } from "@/db";
 import { auth } from "@/lib/auth/server";
 import { toggleClock } from "@/lib/clock";
+import { FREE_DELIVERY_OPTIONS, formatDistance, inPhilippines, isLatLng, MAX_DELIVERY_OPTIONS, MIN_ORDER_OPTIONS } from "@/lib/delivery";
+import { peso } from "@/lib/menu";
+import { savePaymentAccount, setPaymentAccountActive } from "@/lib/payments";
 import {
   audit, canActOnBranch, clientIp, hashKioskToken, hashPin, KIOSK_COOKIE, newKioskToken, onBranchNetwork, PIN_RULE, requireStaff,
 } from "@/lib/staff";
@@ -203,4 +206,78 @@ export async function saveOrderCutoff(_: ActionState, form: FormData): Promise<A
   await audit(me.id, "orders.cutoff", { branchId, minutes });
   revalidatePath("/staff/branch");
   return { ok: `Online orders now stop ${CUTOFFS[minutes]} before closing.` };
+}
+
+// ——— Delivery: managers (their branch) and the admin ———
+const mayChange = (me: Awaited<ReturnType<typeof requireStaff>>, branchId: string) => BRANCHES.includes(branchId) && canActOnBranch(me, branchId);
+
+/** The branch's pin: distances and free delivery are measured from here */
+export async function saveStorePin(_: ActionState, form: FormData): Promise<ActionState> {
+  const me = await requireStaff(["admin", "manager"]);
+  const branchId = s(form.get("branch"));
+  const pin = { lat: Number(form.get("lat")), lng: Number(form.get("lng")) };
+  if (!mayChange(me, branchId)) return { error: "You can't change that branch." };
+  if (!s(form.get("lat")) || !isLatLng(pin) || !inPhilippines(pin)) return { error: "Set the pin on the branch first: drag it on the map, or use your location while you're there." };
+  await db.update(branches).set({ lat: pin.lat, lng: pin.lng }).where(eq(branches.id, branchId));
+  await audit(me.id, "delivery.pin", { branchId, ...pin });
+  revalidatePath("/staff/branch");
+  return { ok: "Branch location saved." };
+}
+
+export async function saveDeliveryRules(_: ActionState, form: FormData): Promise<ActionState> {
+  const me = await requireStaff(["admin", "manager"]);
+  const branchId = s(form.get("branch"));
+  const free = Number(form.get("free"));
+  const max = Number(form.get("max"));
+  const min = Number(form.get("min"));
+  if (!mayChange(me, branchId)) return { error: "You can't change that branch." };
+  const ok = (list: readonly number[], v: number) => list.includes(v);
+  if (!ok(FREE_DELIVERY_OPTIONS, free) || !ok(MAX_DELIVERY_OPTIONS, max) || !ok(MIN_ORDER_OPTIONS, min)) return { error: "Choose from the lists." };
+  if (free > max) return { error: "The free delivery area can't be bigger than the delivery limit." };
+  await db.update(branches).set({ freeDeliveryMeters: free, maxDeliveryMeters: max, deliveryMinOrder: min }).where(eq(branches.id, branchId));
+  await audit(me.id, "delivery.rules", { branchId, free, max, min });
+  revalidatePath("/staff/branch");
+  return {
+    ok: `Saved. ${free ? `Free within ${formatDistance(free)}` : "No free delivery"}, up to ${formatDistance(max)}${min ? `, from ${peso(min)}` : ""}.`,
+  };
+}
+
+/** Delivery needs the branch's pin and somewhere for customers to pay */
+export async function setDeliveryOpen(branchId: string, open: boolean): Promise<ActionState> {
+  const me = await requireStaff(["admin", "manager"]);
+  if (!mayChange(me, branchId)) return { error: "You can't change that branch." };
+  if (open) {
+    const [b] = await db.select({ lat: branches.lat }).from(branches).where(eq(branches.id, branchId));
+    const [acct] = await db.select({ id: paymentAccounts.id }).from(paymentAccounts).where(and(eq(paymentAccounts.branchId, branchId), eq(paymentAccounts.active, true))).limit(1);
+    if (b?.lat == null) return { error: "Save the branch location first." };
+    if (!acct) return { error: "Add a payment account first, so customers can pay for deliveries." };
+  }
+  await db.update(branches).set({ deliveryOpen: open }).where(eq(branches.id, branchId));
+  await audit(me.id, open ? "delivery.start" : "delivery.pause", { branchId });
+  revalidatePath("/staff/branch");
+  return { ok: open ? "Delivery is on." : "Delivery is paused." };
+}
+
+export async function savePaymentAccountAction(_: ActionState, form: FormData): Promise<ActionState> {
+  const me = await requireStaff(["admin", "manager"]);
+  const file = form.get("qr");
+  const r = await savePaymentAccount(me, {
+    id: s(form.get("id")) || null,
+    branchId: s(form.get("branch")),
+    kind: s(form.get("kind")),
+    label: s(form.get("label")),
+    accountName: s(form.get("accountName")),
+    accountNumber: s(form.get("accountNumber")),
+    qrImage: file instanceof File && file.size > 0 ? file : null,
+    removeQr: form.get("removeQr") === "on",
+  });
+  revalidatePath("/staff/branch");
+  return r.ok ? { ok: r.message } : { error: r.error };
+}
+
+export async function setPaymentAccountActiveAction(id: string, active: boolean): Promise<ActionState> {
+  const me = await requireStaff(["admin", "manager"]);
+  const r = await setPaymentAccountActive(me, String(id), active);
+  revalidatePath("/staff/branch");
+  return r.ok ? { ok: r.message } : { error: r.error };
 }

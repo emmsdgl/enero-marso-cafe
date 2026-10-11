@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { glanceOrders, markCustomerRead, postCustomerMessage, type Glance } from "@/lib/order-chat";
-import { cancelByCustomer, placeOrder, type PlaceOrderInput } from "@/lib/orders";
+import { cancelByCustomer, placeOrder, submitPayment, type PlaceOrderInput } from "@/lib/orders";
 import { clientIp } from "@/lib/staff";
 
 /** Checkout: on success the customer lands on their private order page */
@@ -15,6 +15,14 @@ export async function placeOrderAction(input: PlaceOrderInput): Promise<{ error:
 
 export async function cancelOrderAction(code: string, token: string): Promise<{ error?: string }> {
   const r = await cancelByCustomer(code, token);
+  if (!r.ok) return { error: r.error };
+  refresh();
+  return {};
+}
+
+/** Delivery: "I've paid", with the reference number from the receipt */
+export async function submitPaymentAction(code: string, token: string, accountId: string, ref: string): Promise<{ error?: string }> {
+  const r = await submitPayment(String(code), String(token), accountId, ref);
   if (!r.ok) return { error: r.error };
   refresh();
   return {};

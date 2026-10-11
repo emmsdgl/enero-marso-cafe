@@ -43,6 +43,13 @@
       "when": 1791726577401,
       "tag": "0005_order_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791737747845,
+      "tag": "0006_delivery",
+      "breakpoints": true
     }
   ]
 }

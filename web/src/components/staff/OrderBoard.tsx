@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { moveOrderAction } from "@/app/staff/orders/actions";
+import CopyText from "@/components/CopyText";
 import { branches } from "@/data/branches";
+import { formatDistance, mapsLink } from "@/lib/delivery";
 import { peso } from "@/lib/menu";
 import type { Unread } from "@/lib/order-chat";
-import { STATUS_LABEL, nextStatuses, type OrderStatus } from "@/lib/order-rules";
+import { nextStatuses, statusLabel, type OrderStatus } from "@/lib/order-rules";
 import { formatPhone } from "@/lib/pricing";
 import type { FullOrder } from "@/lib/orders";
+import DeliveryActions from "./DeliveryActions";
 
 const STEP_LABEL: Partial<Record<OrderStatus, string>> = {
   accepted: "Accept",
@@ -30,6 +33,19 @@ const useNow = () => useSyncExternalStore(subscribeClock, clockNow, () => null);
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const time = (d: Date) => d.toLocaleTimeString("en-PH", { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" });
 const due = (o: FullOrder) => (o.wantedAt ?? o.createdAt).getTime();
+/** Orders waiting on staff: new ones, and delivery payments to check */
+const needsStaff = (o: FullOrder) => o.status === "pending" || (o.status === "awaiting_payment" && o.paymentStatus === "submitted");
+const waitingSince = (o: FullOrder) => (o.status === "pending" ? o.createdAt : (o.paymentSubmittedAt ?? o.updatedAt)).getTime();
+
+/** What the cards need to know beyond the order itself */
+export type BoardContext = {
+  /** Free delivery radius per branch, in meters */
+  freeWithin: Record<string, number>;
+  /** Payment account names by id */
+  accounts: Record<string, string>;
+  /** Other orders that used the same payment reference */
+  clashes: Record<string, string[]>;
+};
 
 /** Two rising notes from the Web Audio API: no sound file to load, works offline */
 function useChime() {
@@ -83,21 +99,22 @@ function useWakeLock() {
   return { supported, awake, toggle: () => setAwake((a) => !a) };
 }
 
-type Props = { orders: FullOrder[]; unread: Record<string, Unread>; showBranch: boolean };
+type Props = { orders: FullOrder[]; unread: Record<string, Unread>; showBranch: boolean; context: BoardContext };
 
-export default function OrderBoard({ orders, unread, showBranch }: Props) {
+export default function OrderBoard({ orders, unread, showBranch, context }: Props) {
   const chime = useChime();
   const screen = useWakeLock();
   const [fresh, setFresh] = useState<string[]>([]);
   const seen = useRef<Set<string> | null>(null);
 
-  // Chime and highlight when an order arrives that wasn't on the board before
+  // Chime and highlight when something new needs staff: an order, or a delivery payment to check
   const { play } = chime;
   useEffect(() => {
+    const key = (o: FullOrder) => `${o.id}:${o.status}:${o.paymentStatus}`;
     const known = seen.current;
-    seen.current = new Set(orders.map((o) => o.id));
+    seen.current = new Set(orders.filter(needsStaff).map(key));
     if (!known) return;
-    const arrived = orders.filter((o) => !known.has(o.id)).map((o) => o.id);
+    const arrived = orders.filter((o) => needsStaff(o) && !known.has(key(o))).map((o) => o.id);
     if (arrived.length === 0) return;
     setFresh((f) => [...f, ...arrived]);
     play();
@@ -114,9 +131,9 @@ export default function OrderBoard({ orders, unread, showBranch }: Props) {
     if (before !== null && unreadTotal > before) play("message");
   }, [unreadTotal, play]);
 
-  const waiting = orders.filter((o) => o.status === "pending");
-  const oldestWaiting = waiting.length ? Math.min(...waiting.map((o) => o.createdAt.getTime())) : null;
-  // Keep reminding while a new order sits unaccepted for more than a minute
+  const waiting = orders.filter(needsStaff);
+  const oldestWaiting = waiting.length ? Math.min(...waiting.map(waitingSince)) : null;
+  // Keep reminding while a new order or a payment sits untouched for more than a minute
   useEffect(() => {
     if (!chime.on || oldestWaiting === null) return;
     const t = window.setInterval(() => {
@@ -125,24 +142,30 @@ export default function OrderBoard({ orders, unread, showBranch }: Props) {
     return () => window.clearInterval(t);
   }, [chime.on, oldestWaiting, play]);
 
-  // The tab title counts waiting orders and chats; Next sets its own title after us, so keep ours in place
+  // The tab title says what's waiting; Next sets its own title after us, so keep ours in place
   const chats = Object.keys(unread).length;
+  const newOrders = waiting.filter((o) => o.status === "pending").length;
+  const payments = waiting.length - newOrders;
   useEffect(() => {
-    const n = waiting.length + chats;
-    const what = waiting.length && chats ? "New orders & messages" : waiting.length ? `New order${waiting.length > 1 ? "s" : ""}` : `New message${chats > 1 ? "s" : ""}`;
-    const want = n ? `(${n}) ${what} · Orders` : "Orders · Staff · Enero Marso";
+    const n = newOrders + payments + chats;
+    const what = [
+      newOrders && plural(newOrders, "new order"),
+      payments && `${plural(payments, "payment")} to check`,
+      chats && plural(chats, "message"),
+    ].filter(Boolean).join(", ");
+    const want = n ? `(${n}) ${what.charAt(0).toUpperCase()}${what.slice(1)} · Orders` : "Orders · Staff · Enero Marso";
     const apply = () => { if (document.title !== want) document.title = want; };
     apply();
     const watch = new MutationObserver(apply);
     watch.observe(document.head, { subtree: true, childList: true, characterData: true });
     return () => watch.disconnect();
-  }, [waiting.length, chats]);
+  }, [newOrders, payments, chats]);
 
   const byDue = (list: FullOrder[]) => [...list].sort((a, b) => due(a) - due(b));
   const columns = [
     { key: "new", title: "New", empty: "No new orders.", list: byDue(orders.filter((o) => o.status === "pending" || o.status === "awaiting_payment")) },
     { key: "work", title: "In progress", empty: "Nothing being made.", list: byDue(orders.filter((o) => o.status === "accepted" || o.status === "preparing")) },
-    { key: "ready", title: "Ready", empty: "Nothing waiting for pickup.", list: byDue(orders.filter((o) => o.status === "ready" || o.status === "out_for_delivery")) },
+    { key: "ready", title: "Ready", empty: "Nothing waiting to go.", list: byDue(orders.filter((o) => o.status === "ready" || o.status === "out_for_delivery")) },
   ];
   const finished = orders.filter((o) => o.status === "done" || o.status === "cancelled");
   // A message on a finished order ("my fries are missing") must not hide in the collapsed list
@@ -178,7 +201,7 @@ export default function OrderBoard({ orders, unread, showBranch }: Props) {
             {c.list.length === 0 ? (
               <p className="board-empty">{c.empty}</p>
             ) : (
-              c.list.map((o) => <OrderCard key={o.id} order={o} showBranch={showBranch} isNew={fresh.includes(o.id)} unread={unread[o.id]} />)
+              c.list.map((o) => <OrderCard key={o.id} order={o} showBranch={showBranch} isNew={fresh.includes(o.id)} unread={unread[o.id]} context={context} />)
             )}
           </section>
         ))}
@@ -192,7 +215,10 @@ export default function OrderBoard({ orders, unread, showBranch }: Props) {
               <li key={o.id} className={o.status === "cancelled" ? "is-cancelled" : undefined}>
                 <Link href={`/staff/orders/${o.id}`}>{o.code}</Link>
                 <span>{o.customerName}</span>
-                <span>{STATUS_LABEL[o.status]} {time(o.doneAt ?? o.cancelledAt ?? o.updatedAt)}{o.cancelReason && ` · ${o.cancelReason}`}</span>
+                <span>
+                  {statusLabel(o.status, o.fulfillment)} {time(o.doneAt ?? o.cancelledAt ?? o.updatedAt)}{o.cancelReason && ` · ${o.cancelReason}`}
+                  {o.status === "cancelled" && o.paymentStatus === "verified" && <b className="board-refund"> · Paid: refund {peso(o.total)}</b>}
+                </span>
                 <span className="num">{peso(o.total)}</span>
               </li>
             ))}
@@ -203,17 +229,30 @@ export default function OrderBoard({ orders, unread, showBranch }: Props) {
   );
 }
 
-type CardProps = { order: FullOrder; showBranch: boolean; isNew?: boolean; unread?: Unread; detail?: boolean };
+type CardProps = { order: FullOrder; showBranch: boolean; isNew?: boolean; unread?: Unread; detail?: boolean; context: BoardContext };
+
+/** What the customer still owes, or has paid */
+function payLabel(o: FullOrder) {
+  if (o.fulfillment === "pickup") return "Pay at counter";
+  if (o.paymentStatus === "verified") return "Paid";
+  if (o.status === "pending") return "Items · fee to confirm";
+  if (o.paymentStatus === "submitted") return "Payment to check";
+  return "Waiting for payment";
+}
 
 /** One order: on the board, and again at the top of its own page (detail) */
-export function OrderCard({ order: o, showBranch, isNew = false, unread, detail = false }: CardProps) {
+export function OrderCard({ order: o, showBranch, isNew = false, unread, detail = false, context }: CardProps) {
   const now = useNow();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState(REASONS[0]);
   const steps = nextStatuses(o.fulfillment, o.status);
-  const forward = steps.find((s) => s !== "cancelled" && STEP_LABEL[s]);
+  const delivery = o.fulfillment === "delivery";
+  // Delivery's fee, payment and send-out steps have their own controls (DeliveryActions)
+  const special = delivery && (o.status === "pending" || o.status === "awaiting_payment" || o.status === "ready");
+  const forward = special ? undefined : steps.find((s) => s !== "cancelled" && STEP_LABEL[s]);
+  const forwardLabel = forward === "done" && delivery ? "Delivered" : forward && STEP_LABEL[forward];
   const minutes = now ? Math.max(0, Math.round((now - o.createdAt.getTime()) / 60_000)) : null;
 
   const go = (to: OrderStatus, why?: string) =>
@@ -237,6 +276,7 @@ export function OrderCard({ order: o, showBranch, isNew = false, unread, detail 
         </Link>
       )}
       <p className="order-card-meta">
+        {delivery && <span className="order-card-kind">Delivery{o.distanceMeters != null && ` · ${formatDistance(o.distanceMeters)}`}</span>}
         {showBranch && <>{branches.find((b) => b.id === o.branchId)?.name.replace("Enero Marso ", "")} · </>}
         Placed {time(o.createdAt)}
         {minutes !== null && <> · {minutes < 1 ? "just now" : `${minutes} min ago`}</>}
@@ -252,8 +292,27 @@ export function OrderCard({ order: o, showBranch, isNew = false, unread, detail 
           </li>
         ))}
       </ul>
+      {delivery && o.address && (
+        <div className="order-card-address">
+          <p>{o.address}{o.landmark && <small>{o.landmark}</small>}</p>
+          {o.lat != null && o.lng != null && (
+            <span>
+              <a href={mapsLink({ lat: o.lat, lng: o.lng })} target="_blank" rel="noopener noreferrer">Open map</a>
+              <CopyText text={[o.address, o.landmark && `(${o.landmark})`, o.plusCode].filter(Boolean).join(" ")} label="Copy for Lalamove" className="order-link" />
+            </span>
+          )}
+        </div>
+      )}
       {o.notes && <p className="order-card-notes">“{o.notes}”</p>}
-      <p className="order-card-total"><span>Pay at counter</span><b>{peso(o.total)}</b></p>
+      <p className={`order-card-total${o.paymentStatus === "verified" ? " is-paid" : ""}`}><span>{payLabel(o)}</span><b>{peso(o.total)}</b></p>
+      {special && (
+        <DeliveryActions
+          order={o}
+          freeWithin={context.freeWithin[o.branchId] ?? 0}
+          accountLabel={o.paymentAccountId ? (context.accounts[o.paymentAccountId] ?? null) : null}
+          clashes={context.clashes[o.id]}
+        />
+      )}
 
       {cancelling ? (
         <div className="order-card-cancel">
@@ -272,7 +331,7 @@ export function OrderCard({ order: o, showBranch, isNew = false, unread, detail 
         <div className="order-card-actions">
           {forward && (
             <button type="button" className="staff-btn is-primary" disabled={pending} onClick={() => go(forward)}>
-              {pending ? "Saving…" : STEP_LABEL[forward]}
+              {pending ? "Saving…" : forwardLabel}
             </button>
           )}
           {steps.includes("cancelled") && (

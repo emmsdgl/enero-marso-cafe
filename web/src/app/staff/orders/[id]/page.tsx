@@ -1,31 +1,37 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import CopyText from "@/components/CopyText";
 import LiveRefresh from "@/components/LiveRefresh";
+import PinMap from "@/components/map/PinMap";
 import { OrderCard } from "@/components/staff/OrderBoard";
 import ReissueLink from "@/components/staff/ReissueLink";
 import StaffChat from "@/components/staff/StaffChat";
+import { formatDistance, mapsLink } from "@/lib/delivery";
 import { listMessages } from "@/lib/order-chat";
-import { STATUS_LABEL, chatState, unreadCount } from "@/lib/order-rules";
-import { getStaffOrder } from "@/lib/orders";
+import { chatState, statusLabel, unreadCount } from "@/lib/order-rules";
+import { getOrderSettings, getStaffOrder } from "@/lib/orders";
 import { channels } from "@/lib/realtime";
 import { manila, requireStaff } from "@/lib/staff";
+import { boardContext } from "../board-context";
 
 export const metadata: Metadata = { title: "Order" };
 
-/** One order: its details and buttons, the chat with the customer, and a way to resend their link */
+/** One order: its details and buttons, where to deliver it, the chat with the customer, and a way to resend their link */
 export default async function OrderDetailPage({ params }: PageProps<"/staff/orders/[id]">) {
   const me = await requireStaff();
   const order = await getStaffOrder(me, (await params).id);
   if (!order) notFound();
 
-  const messages = await listMessages(order.id);
+  const [messages, context, settings] = await Promise.all([listMessages(order.id), boardContext([order], [order.branchId]), getOrderSettings()]);
   const chat = chatState(order);
   const firstName = order.customerName.split(" ")[0];
   const lines = messages.map((m) => ({
     id: m.id, sender: m.sender, body: m.body, time: manila.time(m.createdAt),
     who: m.sender === "customer" ? order.customerName : m.sender === "staff" ? (m.staffName ?? "Staff") : null,
   }));
+  const pin = order.lat != null && order.lng != null ? { lat: order.lat, lng: order.lng } : null;
+  const rules = settings[order.branchId as "main" | "noir"].delivery;
 
   return (
     <div className="staff-page">
@@ -33,13 +39,34 @@ export default async function OrderDetailPage({ params }: PageProps<"/staff/orde
       <header className="staff-head">
         <Link href="/staff/orders" className="staff-back">&larr; All orders</Link>
         <h1>Order {order.code}</h1>
-        <p>{STATUS_LABEL[order.status]} · placed {manila.date(order.createdAt)}, {manila.time(order.createdAt)}</p>
+        <p>
+          {order.fulfillment === "delivery" ? "Delivery" : "Pickup"} · {statusLabel(order.status, order.fulfillment)} · placed {manila.date(order.createdAt)},{" "}
+          {manila.time(order.createdAt)}
+        </p>
       </header>
 
-      <div className="order-detail">
+      <div className={`order-detail${pin ? " has-delivery" : ""}`}>
         <div className="order-detail-card">
-          <OrderCard order={order} showBranch={me.role === "admin"} detail />
+          <OrderCard order={order} showBranch={me.role === "admin"} detail context={context} />
         </div>
+
+        {pin && (
+          <section className="staff-card order-detail-delivery" aria-labelledby="where-title">
+            <h2 id="where-title">Deliver to</h2>
+            <PinMap pin={pin} center={pin} store={rules.store} freeRadius={rules.freeWithin} label={`Where to deliver order ${order.code}`} />
+            <dl className="delivery-facts">
+              <div><dt>Address</dt><dd>{order.address}{order.landmark && <small>{order.landmark}</small>}</dd></div>
+              {order.distanceMeters != null && <div><dt>Distance</dt><dd>About {formatDistance(order.distanceMeters)} from the branch, in a straight line</dd></div>}
+              {order.plusCode && <div><dt>Plus Code</dt><dd><span className="nowrap">{order.plusCode}</span> <CopyText text={order.plusCode} /></dd></div>}
+              {order.trackingUrl && <div><dt>Rider</dt><dd><a href={order.trackingUrl} target="_blank" rel="noopener noreferrer">Lalamove tracking</a></dd></div>}
+            </dl>
+            <div className="relink-actions">
+              <a className="staff-btn" href={mapsLink(pin)} target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
+              <CopyText text={[order.address, order.landmark && `(${order.landmark})`, order.plusCode].filter(Boolean).join(" ")} label="Copy for Lalamove" className="staff-btn" />
+            </div>
+          </section>
+        )}
+
         <section className="staff-card order-detail-link" aria-labelledby="link-title">
           <h2 id="link-title">Customer&rsquo;s link</h2>
           <ReissueLink orderId={order.id} code={order.code} phone={order.customerPhone} />
@@ -49,6 +76,7 @@ export default async function OrderDetailPage({ params }: PageProps<"/staff/orde
           <h2 id="chat-title">Chat with {firstName}</h2>
           <StaffChat
             orderId={order.id}
+            delivery={order.fulfillment === "delivery"}
             lines={lines}
             open={chat.open}
             unread={unreadCount(messages, "staff", order.staffLastReadAt)}

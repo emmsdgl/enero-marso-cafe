@@ -7,7 +7,7 @@ import { getOrderSettings } from "@/lib/orders";
 
 export const metadata: Metadata = {
   title: "Order",
-  description: "Order ahead from Enero Marso Cafe or Cafe Noir in Taguig and pick it up at the counter.",
+  description: "Order ahead from Enero Marso Cafe or Cafe Noir in Taguig, for pickup or delivery.",
 };
 // Rendered per visit: sold-out items and whether each branch is taking orders change during the night
 export const dynamic = "force-dynamic";

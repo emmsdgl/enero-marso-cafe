@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.1.13"],
+  // The QR reader for payment accounts: loaded from node_modules at run time, with its engine file
+  serverExternalPackages: ["zxing-wasm"],
+  outputFileTracingIncludes: { "/staff/branch": ["./node_modules/zxing-wasm/dist/reader/zxing_reader.wasm"] },
   // A customer's order link carries their private token: never pass it on, never index it
   async headers() {
     return [

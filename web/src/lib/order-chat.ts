@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, eq, gte, inArray, sql } from "drizzle-orm";
 import { db, orderMessages, orders, staff, type Staff } from "@/db";
-import { chatState, cleanMessage, type OrderStatus, type Sender } from "./order-rules";
+import { chatState, cleanMessage, type Fulfillment, type OrderStatus, type Sender } from "./order-rules";
 import { tokenMatches } from "./order-token";
 import { getCustomerOrder, getStaffOrder, isOrderId } from "./orders";
 import { announce, channels } from "./realtime";
@@ -113,7 +113,9 @@ export async function staffUnread(orderIds: string[]): Promise<Record<string, Un
   return out;
 }
 
-export type Glance = { code: string; found: false } | { code: string; found: true; status: OrderStatus; unread: number; chatOpen: boolean };
+export type Glance =
+  | { code: string; found: false }
+  | { code: string; found: true; status: OrderStatus; fulfillment: Fulfillment; unread: number; chatOpen: boolean };
 
 /**
  * For the "order in progress" bar on the customer's phone: status and new messages for the
@@ -123,7 +125,7 @@ export async function glanceOrders(list: { code: string; token: string }[]): Pro
   if (list.length === 0) return [];
   const rows = await db
     .select({
-      id: orders.id, code: orders.code, tokenHash: orders.tokenHash, status: orders.status,
+      id: orders.id, code: orders.code, tokenHash: orders.tokenHash, status: orders.status, fulfillment: orders.fulfillment,
       createdAt: orders.createdAt, doneAt: orders.doneAt, cancelledAt: orders.cancelledAt,
     })
     .from(orders)
@@ -133,6 +135,6 @@ export async function glanceOrders(list: { code: string; token: string }[]): Pro
   return list.map((l, i) => {
     const o = mine[i];
     if (!o) return { code: l.code, found: false };
-    return { code: o.code, found: true, status: o.status, unread: unread.filter((m) => m.orderId === o.id).length, chatOpen: chatState(o).open };
+    return { code: o.code, found: true, status: o.status, fulfillment: o.fulfillment, unread: unread.filter((m) => m.orderId === o.id).length, chatOpen: chatState(o).open };
   });
 }

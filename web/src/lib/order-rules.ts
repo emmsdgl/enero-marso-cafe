@@ -20,7 +20,7 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type Fulfillment = "pickup" | "delivery";
 export type PaymentStatus = "unpaid" | "submitted" | "verified" | "refunded";
 
-/** What staff call each status on the board */
+/** What staff call each status on the board (see statusLabel for delivered orders) */
 export const STATUS_LABEL: Record<OrderStatus, string> = {
   pending: "New",
   awaiting_payment: "Awaiting payment",
@@ -31,6 +31,19 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
   done: "Picked up",
   cancelled: "Cancelled",
 };
+
+export const statusLabel = (status: OrderStatus, fulfillment: Fulfillment) =>
+  status === "done" && fulfillment === "delivery" ? "Delivered" : STATUS_LABEL[status];
+
+/**
+ * The reference number from a payment receipt, tidied: GCash prints "1234 567 890123", banks
+ * mix letters and digits. Null when it can't be a reference.
+ */
+export function cleanPaymentRef(input: unknown): string | null {
+  const ref = String(input ?? "").toUpperCase().replace(/[\s-]/g, "");
+  // Every receipt's reference has digits; "PAID NA PO" doesn't
+  return /^[A-Z0-9]{6,20}$/.test(ref) && (ref.match(/\d/g)?.length ?? 0) >= 4 ? ref : null;
+}
 
 /** The chat stays open this long after the order is done, for "missing item" messages */
 export const CHAT_GRACE_MINUTES = 30;

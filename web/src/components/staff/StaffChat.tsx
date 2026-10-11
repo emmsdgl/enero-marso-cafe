@@ -9,12 +9,21 @@ const QUICK = [
   "Got it, thank you!",
   "Sorry, that item just ran out. Would you like something else instead?",
   "We're a bit busy. Your order will take about 10 more minutes.",
-  "Your order is ready at the counter.",
 ];
+const LAST = { pickup: "Your order is ready at the counter.", delivery: "Your order is on its way." };
 
-type Props = { orderId: string; lines: ChatLine[]; open: boolean; unread: number; myName: string; customer: string; closedNote: React.ReactNode };
+type Props = {
+  orderId: string;
+  delivery: boolean;
+  lines: ChatLine[];
+  open: boolean;
+  unread: number;
+  myName: string;
+  customer: string;
+  closedNote: React.ReactNode;
+};
 
-export default function StaffChat({ orderId, lines, open, unread, myName, customer, closedNote }: Props) {
+export default function StaffChat({ orderId, delivery, lines, open, unread, myName, customer, closedNote }: Props) {
   const send = useCallback((body: string) => sendStaffMessage(orderId, body), [orderId]);
   const seen = useCallback(() => markChatSeen(orderId), [orderId]);
   return (
@@ -27,7 +36,7 @@ export default function StaffChat({ orderId, lines, open, unread, myName, custom
       placeholder={`Message ${customer}`}
       emptyNote={<>No messages yet. Anything you send here shows on {customer}&rsquo;s order page.</>}
       closedNote={closedNote}
-      suggestions={QUICK}
+      suggestions={[...QUICK, LAST[delivery ? "delivery" : "pickup"]]}
       send={send}
       seen={seen}
     />

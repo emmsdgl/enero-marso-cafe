@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { placeOrderAction } from "@/app/order/actions";
+import PinMap from "@/components/map/PinMap";
 import { branches } from "@/data/branches";
+import { checkDelivery, formatDistance, type LatLng } from "@/lib/delivery";
 import { isBranchId, peso, type BranchId, type MenuCategory, type MenuItem, type Menus } from "@/lib/menu";
 import type { OrderSettings } from "@/lib/orders";
 import { pickupWindow, type PickupWindow } from "@/lib/pickup";
@@ -13,7 +15,7 @@ type Line = Choice & { key: string; itemId: string; name: string; detail: string
 const manilaTime = (d: Date) => d.toLocaleTimeString("en-PH", { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" });
 const firstSize = (i: MenuItem) => Math.max(0, i.prices.findIndex((p) => p !== null));
 
-/** Online order for pickup: branch, time, items, details. Prices shown here are re-checked on the server. */
+/** Online order for pickup or delivery: branch, time, items, details. Prices and distances are re-checked on the server. */
 export default function Checkout({ menus, settings, initialBranch }: { menus: Menus; settings: OrderSettings; initialBranch?: string }) {
   // Times depend on the clock, so they're worked out in the browser only (and refreshed every 30 s)
   const [now, setNow] = useState<Date | null>(null);
@@ -37,6 +39,10 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
   const [choices, setChoices] = useState<Record<string, Choice>>({});
   const [lines, setLines] = useState<Line[]>([]);
   const [when, setWhen] = useState("asap");
+  const [mode, setMode] = useState<"pickup" | "delivery">("pickup");
+  const [pin, setPin] = useState<LatLng | null>(null);
+  const [address, setAddress] = useState("");
+  const [landmark, setLandmark] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
@@ -52,6 +58,14 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
   const effectiveWhen = whenValid ? when : win.asap ? "asap" : (win.slots[0]?.toISOString() ?? "");
   const total = lines.reduce((n, l) => n + l.unit * l.qty, 0);
   const count = lines.reduce((n, l) => n + l.qty, 0);
+  const rules = settings[branch].delivery;
+  const delivers = (id: BranchId) => settings[id].delivery.open && !!settings[id].delivery.store;
+  // Switching to a branch that doesn't deliver falls back to pickup without losing the pin
+  const how = mode === "delivery" && delivers(branch) ? "delivery" : "pickup";
+  const reach = how === "delivery" ? checkDelivery(rules, pin, total) : null;
+  // Nothing is wrong before there's a pin (the map says what to do), and an empty cart isn't "below the minimum" yet
+  const reachError = reach && !reach.ok && pin && (lines.length > 0 || !reach.error.startsWith("Delivery needs")) ? reach.error : null;
+  const deliveryReady = how === "pickup" || (reach?.ok === true && address.trim().length >= 5);
 
   const pickBranch = (id: BranchId) => {
     if (id === branch) return;
@@ -82,12 +96,13 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
     start(async () => {
       const r = await placeOrderAction({
         branch,
-        fulfillment: "pickup",
+        fulfillment: how,
         wantedAt: effectiveWhen === "asap" ? null : effectiveWhen,
         lines: lines.map(({ itemId, size, upsize, addons, qty }) => ({ itemId, size, upsize, addons, qty })),
         name,
         phone,
         notes,
+        delivery: how === "delivery" && pin ? { ...pin, address, landmark } : null,
       });
       if (r?.error) setError(r.error);
     });
@@ -127,15 +142,53 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
           <legend>How</legend>
           <div className="order-toggle">
             <label>
-              <input type="radio" name="fulfillment" checked readOnly />
+              <input type="radio" name="fulfillment" checked={how === "pickup"} onChange={() => setMode("pickup")} />
               <span>Pickup</span>
             </label>
-            <label className="is-soon" aria-disabled="true">
-              <input type="radio" name="fulfillment" disabled />
-              <span>Delivery <small>soon</small></span>
-            </label>
+            {delivers(branch) ? (
+              <label>
+                <input type="radio" name="fulfillment" checked={how === "delivery"} onChange={() => setMode("delivery")} />
+                <span>Delivery</span>
+              </label>
+            ) : (
+              <label className="is-soon" aria-disabled="true">
+                <input type="radio" name="fulfillment" disabled />
+                <span>Delivery <small>unavailable</small></span>
+              </label>
+            )}
           </div>
+          {how === "delivery" && (
+            <p className="order-hint">
+              {rules.freeWithin ? `Free within ${formatDistance(rules.freeWithin)} of the branch. ` : ""}
+              We deliver up to {formatDistance(rules.maxDistance)}{rules.minOrder ? `, from ${peso(rules.minOrder)}` : ""}.
+            </p>
+          )}
         </fieldset>
+
+        {how === "delivery" && (
+          <fieldset className="slip-course delivery-where">
+            <legend>Deliver to</legend>
+            <PinMap pin={pin} onPin={setPin} center={rules.store!} store={rules.store} freeRadius={rules.freeWithin} label="Where we should deliver" />
+            {reach?.ok ? (
+              <p className={`delivery-reach${reach.free ? " is-free" : ""}`} role="status">
+                About {formatDistance(reach.distance)} from {chosen.name}.{" "}
+                {reach.free ? "Free delivery. The cafe confirms the fee before you pay." : "The cafe tells you the delivery fee before you pay."}
+              </p>
+            ) : (
+              reachError && <p className="delivery-reach is-off" role="status">{reachError}</p>
+            )}
+            <div className="slip-fields">
+              <label>
+                Address <small>house or unit, street, barangay</small>
+                <input value={address} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" required minLength={5} maxLength={200} placeholder="12 Champaca St., Western Bicutan" />
+              </label>
+              <label>
+                Landmark <small>optional</small>
+                <input value={landmark} onChange={(e) => setLandmark(e.target.value)} maxLength={200} placeholder="Blue gate, beside the sari-sari store" />
+              </label>
+            </div>
+          </fieldset>
+        )}
 
         <fieldset className="slip-course">
           <legend>When</legend>
@@ -143,9 +196,9 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
             <p className="order-hint">Checking pickup times…</p>
           ) : open ? (
             <label className="checkout-when">
-              <span className="sr-only">Pickup time</span>
+              <span className="sr-only">{how === "delivery" ? "Delivery time" : "Pickup time"}</span>
               <select value={effectiveWhen} onChange={(e) => setWhen(e.target.value)}>
-                {win.asap && <option value="asap">As soon as it&rsquo;s ready (about 20 min)</option>}
+                {win.asap && <option value="asap">{how === "delivery" ? "As soon as possible" : "As soon as it\u2019s ready (about 20 min)"}</option>}
                 {win.slots.map((s) => (
                   <option key={s.toISOString()} value={s.toISOString()}>Today, {manilaTime(s)}</option>
                 ))}
@@ -221,7 +274,11 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
 
       <aside className="checkout-slip" id="your-order" aria-labelledby="your-order-title">
         <h2 id="your-order-title">Your order</h2>
-        <p className="slip-where">Pickup at {chosen.name}<small>{chosen.address}</small></p>
+        {how === "delivery" ? (
+          <p className="slip-where">Delivery from {chosen.name}<small>{address.trim() || "Set your address and pin"}</small></p>
+        ) : (
+          <p className="slip-where">Pickup at {chosen.name}<small>{chosen.address}</small></p>
+        )}
         {lines.length === 0 ? (
           <p className="slip-empty">Nothing yet. Choose a drink or a dish, then tap Add.</p>
         ) : (
@@ -243,18 +300,34 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
         <div className="slip-fields">
           <label>Name<input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required minLength={2} maxLength={60} placeholder="Juan Dela Cruz" /></label>
           <label>Mobile number<input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" autoComplete="tel" required inputMode="tel" placeholder="0917 123 4567" /></label>
-          <label>Notes <small>optional</small><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={300} placeholder="Less sugar, extra sauce, who's picking up…" /></label>
+          <label>Notes <small>optional</small><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={300} placeholder={how === "delivery" ? "Less sugar, who receives it, gate code…" : "Less sugar, extra sauce, who's picking up…"} /></label>
         </div>
 
-        <p className="slip-pay">Pay when you pick up: cash or GCash at the counter.</p>
-        <div className="slip-total"><span>Total</span><b>{peso(total)}</b></div>
+        {how === "delivery" ? (
+          <>
+            <p className="slip-fee">
+              <span>Delivery</span>
+              <b>{reach?.ok ? (reach.free ? "Free" : "Confirmed by the cafe") : "–"}</b>
+            </p>
+            <p className="slip-pay">Pay by GCash, Maya or bank transfer once the cafe confirms your order and the delivery fee.</p>
+          </>
+        ) : (
+          <p className="slip-pay">Pay when you pick up: cash or GCash at the counter.</p>
+        )}
+        <div className="slip-total"><span>{how === "delivery" ? "Items" : "Total"}</span><b>{peso(total)}</b></div>
         {error && <p className="slip-error" role="alert">{error}</p>}
-        <button type="submit" className="order-submit" disabled={!open || lines.length === 0 || sending}>
-          {sending ? "Placing your order…" : lines.length === 0 ? "Add an item to order" : "Place order"}
+        <button type="submit" className="order-submit" disabled={!open || lines.length === 0 || sending || !deliveryReady}>
+          {sending
+            ? "Placing your order…"
+            : lines.length === 0
+              ? "Add an item to order"
+              : !deliveryReady
+                ? reach?.ok ? "Add your address" : "Set where to deliver"
+                : how === "delivery" ? "Send order" : "Place order"}
         </button>
         <p className="slip-privacy">
-          We use your name and number only to prepare this order and reach you about it. Order details are kept for a year,
-          then your name and number are removed.
+          We use your name, number{how === "delivery" ? ", address and pin" : ""} only to prepare this order and reach you about it.
+          Order details are kept for a year, then your personal details are removed.
         </p>
       </aside>
 

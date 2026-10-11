@@ -18,6 +18,12 @@ const LABEL: Record<OrderStatus, string> = {
   done: "Picked up",
   cancelled: "Cancelled",
 };
+const DELIVERY_LABEL: Partial<Record<OrderStatus, string>> = {
+  pending: "Waiting for the cafe to confirm",
+  accepted: "Paid and accepted",
+  ready: "Waiting for the rider",
+  done: "Delivered",
+};
 const DAY = 86_400_000;
 const HIDDEN_KEY = "em-order-bar-hidden";
 
@@ -63,7 +69,8 @@ export default function OrderBanner() {
         // Hiding lasts until something changes: a new status or a new message brings it back
         const key = `${g.code}|${g.status}|${g.unread}`;
         if (key === hidden) return [];
-        return [{ code: g.code, href: recent.find((r) => r.code === g.code)!.href, label: LABEL[g.status], unread: g.unread, key }];
+        const label = g.fulfillment === "delivery" ? (DELIVERY_LABEL[g.status] ?? LABEL[g.status]) : LABEL[g.status];
+        return [{ code: g.code, href: recent.find((r) => r.code === g.code)!.href, label, unread: g.unread, key }];
       });
       setShown(live[0] ?? null);
     };

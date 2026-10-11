@@ -504,6 +504,71 @@ h1, h2, h3 { margin: 0; }
 .chat-left { font-size: 0.75rem; color: var(--cocoa); }
 .chat-error { margin: 0; padding: 0.6rem 0.85rem; background: #f6dcd8; color: #6e1710; font-size: 0.875rem; font-weight: 500; }
 
+/* ——— Delivery: the map pin, at checkout and on staff pages ——— */
+.pin-map { display: grid; gap: 0.6rem; }
+.pin-map-canvas { height: clamp(15rem, 42vh, 22rem); border: 1.5px solid var(--ink); background: var(--sand); }
+.pin-map-off { margin: 0; padding: 0.9rem 1rem; background: var(--sand); font-size: 0.9375rem; color: var(--cocoa); }
+.pin-map-tools { display: flex; align-items: center; gap: 0.5rem 0.85rem; flex-wrap: wrap; }
+.pin-map-tools small { font-size: 0.8125rem; color: var(--cocoa); }
+.pin-map-locate {
+  padding: 0.65rem 1.1rem; border: 1.5px solid var(--brown); border-radius: 999px; background: none; color: var(--brown); cursor: pointer;
+  font: 700 0.75rem/1 var(--brand); letter-spacing: 0.12em; text-transform: uppercase; transition: background-color 0.2s ease, color 0.2s ease;
+}
+.pin-map-locate:hover:not(:disabled) { background: var(--brown); color: var(--cream); }
+.pin-map-locate:disabled { opacity: 0.6; cursor: default; }
+.pin-map-store {
+  display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border: 2px solid var(--gold); border-radius: 50%;
+  background: var(--ink); color: var(--gold); font: 700 0.6875rem/1 var(--brand); letter-spacing: 0.08em; box-shadow: 0 2px 6px rgb(21 18 17 / 0.4);
+}
+.delivery-where { display: grid; gap: 0.85rem; }
+.delivery-reach { margin: 0; padding: 0.7rem 0.9rem; background: var(--sand); font-size: 0.9375rem; font-weight: 500; }
+.delivery-reach.is-free { background: #e6efe2; color: #24461a; }
+.delivery-reach.is-off { background: #f6dcd8; color: #6e1710; }
+.slip-fee { margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; font-size: 0.9375rem; }
+.slip-fee span { font-weight: 700; font-size: 0.75rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--brown); }
+.copy-btn {
+  padding: 0.3rem 0.7rem; border: 1px solid rgb(21 18 17 / 0.35); border-radius: 999px; background: none; color: var(--ink); cursor: pointer;
+  font: 600 0.75rem/1 var(--brand); letter-spacing: 0.04em; vertical-align: 0.1em;
+}
+.copy-btn:hover { border-color: var(--ink); }
+
+/* Paying for a delivery: the cafe's QR, the amount, then the receipt's reference */
+.track-fee { color: var(--cocoa); }
+.track-rider {
+  display: inline-flex; margin: 0.85rem 0.6rem 0 0; padding: 0.7rem 1.2rem; border-radius: 999px; background: var(--brown); color: var(--cream); text-decoration: none;
+  font-weight: 700; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.track-rider:hover { background: var(--ink); }
+.pay { display: grid; gap: 1rem; padding: 1.25rem; border: 2px solid var(--brown); background: #fffaf1; }
+.pay h2 { font: 400 2.2rem/1 var(--script); color: var(--brown); }
+.pay p { margin: 0; }
+.pay-how { font-size: 0.9375rem; }
+.pay.is-sent { border-color: var(--gold); background: #fbf3e4; }
+.pay-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.pay-tabs button {
+  padding: 0.5rem 1rem; border: 1.5px solid var(--ink); border-radius: 999px; background: none; color: var(--ink); cursor: pointer;
+  font: 600 0.8125rem/1 var(--brand); letter-spacing: 0.06em;
+}
+.pay-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--cream); }
+.pay-account { display: grid; grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.pay-qr { margin: 0; display: grid; gap: 0.6rem; justify-items: center; }
+.pay-qr > div { width: 100%; padding: 0.4rem; background: #fff; border: 1px solid rgb(21 18 17 / 0.2); }
+.pay-qr svg { display: block; width: 100%; height: auto; }
+.pay-qr figcaption { display: grid; gap: 0.4rem; justify-items: center; text-align: center; }
+.pay-qr small { font-size: 0.75rem; color: var(--cocoa); }
+.pay-save { padding: 0.6rem 1.2rem; border: 1.5px solid var(--brown); color: var(--brown); background: none; cursor: pointer; font: 700 0.75rem/1 var(--brand); letter-spacing: 0.14em; }
+.pay-save:hover:not(:disabled) { background: var(--brown); color: var(--cream); }
+.pay-details { margin: 0; display: grid; gap: 0.6rem; }
+.pay-details div { display: grid; gap: 0.15rem; }
+.pay-details dt { font-weight: 700; font-size: 0.6875rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brown); }
+.pay-details dd { margin: 0; font-weight: 600; font-size: 1.0625rem; }
+.pay-details small { display: block; font-weight: 500; font-size: 0.875rem; color: var(--cocoa); }
+.pay-ref { display: grid; gap: 0.75rem; padding-top: 1rem; border-top: 1px solid rgb(21 18 17 / 0.2); }
+.pay-ref label { display: grid; gap: 0.4rem; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brown); }
+.pay-ref label small { font-weight: 500; letter-spacing: 0.04em; text-transform: none; color: var(--cocoa); }
+.pay-ref input { width: 100%; padding: 0.8rem 0.9rem; border: 1.5px solid var(--ink); background: #fff; color: var(--ink); font: 600 1.0625rem/1.3 var(--brand); letter-spacing: 0.06em; }
+.pay-ref input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+
 /* "Your order is being prepared": while this phone has an order in progress */
 body:has(.order-bar) { padding-bottom: 5.5rem; }
 .order-bar {
@@ -581,6 +646,8 @@ body:has(.order-bar) { padding-bottom: 5.5rem; }
   .track-steps li span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .track-step-now { display: block; }
   .track-facts div { grid-template-columns: 4.75rem minmax(0, 1fr); }
+  .pay-account { grid-template-columns: minmax(0, 1fr); }
+  .pay-qr > div { max-width: 15rem; }
   .brand-word { display: none; }
   .landing-visit { right: var(--gutter); bottom: calc(env(safe-area-inset-bottom, 0px) + 4.5rem); }
   .landing-enter { left: var(--gutter); right: auto; }

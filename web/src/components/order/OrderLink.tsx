@@ -58,7 +58,7 @@ export function OrderLink({ code }: { code: string }) {
   return (
     <div className="track-link">
       <p>
-        <b>Keep this page.</b> It&rsquo;s your private link to this order, and this phone remembers it. Anyone with the link can see the order, so share it only with whoever is picking up.
+        <b>Keep this page.</b> It&rsquo;s your private link to this order, and this phone remembers it. Anyone with the link can see the order, so share it only with whoever is picking it up or receiving it.
       </p>
       <div className="track-link-actions">
         <button type="button" className="pill-btn" onClick={copy} disabled={!url}>{copied ? "Link copied" : "Copy link"}</button>

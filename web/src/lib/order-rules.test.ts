@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHAT_GRACE_MINUTES, MESSAGE_MAX, STALE_HOURS, canMove, chatState, cleanMessage, nextStatuses, statusNote, unreadCount } from "./order-rules";
+import { CHAT_GRACE_MINUTES, MESSAGE_MAX, STALE_HOURS, canMove, chatState, cleanMessage, cleanPaymentRef, nextStatuses, statusLabel, statusNote, unreadCount } from "./order-rules";
 
 const at = (iso: string) => new Date(iso);
 
@@ -106,5 +106,24 @@ describe("chat messages", () => {
     expect(unreadCount(msgs, "staff", at("2026-10-10T11:01:00Z"))).toBe(1);
     expect(unreadCount(msgs, "customer", null)).toBe(1);
     expect(unreadCount(msgs, "customer", at("2026-10-10T11:03:00Z"))).toBe(0);
+  });
+});
+
+describe("delivery payments", () => {
+  it("tidies reference numbers the way receipts print them", () => {
+    expect(cleanPaymentRef("1234 567 890123")).toBe("1234567890123");
+    expect(cleanPaymentRef("ab-12cd34")).toBe("AB12CD34");
+  });
+
+  it("refuses things that can't be a reference", () => {
+    expect(cleanPaymentRef("123")).toBeNull();
+    expect(cleanPaymentRef("paid na po")).toBeNull();
+    expect(cleanPaymentRef("1".repeat(21))).toBeNull();
+    expect(cleanPaymentRef(undefined)).toBeNull();
+  });
+
+  it("calls a finished delivery order delivered", () => {
+    expect(statusLabel("done", "delivery")).toBe("Delivered");
+    expect(statusLabel("done", "pickup")).toBe("Picked up");
   });
 });

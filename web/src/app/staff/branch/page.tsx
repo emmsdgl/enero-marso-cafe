@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { asc, isNull } from "drizzle-orm";
+import { asc, inArray, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import ActionButton from "@/components/staff/ActionButton";
 import ActionForm from "@/components/staff/ActionForm";
-import { branchNetworks, db, kiosks } from "@/db";
+import { branchNetworks, db, kiosks, staff } from "@/db";
 import { branches } from "@/data/branches";
 import { getOrderSettings } from "@/lib/orders";
+import { listPaymentAccounts, qrSvg } from "@/lib/payments";
 import { clientIp, hashKioskToken, KIOSK_COOKIE, manila, requireStaff } from "@/lib/staff";
 import { registerKiosk, registerNetwork, removeNetwork, revokeKiosk, saveOrderCutoff, setOrdersOpen } from "../actions";
+import DeliverySetup, { type AccountRow } from "./DeliverySetup";
 
 export const metadata: Metadata = { title: "Branch setup" };
 
@@ -19,18 +21,24 @@ export default async function BranchSetupPage() {
   const token = (await cookies()).get(KIOSK_COOKIE)?.value;
   const thisDeviceHash = token ? hashKioskToken(token) : null;
 
-  const [nets, tabs, orderSettings] = await Promise.all([
+  const [nets, tabs, orderSettings, accountList] = await Promise.all([
     db.select().from(branchNetworks).orderBy(asc(branchNetworks.createdAt)),
     db.select().from(kiosks).where(isNull(kiosks.revokedAt)).orderBy(asc(kiosks.createdAt)),
     getOrderSettings(),
+    listPaymentAccounts(mine.map((b) => b.id)),
   ]);
   const thisDevice = tabs.find((t) => t.tokenHash === thisDeviceHash);
+  const editorIds = [...new Set(accountList.flatMap((a) => (a.updatedBy ? [a.updatedBy] : [])))];
+  const editors = editorIds.length ? await db.select({ id: staff.id, name: staff.name }).from(staff).where(inArray(staff.id, editorIds)) : [];
+  const accounts: AccountRow[] = await Promise.all(
+    accountList.map(async (a) => ({ ...a, qrSvg: a.qrPayload ? await qrSvg(a.qrPayload) : null, changedBy: editors.find((e) => e.id === a.updatedBy)?.name ?? null })),
+  );
 
   return (
     <div className="staff-page">
       <header className="staff-head">
         <h1>Branch setup</h1>
-        <p>Online orders, and where staff are allowed to clock in</p>
+        <p>Online orders, delivery, and where staff are allowed to clock in</p>
       </header>
 
       {mine.map((b) => {
@@ -66,6 +74,7 @@ export default async function BranchSetupPage() {
                 </ActionForm>
               </div>
             </div>
+            <DeliverySetup branchId={b.id} settings={orderSettings[b.id]} accounts={accounts.filter((a) => a.branchId === b.id)} />
             <div className="staff-grid">
               <div>
                 <h3>Branch Wi-Fi</h3>

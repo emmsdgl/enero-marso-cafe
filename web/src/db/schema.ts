@@ -14,8 +14,20 @@ export const branches = pgTable(
     ordersOpen: boolean("orders_open").notNull().default(false),
     /** Online orders stop this many minutes before closing */
     orderCutoffMinutes: integer("order_cutoff_minutes").notNull().default(30),
+    // Delivery: the branch's pin, and the rules managers set on Staff > Branch (see lib/delivery.ts)
+    lat: doublePrecision("lat"),
+    lng: doublePrecision("lng"),
+    deliveryOpen: boolean("delivery_open").notNull().default(false),
+    freeDeliveryMeters: integer("free_delivery_meters").notNull().default(0), // 0 = no free delivery
+    maxDeliveryMeters: integer("max_delivery_meters").notNull().default(5000),
+    deliveryMinOrder: integer("delivery_min_order").notNull().default(0),
   },
-  (t) => [check("branches_order_cutoff", sql`${t.orderCutoffMinutes} in (30, 45, 60)`)],
+  (t) => [
+    check("branches_order_cutoff", sql`${t.orderCutoffMinutes} in (30, 45, 60)`),
+    check("branches_free_delivery", sql`${t.freeDeliveryMeters} in (0, 100, 250, 500, 1000, 2000)`),
+    check("branches_max_delivery", sql`${t.maxDeliveryMeters} in (2000, 3000, 5000, 8000, 10000)`),
+    check("branches_delivery_min_order", sql`${t.deliveryMinOrder} in (0, 200, 300, 500)`),
+  ],
 );
 
 /**
@@ -149,6 +161,33 @@ export const menuAddons = pgTable("menu_addons", {
 });
 
 /**
+ * Where delivery customers send money: a branch's GCash, Maya or bank accounts. The QR is kept
+ * as the text inside it (checked as a peso payment code), and drawn fresh for customers.
+ * Accounts are switched off rather than deleted, so past orders still show where they paid.
+ */
+export const paymentAccounts = pgTable(
+  "payment_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    branchId: text("branch_id").notNull().references(() => branches.id),
+    kind: text("kind", { enum: ["gcash", "maya", "bank", "other"] }).notNull(),
+    label: text("label").notNull(), // "GCash", "BPI savings"
+    accountName: text("account_name").notNull(),
+    accountNumber: text("account_number"), // for "send to this number"; optional when there's a QR
+    qrPayload: text("qr_payload"),
+    active: boolean("active").notNull().default(true),
+    sort: integer("sort").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedBy: uuid("updated_by").references(() => staff.id),
+  },
+  (t) => [
+    index("payment_accounts_branch").on(t.branchId, t.sort),
+    check("payment_accounts_way_to_pay", sql`${t.accountNumber} is not null or ${t.qrPayload} is not null`),
+  ],
+);
+
+/**
  * An online order. The customer's link carries a secret token; only its hash is stored here.
  * Names and prices are copied into order_items, so later menu edits never change an order.
  */
@@ -172,14 +211,20 @@ export const orders = pgTable(
     lng: doublePrecision("lng"),
     plusCode: text("plus_code"),
     deliveryProvider: text("delivery_provider", { enum: ["lalamove", "own_rider"] }),
-    deliveryFee: integer("delivery_fee"),
+    deliveryFee: integer("delivery_fee"), // null until staff confirm it
     trackingUrl: text("tracking_url"),
+    distanceMeters: integer("distance_meters"), // straight line from the branch pin, at order time
+    quotedAt: timestamp("quoted_at", { withTimezone: true }), // staff confirmed the order and the fee
     // Money, in whole pesos
     subtotal: integer("subtotal").notNull(),
     total: integer("total").notNull(),
-    paymentMethod: text("payment_method", { enum: ["cash", "gcash"] }),
+    paymentMethod: text("payment_method", { enum: ["cash", "gcash", "transfer"] }), // transfer = paid to a payment account
     paymentStatus: text("payment_status", { enum: ["unpaid", "submitted", "verified", "refunded"] }).notNull().default("unpaid"),
-    gcashRef: text("gcash_ref"),
+    gcashRef: text("gcash_ref"), // the reference number from the customer's receipt (any app)
+    paymentAccountId: uuid("payment_account_id").references(() => paymentAccounts.id),
+    paymentSubmittedAt: timestamp("payment_submitted_at", { withTimezone: true }),
+    paymentVerifiedAt: timestamp("payment_verified_at", { withTimezone: true }),
+    paymentVerifiedBy: uuid("payment_verified_by").references(() => staff.id),
     // Timeline
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -199,6 +244,8 @@ export const orders = pgTable(
     index("orders_branch_created").on(t.branchId, t.createdAt),
     index("orders_phone_created").on(t.customerPhone, t.createdAt),
     index("orders_ip_created").on(t.createdIp, t.createdAt),
+    // Staff are warned when a reference number was already used on another order
+    index("orders_gcash_ref").on(t.gcashRef),
   ],
 );
 
@@ -248,3 +295,4 @@ export type TimeEntry = typeof timeEntries.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type OrderMessage = typeof orderMessages.$inferSelect;
+export type PaymentAccount = typeof paymentAccounts.$inferSelect;

@@ -184,6 +184,32 @@
 .order-card-unread:hover { background: #dfb06b; }
 .order-card-open { justify-self: start; color: var(--brown); font-weight: 600; font-size: 0.875rem; text-underline-offset: 0.2em; }
 
+.order-card-kind { display: inline-block; margin-right: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--ink); color: var(--cream); font-weight: 600; font-size: 0.75rem; }
+.order-card-address { display: grid; gap: 0.3rem; padding: 0.55rem 0.7rem; border-radius: 0.5rem; background: rgb(21 18 17 / 0.05); }
+.order-card-address p { margin: 0; font-weight: 600; font-size: 0.9375rem; }
+.order-card-address small { display: block; font-weight: 500; font-size: 0.8125rem; color: var(--cocoa); }
+.order-card-address span { display: flex; gap: 0.9rem; flex-wrap: wrap; font-size: 0.875rem; }
+.order-card-address a, .order-card-address .order-link { color: var(--brown); font-weight: 600; font-size: 0.875rem; text-underline-offset: 0.2em; }
+.order-card-total.is-paid span { color: #2f5a22; font-weight: 700; }
+.order-card-step { display: grid; gap: 0.5rem; padding: 0.7rem; border-radius: 0.5rem; background: #f7e7cf; }
+.order-card-step p { margin: 0; font-size: 0.9375rem; }
+.order-card-step small { font-size: 0.8125rem; color: var(--cocoa); }
+.order-card-step .order-link { justify-self: start; font-size: 0.875rem; }
+.order-card-step.is-payment { background: #fbe9b7; border: 1.5px solid var(--gold); }
+.order-card-fee { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; font-weight: 600; font-size: 0.9375rem; }
+.peso-input { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0 0.6rem; border: 1.5px solid rgb(21 18 17 / 0.35); border-radius: 0.5rem; background: #fffaf1; font-weight: 700; }
+.peso-input input { width: 4.5rem; padding: 0.55rem 0; border: 0; background: none; font: 700 1.0625rem var(--brand); text-align: right; }
+.peso-input input:focus { outline: none; }
+.peso-input:focus-within { outline: 2px solid var(--gold); outline-offset: 1px; }
+.order-card-who-delivers { margin: 0; padding: 0; border: 0; display: flex; gap: 0.4rem 1rem; flex-wrap: wrap; font-size: 0.9375rem; }
+.order-card-who-delivers legend { width: 100%; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.875rem; }
+.order-card-who-delivers label { display: inline-flex; align-items: center; gap: 0.35rem; }
+.order-card-who-delivers input { accent-color: var(--brown); }
+.order-card-link { display: grid; gap: 0.3rem; font-weight: 600; font-size: 0.875rem; }
+.order-card-link small { font-weight: 400; color: var(--cocoa); }
+.order-card-link input { padding: 0.55rem 0.65rem; border: 1.5px solid rgb(21 18 17 / 0.3); border-radius: 0.5rem; background: #fffaf1; font: 500 0.9375rem var(--brand); }
+.board-refund { color: #8a1f17; }
+
 /* ——— One order: details on the left, the chat on the right ——— */
 .staff-back { display: inline-block; margin-bottom: 0.5rem; color: var(--brown); font-weight: 600; font-size: 0.9375rem; text-decoration: none; }
 .staff-back:hover { text-decoration: underline; text-underline-offset: 0.2em; }
@@ -191,7 +217,39 @@
   display: grid; grid-template-columns: minmax(0, 24rem) minmax(0, 1fr); grid-template-rows: auto 1fr;
   grid-template-areas: "card chat" "link chat"; gap: 1.25rem; align-items: start;
 }
+.order-detail.has-delivery { grid-template-rows: auto auto 1fr; grid-template-areas: "card chat" "delivery chat" "link chat"; }
 .order-detail-card { grid-area: card; }
+.order-detail-delivery { grid-area: delivery; display: grid; gap: 0.85rem; }
+.order-detail-delivery h2 { margin: 0; }
+.delivery-facts { margin: 0; display: grid; gap: 0.5rem; font-size: 0.9375rem; }
+.delivery-facts div { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: 0.75rem; }
+.delivery-facts dt { font-weight: 700; font-size: 0.8125rem; color: var(--cocoa); }
+.delivery-facts dd { margin: 0; font-weight: 500; }
+.delivery-facts small { display: block; color: var(--cocoa); font-size: 0.8125rem; }
+.delivery-facts a { color: var(--brown); font-weight: 600; }
+.pin-map-canvas { border-radius: 0.5rem; border-color: rgb(21 18 17 / 0.3); }
+
+/* ——— Branch > Delivery ——— */
+.delivery-setup { display: grid; gap: 1rem; margin: 1.5rem 0; padding: 1.25rem 0; border-block: 1px solid rgb(21 18 17 / 0.12); }
+.delivery-setup h3 { margin: 0; }
+.delivery-setup h4 { margin: 0 0 0.4rem; font-weight: 700; font-size: 0.9375rem; }
+.store-pin { display: grid; gap: 0.4rem; }
+.store-pin .staff-help { margin: 0; }
+.staff-form label small { font-weight: 400; color: var(--cocoa); }
+.pay-setup .staff-help { margin-bottom: 0.75rem; }
+.pay-accounts { list-style: none; margin: 0 0 0.75rem; padding: 0; }
+.pay-accounts li { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) auto; gap: 0.9rem; align-items: start; padding: 0.8rem 0; border-bottom: 1px solid rgb(21 18 17 / 0.1); }
+.pay-accounts li.is-off { opacity: 0.6; }
+.pay-accounts-qr { width: 4.5rem; padding: 0.2rem; border: 1px solid rgb(21 18 17 / 0.15); border-radius: 0.35rem; background: #fff; }
+.pay-accounts-qr svg { display: block; width: 100%; height: auto; }
+.pay-accounts-noqr { display: grid; place-items: center; aspect-ratio: 1; font-size: 0.75rem; color: var(--cocoa); }
+.pay-accounts-info { display: grid; gap: 0.15rem; }
+.pay-accounts-title { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.pay-accounts-info small { color: var(--cocoa); font-size: 0.8125rem; }
+.pay-add summary { font-size: 0.9375rem; }
+.qr-upload { display: grid; gap: 0.4rem; }
+.qr-upload input[type="file"] { padding: 0.5rem 0; border: 0; background: none; font: 500 0.875rem var(--brand); }
+.qr-upload-preview { width: 7rem; height: auto; border: 1px solid rgb(21 18 17 / 0.2); border-radius: 0.35rem; }
 .order-detail-link { grid-area: link; }
 .order-detail-chat { grid-area: chat; }
 .relink { display: grid; gap: 0.75rem; }
@@ -211,7 +269,11 @@
 .board-done .num { text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 64rem) { .board { grid-template-columns: minmax(0, 1fr); } }
 /* On a phone the chat comes right after the order: replying matters more than the link */
-@media (max-width: 56rem) { .order-detail { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: "card" "chat" "link"; } }
+@media (max-width: 56rem) {
+  .order-detail { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: "card" "chat" "link"; }
+  .order-detail.has-delivery { grid-template-rows: none; grid-template-areas: "card" "chat" "delivery" "link"; }
+}
+@media (max-width: 40rem) { .pay-accounts li { grid-template-columns: 3.5rem minmax(0, 1fr); } .pay-accounts li .staff-actions { grid-column: 1 / -1; } .pay-accounts-qr { width: 3.5rem; } }
 @media (max-width: 40rem) { .board-done li { grid-template-columns: minmax(0, 1fr) auto; } }
 
 /* Online orders switch on the branch page */
