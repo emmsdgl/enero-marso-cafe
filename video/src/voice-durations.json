@@ -1,0 +1,29 @@
+{
+  "engine": "en-PH-RosaNeural",
+  "version": 1791838182303,
+  "lines": {
+    "pitch/01-hook": 2.767,
+    "pitch/02-problem": 3.633,
+    "pitch/03-pin": 3.919,
+    "pitch/04-order": 6.755,
+    "pitch/05-staff": 3.42,
+    "pitch/06-pay": 5.678,
+    "pitch/07-chat": 9.824,
+    "pitch/08-closes": 5.783,
+    "pitch/09-pickup": 2.823,
+    "pitch/10-pickup": 2.325,
+    "pitch/11-outro": 2.626,
+    "pitch/12-outro": 4.029,
+    "reelPickup/01-hook": 2.14,
+    "reelPickup/02-order": 7.36,
+    "reelPickup/03-chat": 4.785,
+    "reelPickup/04-ready": 4.293,
+    "reelPickup/05-cta": 2.626,
+    "reelDelivery/01-hook": 2.013,
+    "reelDelivery/02-order": 6.125,
+    "reelDelivery/03-pay": 2.91,
+    "reelDelivery/04-out": 3.514,
+    "reelDelivery/05-done": 4.288,
+    "reelDelivery/06-cta": 2.626
+  }
+}

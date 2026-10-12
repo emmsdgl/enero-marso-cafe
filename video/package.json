@@ -1,0 +1,29 @@
+{
+  "name": "enero-marso-video",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Motion graphics for the Enero Marso ordering website (Remotion)",
+  "scripts": {
+    "studio": "remotion studio --port 3100",
+    "still": "remotion still",
+    "typecheck": "tsc --noEmit",
+    "voice": "node scripts/voice.mjs",
+    "voice:draft": "node scripts/voice.mjs --draft",
+    "render:pitch": "remotion render Pitch out/enero-marso-pitch.mp4",
+    "render:reel-pickup": "remotion render Reel-pickup out/enero-marso-reel-pickup.mp4",
+    "render:reel-delivery": "remotion render Reel-delivery out/enero-marso-reel-delivery.mp4",
+    "render": "npm run render:pitch && npm run render:reel-pickup && npm run render:reel-delivery"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.535",
+    "@remotion/google-fonts": "4.0.535",
+    "@remotion/transitions": "4.0.535",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remotion": "4.0.535"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,9 @@
+# Rendered videos and stills
+out/
+
+# Your Azure Speech key (see .env.example)
+.env
+
+# Sound files: the music license forbids sharing the raw track, and the voice is made with `npm run voice` (see README)
+public/music/
+public/voice/
