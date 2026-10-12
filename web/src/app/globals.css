@@ -339,7 +339,7 @@ h1, h2, h3 { margin: 0; }
 .slip-course:first-child { border-top: 0; }
 .slip-course legend { float: left; width: 100%; padding: 0; margin-bottom: 0.9rem; font-weight: 700; font-size: 0.8125rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--brown); }
 .slip-course legend + * { clear: both; }
-.slip-course:disabled .pick-list, .slip-course:disabled .order-cats { opacity: 0.45; }
+.slip-course:disabled .menu-picks, .slip-course:disabled .order-cats { opacity: 0.45; }
 
 .order-choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 0.6rem; }
 .order-choice label, .order-toggle label { position: relative; cursor: pointer; }
@@ -365,27 +365,71 @@ h1, h2, h3 { margin: 0; }
 }
 .order-cats button[aria-pressed="true"] { background: var(--ink); color: var(--cream); }
 .order-cats button:not([aria-pressed="true"]):hover { background: var(--sand); }
-.checkout-when select, .pick-options select, .slip-fields input, .slip-fields textarea {
+.checkout-when select, .slip-fields input, .slip-fields textarea {
   border: 1.5px solid var(--ink); border-radius: 0; background: #fffaf1; color: var(--ink); font: 500 1rem/1.4 var(--brand);
 }
 .checkout-when select { width: 100%; padding: 0.85rem 0.9rem; font-weight: 600; cursor: pointer; }
-.checkout-when select:focus, .pick-options select:focus, .slip-fields input:focus, .slip-fields textarea:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.checkout-when select:focus, .slip-fields input:focus, .slip-fields textarea:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
 
 /* Items: name on the left, size, upsize, add-ons and Add on the right */
-.pick-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
-.pick-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem 1rem; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid rgb(21 18 17 / 0.2); }
-.pick-name b { font-weight: 600; font-size: 0.9375rem; letter-spacing: 0.08em; text-transform: uppercase; }
-.pick-name small { display: block; margin-top: 0.1rem; font-size: 0.8125rem; color: var(--cocoa); }
-.pick-list li.is-sold-out .pick-name b { color: var(--cocoa); }
-.pick-name .pick-sold { color: var(--brown); font-weight: 700; font-size: 0.6875rem; letter-spacing: 0.16em; text-transform: uppercase; }
-.pick-options { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem 0.75rem; flex-wrap: wrap; }
-.pick-options select { padding: 0.5rem 0.6rem; font-weight: 600; font-size: 0.8125rem; cursor: pointer; }
-.pick-price { font-weight: 700; color: var(--brown); font-variant-numeric: tabular-nums; }
+/* Branch, pickup or delivery, and time: one line until the customer wants to change it */
+.checkout-setup > summary {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.15rem 1rem;
+  padding: 1.15rem clamp(1.25rem, 3.5vw, 2.25rem); cursor: pointer; list-style: none;
+}
+.checkout-setup > summary::-webkit-details-marker { display: none; }
+.checkout-setup > summary:focus-visible { outline: 2px solid var(--gold); outline-offset: -4px; }
+.checkout-setup-label { grid-column: 1; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--brown); }
+.checkout-setup-main { grid-column: 1; display: grid; min-width: 0; }
+.checkout-setup-main b { font-weight: 700; font-size: 1.0625rem; }
+.checkout-setup-main small { font-size: 0.875rem; color: var(--cocoa); }
+.checkout-setup-change {
+  grid-column: 2; grid-row: 1 / span 2; padding: 0.55rem 1rem; border: 1.5px solid var(--ink); border-radius: 999px;
+  font-weight: 700; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; transition: background-color 0.2s ease, color 0.2s ease;
+}
+.checkout-setup > summary:hover .checkout-setup-change { background: var(--ink); color: var(--cream); }
+.checkout-setup-change .is-shut, .checkout-setup[open] .checkout-setup-change .is-open { display: none; }
+.checkout-setup[open] .checkout-setup-change .is-shut { display: inline; }
+.checkout-setup-body > .slip-course:first-child { border-top: 1px solid rgb(21 18 17 / 0.2); }
+.checkout-main .order-cats { scrollbar-width: none; padding-bottom: 0.6rem; -webkit-mask-image: linear-gradient(to right, #000 82%, transparent); mask-image: linear-gradient(to right, #000 82%, transparent); }
+.checkout-main .order-cats::-webkit-scrollbar { display: none; }
+/* The menu: one line per item; tapping + opens its sizes, upsize and add-ons */
+.menu-picks { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
+.menu-pick { border-bottom: 1px solid rgb(21 18 17 / 0.2); }
+.menu-pick-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 0.25rem 0.85rem; padding: 0.85rem 0; }
+summary.menu-pick-row { cursor: pointer; list-style: none; }
+summary.menu-pick-row::-webkit-details-marker { display: none; }
+summary.menu-pick-row:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.menu-pick-name { display: grid; min-width: 0; }
+.menu-pick-name b { font-weight: 600; font-size: 0.9375rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.menu-pick-name small { margin-top: 0.1rem; font-size: 0.8125rem; color: var(--cocoa); }
+.menu-pick-name .menu-pick-sold { color: var(--brown); font-weight: 700; font-size: 0.6875rem; letter-spacing: 0.16em; text-transform: uppercase; }
+.menu-pick.is-sold-out .menu-pick-name b, .menu-pick.is-sold-out .menu-pick-price { color: var(--cocoa); }
+.menu-pick-price { font-weight: 700; font-size: 0.875rem; color: var(--brown); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.menu-pick-toggle {
+  display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: var(--brown); color: var(--cream);
+  transition: transform 0.25s var(--ease), background-color 0.2s ease;
+}
+summary.menu-pick-row:hover .menu-pick-toggle { background: var(--ink); }
+details[open] > summary .menu-pick-toggle { transform: rotate(45deg); background: var(--ink); }
+.menu-pick-options { display: grid; gap: 0.85rem; padding: 0 0 1.1rem; }
+.menu-sizes { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0; padding: 0; border: 0; }
+.menu-size { position: relative; cursor: pointer; }
+.menu-size input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.menu-size span {
+  display: grid; gap: 0.05rem; min-width: 4.5rem; padding: 0.5rem 0.85rem; border: 1.5px solid var(--ink); border-radius: 0.6rem;
+  font-weight: 600; font-size: 0.8125rem; text-align: center; transition: background-color 0.15s ease, color 0.15s ease;
+}
+.menu-size small { font-weight: 700; color: var(--brown); font-variant-numeric: tabular-nums; }
+.menu-size input:checked + span { background: var(--ink); color: var(--cream); }
+.menu-size input:checked + span small { color: var(--gold); }
+.menu-size input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
+.menu-addons { display: flex; flex-wrap: wrap; gap: 0.45rem 1.1rem; align-items: center; }
+.menu-addons-title { flex-basis: 100%; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cocoa); }
+.menu-pick-add { justify-self: start; }
+@media (prefers-reduced-motion: reduce) { .menu-pick-toggle { transition: none; } }
 .pick-check { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
 .pick-check input { width: 1rem; height: 1rem; margin: 0; accent-color: var(--brown); }
-.pick-addons summary { cursor: pointer; list-style: none; font-size: 0.8125rem; font-weight: 600; color: var(--brown); text-decoration: underline; text-underline-offset: 0.2em; }
-.pick-addons summary::-webkit-details-marker { display: none; }
-.pick-addons > div { display: grid; gap: 0.35rem; margin-top: 0.5rem; }
 .pick-add {
   padding: 0.6rem 1.15rem; border: 0; border-radius: 999px; background: var(--brown); color: var(--cream); cursor: pointer;
   font: 700 0.75rem/1 var(--brand); letter-spacing: 0.16em; text-transform: uppercase; transition: background-color 0.2s ease;
@@ -467,6 +511,28 @@ h1, h2, h3 { margin: 0; }
 .track-alert:hover { background: var(--ink); color: var(--cream); }
 .track-chat { display: grid; gap: 0.85rem; padding-top: 1.25rem; border-top: 2px solid var(--ink); scroll-margin-top: 6rem; }
 .track-chat h2 { font-weight: 700; font-size: 0.75rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--brown); }
+.track-chat-intro { margin: -0.35rem 0 0; font-size: 0.9375rem; color: var(--cocoa); }
+label.track-alert { cursor: pointer; }
+/* From the pay step on: Pay (while paying), Messages and Your order as tabs */
+.track-tabs { display: flex; min-width: 0; margin: 0; padding: 0; border: 0; border-bottom: 2px solid var(--ink); }
+.track-tab {
+  position: relative; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; padding: 0.85rem 0.5rem;
+  cursor: pointer; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cocoa); transition: color 0.15s ease;
+}
+.track-tab:hover { color: var(--ink); }
+.track-tab:has(input:checked) { color: var(--ink); box-shadow: inset 0 -5px 0 var(--gold); }
+.track-tab:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (max-width: 30rem) { .track-tab { flex: 1 1 auto; padding-inline: 0.3rem; letter-spacing: 0.1em; white-space: nowrap; } }
+.track-tab b { min-width: 1.4rem; padding: 0.15rem 0.4rem; border-radius: 999px; background: var(--brown); color: var(--cream); font-size: 0.6875rem; letter-spacing: 0; text-align: center; }
+.track-pane { display: grid; gap: 1.25rem; margin-top: -0.5rem; }
+.track-pane .track-chat { position: relative; border-top: 0; padding-top: 0; }
+.track-pane .track-chat h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.track-pane-sum { margin: 0; font-weight: 600; }
+.track:has(.track-tab input[value="pay"]:checked) .track-pane:not([data-pane="pay"]),
+.track:has(.track-tab input[value="chat"]:checked) .track-pane:not([data-pane="chat"]),
+.track:has(.track-tab input[value="order"]:checked) .track-pane:not([data-pane="order"]) { display: none; }
+/* The Messages tab's badge already says so; the alert only shows on Your order, where it switches back */
+.track:has(.track-tab input[value="chat"]:checked) label.track-alert { display: none; }
 .track-lost { margin: 0; }
 .track-lost-list { margin: 0; padding-left: 1.2rem; }
 .track-lost-list a { color: var(--brown); font-weight: 600; text-underline-offset: 0.2em; }
@@ -587,32 +653,41 @@ h1, h2, h3 { margin: 0; }
 .pay-ref input { width: 100%; padding: 0.8rem 0.9rem; border: 1.5px solid var(--ink); background: #fff; color: var(--ink); font: 600 1.0625rem/1.3 var(--brand); letter-spacing: 0.06em; }
 .pay-ref input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
 
-/* "Your order is being prepared": while this phone has an order in progress */
-body:has(.order-bar) { padding-bottom: 5.5rem; }
-.order-bar {
-  position: fixed; z-index: 30; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem); translate: -50% 0;
-  display: flex; width: min(calc(100% - 2rem), 34rem); border: 1px solid rgb(207 157 87 / 0.45); border-radius: 999px;
-  background: var(--ink); color: var(--cream); box-shadow: 0 1rem 2rem -1rem rgb(21 18 17 / 0.75);
-  animation: order-bar-in 0.5s var(--ease);
+/* "Your order: being prepared", floating bottom right while this phone has an order in progress (OrderBubble) */
+body:has(.order-bubble) { padding-bottom: 5.5rem; }
+.order-bubbles {
+  position: fixed; z-index: 30; right: calc(env(safe-area-inset-right, 0px) + 1rem); bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  display: grid; justify-items: end; gap: 0.6rem; max-width: calc(100vw - 2rem); pointer-events: none;
 }
-.order-bar-link {
-  flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 0.85rem; align-items: center;
-  padding: 0.6rem 0.25rem 0.6rem 1.35rem; text-decoration: none;
+.order-bubble {
+  pointer-events: auto; display: flex; align-items: center; max-width: 22rem; border: 1px solid rgb(207 157 87 / 0.45); border-radius: 999px;
+  background: var(--ink); color: var(--cream); text-decoration: none; box-shadow: 0 1rem 2rem -1rem rgb(21 18 17 / 0.75);
+  animation: order-bubble-in 0.45s var(--ease);
 }
-.order-bar-code { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--card); }
-.order-bar-code b { color: var(--gold); letter-spacing: 0.1em; }
-.order-bar-status { grid-column: 1; font-weight: 600; font-size: 0.9375rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.order-bar-status em { font-style: normal; color: var(--gold); }
-.order-bar-go {
-  grid-column: 2; grid-row: 1 / 3; padding: 0.6rem 1rem; border-radius: 999px; background: var(--gold); color: var(--ink);
-  font-weight: 700; font-size: 0.75rem; letter-spacing: 0.16em; text-transform: uppercase; transition: background-color 0.2s ease;
+.order-bubble-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.75rem; padding: 0.4rem 0.25rem 0.4rem 0.4rem; color: inherit; text-decoration: none; }
+.order-bubble-icon { position: relative; flex: none; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%; background: var(--gold); color: var(--ink); }
+.order-bubble-icon svg { width: 1.5rem; height: 1.5rem; }
+.order-bubble.needs-you .order-bubble-icon { box-shadow: 0 0 0 2px var(--ink), 0 0 0 4px var(--cream); }
+.order-bubble-badge {
+  position: absolute; top: -0.35rem; right: -0.35rem; display: grid; place-items: center; min-width: 1.3rem; height: 1.3rem; padding: 0 0.3rem;
+  border: 2px solid var(--ink); border-radius: 999px; background: var(--brown); color: var(--cream); font-size: 0.6875rem; font-weight: 700; font-variant-numeric: tabular-nums;
 }
-.order-bar-link:hover .order-bar-go { background: var(--cream); }
-.order-bar-hide { flex: none; width: 2.9rem; display: grid; place-items: center; border: 0; border-radius: 0 999px 999px 0; background: none; color: var(--card); cursor: pointer; }
-.order-bar-hide svg { width: 1.1rem; height: 1.1rem; }
-.order-bar-hide:hover { color: var(--cream); }
-@keyframes order-bar-in { from { opacity: 0; translate: -50% 1rem; } }
-@media (prefers-reduced-motion: reduce) { .order-bar { animation: none; } }
+.order-bubble-text { display: grid; min-width: 0; }
+.order-bubble-code { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--card); white-space: nowrap; }
+.order-bubble-code b { color: var(--gold); letter-spacing: 0.08em; }
+.order-bubble-status { font-weight: 600; font-size: 0.9375rem; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.order-bubble-status em { font-style: normal; color: var(--gold); }
+.order-bubble-shrink { flex: none; align-self: stretch; width: 2.75rem; display: grid; place-items: center; border: 0; border-radius: 0 999px 999px 0; background: none; color: var(--card); cursor: pointer; }
+.order-bubble-shrink:hover { color: var(--cream); }
+.order-bubble.is-small { padding: 0.35rem; border-radius: 50%; }
+.order-bubble.is-small .order-bubble-icon { width: 3rem; height: 3rem; }
+.order-bubble.is-small:hover .order-bubble-icon, .order-bubble-link:hover .order-bubble-icon { background: var(--cream); }
+.order-bubble:focus-visible, .order-bubble-link:focus-visible, .order-bubble-shrink:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+/* The landing photo fills the screen with its links at the bottom: there, the bubble floats at the top instead */
+body:has(.landing) .order-bubbles { top: calc(env(safe-area-inset-top, 0px) + 1rem); bottom: auto; }
+body:has(.landing):has(.order-bubble) { padding-bottom: 0; }
+@keyframes order-bubble-in { from { opacity: 0; transform: translateY(1rem) scale(0.96); } }
+@media (prefers-reduced-motion: reduce) { .order-bubble { animation: none; } }
 .track-link { display: grid; gap: 0.85rem; padding: 1.1rem 1.2rem; background: var(--sand); }
 .track-link p { margin: 0; font-size: 0.9375rem; }
 .track-link-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
@@ -631,6 +706,7 @@ body:has(.order-bar) { padding-bottom: 5.5rem; }
     background: var(--ink); color: var(--cream); text-decoration: none; box-shadow: 0 0.75rem 1.5rem -0.75rem rgb(21 18 17 / 0.6);
   }
   .checkout-bar span { font-weight: 600; font-variant-numeric: tabular-nums; }
+  body:has(.checkout-bar) .order-bubbles { bottom: calc(env(safe-area-inset-bottom, 0px) + 5.25rem); }
   .checkout-bar b { font-size: 0.8125rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
   .site-header { grid-template-columns: 1fr auto; }
   .nav-toggle { display: grid; }
@@ -658,8 +734,6 @@ body:has(.order-bar) { padding-bottom: 5.5rem; }
   .purpose-sprig { display: none; }
 }
 @media (max-width: 34rem) {
-  .pick-list li { grid-template-columns: minmax(0, 1fr); }
-  .pick-options { justify-content: flex-start; }
   .track-steps li { padding-top: 0; height: 6px; }
   .track-steps li span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .track-step-now { display: block; }

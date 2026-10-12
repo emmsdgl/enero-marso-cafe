@@ -114,56 +114,99 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
   return (
     <form className="checkout" onSubmit={submit}>
       <div className="checkout-main">
-        <fieldset className="slip-course">
-          <legend>Branch</legend>
-          <div className="order-choice">
-            {branches.map((b) => {
-              const w = windows?.[b.id];
-              const status = !settings[b.id].ordersOpen
-                ? "Not taking online orders right now"
-                : !w
-                  ? "Checking hours…"
-                  : w.asap
-                    ? `Open now · last pickup ${w.slots.length ? manilaTime(w.slots.at(-1)!) : "soon"}`
-                    : w.opensAt && w.slots.length
-                      ? `Pre-order · opens ${manilaTime(w.opensAt)}`
-                      : "Closed for today";
-              return (
-                <label key={b.id} className={canOrder(b.id) ? undefined : "is-off"}>
-                  <input type="radio" name="branch" checked={branch === b.id} onChange={() => pickBranch(b.id)} />
-                  <span><b>{b.name}</b><small>{b.serves} · {status}</small></span>
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
+        {/* Branch, pickup or delivery, and time: one line until they want to change it (open by itself when this branch can't take orders) */}
+        <details className="checkout-setup" open={!!windows && !open}>
+          <summary>
+            <span className="checkout-setup-label">{how === "delivery" ? "Delivery from" : "Pickup at"}</span>
+            <span className="checkout-setup-main">
+              <b>{chosen.name}</b>
+              <small>
+                {!windows
+                  ? "Checking times…"
+                  : !open
+                    ? settings[branch].ordersOpen ? "Closed for the rest of today" : "Not taking online orders right now"
+                    : effectiveWhen === "asap"
+                      ? how === "delivery" ? "As soon as possible" : "As soon as it\u2019s ready, about 20 min"
+                      : `Today, ${manilaTime(new Date(effectiveWhen))}`}
+              </small>
+            </span>
+            <span className="checkout-setup-change"><span className="is-open">Change</span><span className="is-shut">Done</span></span>
+          </summary>
+          <div className="checkout-setup-body">
+                <fieldset className="slip-course">
+                  <legend>Branch</legend>
+                  <div className="order-choice">
+                    {branches.map((b) => {
+                      const w = windows?.[b.id];
+                      const status = !settings[b.id].ordersOpen
+                        ? "Not taking online orders right now"
+                        : !w
+                          ? "Checking hours…"
+                          : w.asap
+                            ? `Open now · last pickup ${w.slots.length ? manilaTime(w.slots.at(-1)!) : "soon"}`
+                            : w.opensAt && w.slots.length
+                              ? `Pre-order · opens ${manilaTime(w.opensAt)}`
+                              : "Closed for today";
+                      return (
+                        <label key={b.id} className={canOrder(b.id) ? undefined : "is-off"}>
+                          <input type="radio" name="branch" checked={branch === b.id} onChange={() => pickBranch(b.id)} />
+                          <span><b>{b.name}</b><small>{b.serves} · {status}</small></span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
 
-        <fieldset className="slip-course">
-          <legend>How</legend>
-          <div className="order-toggle">
-            <label>
-              <input type="radio" name="fulfillment" checked={how === "pickup"} onChange={() => setMode("pickup")} />
-              <span>Pickup</span>
-            </label>
-            {delivers(branch) ? (
-              <label>
-                <input type="radio" name="fulfillment" checked={how === "delivery"} onChange={() => setMode("delivery")} />
-                <span>Delivery</span>
-              </label>
-            ) : (
-              <label className="is-soon" aria-disabled="true">
-                <input type="radio" name="fulfillment" disabled />
-                <span>Delivery <small>unavailable</small></span>
-              </label>
-            )}
+                <fieldset className="slip-course">
+                  <legend>How</legend>
+                  <div className="order-toggle">
+                    <label>
+                      <input type="radio" name="fulfillment" checked={how === "pickup"} onChange={() => setMode("pickup")} />
+                      <span>Pickup</span>
+                    </label>
+                    {delivers(branch) ? (
+                      <label>
+                        <input type="radio" name="fulfillment" checked={how === "delivery"} onChange={() => setMode("delivery")} />
+                        <span>Delivery</span>
+                      </label>
+                    ) : (
+                      <label className="is-soon" aria-disabled="true">
+                        <input type="radio" name="fulfillment" disabled />
+                        <span>Delivery <small>unavailable</small></span>
+                      </label>
+                    )}
+                  </div>
+                  {how === "delivery" && (
+                    <p className="order-hint">
+                      {rules.freeWithin ? `Free within ${formatDistance(rules.freeWithin)} of the branch. ` : ""}
+                      We deliver up to {formatDistance(rules.maxDistance)}{rules.minOrder ? `, from ${peso(rules.minOrder)}` : ""}.
+                    </p>
+                  )}
+                </fieldset>
+
+                <fieldset className="slip-course">
+                  <legend>When</legend>
+                  {!windows ? (
+                    <p className="order-hint">Checking pickup times…</p>
+                  ) : open ? (
+                    <label className="checkout-when">
+                      <span className="sr-only">{how === "delivery" ? "Delivery time" : "Pickup time"}</span>
+                      <select value={effectiveWhen} onChange={(e) => setWhen(e.target.value)}>
+                        {win.asap && <option value="asap">{how === "delivery" ? "As soon as possible" : "As soon as it\u2019s ready (about 20 min)"}</option>}
+                        {win.slots.map((s) => (
+                          <option key={s.toISOString()} value={s.toISOString()}>Today, {manilaTime(s)}</option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <p className="checkout-note">
+                      {settings[branch].ordersOpen ? `${chosen.name} is closed for the rest of today.` : `${chosen.name} isn't taking online orders right now.`}{" "}
+                      {otherOpen ? `You can order from ${otherOpen.name} instead.` : "Please come back during opening hours, or drop by."}
+                    </p>
+                  )}
+                </fieldset>
           </div>
-          {how === "delivery" && (
-            <p className="order-hint">
-              {rules.freeWithin ? `Free within ${formatDistance(rules.freeWithin)} of the branch. ` : ""}
-              We deliver up to {formatDistance(rules.maxDistance)}{rules.minOrder ? `, from ${peso(rules.minOrder)}` : ""}.
-            </p>
-          )}
-        </fieldset>
+        </details>
 
         {how === "delivery" && (
           <fieldset className="slip-course delivery-where">
@@ -190,54 +233,61 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
           </fieldset>
         )}
 
-        <fieldset className="slip-course">
-          <legend>When</legend>
-          {!windows ? (
-            <p className="order-hint">Checking pickup times…</p>
-          ) : open ? (
-            <label className="checkout-when">
-              <span className="sr-only">{how === "delivery" ? "Delivery time" : "Pickup time"}</span>
-              <select value={effectiveWhen} onChange={(e) => setWhen(e.target.value)}>
-                {win.asap && <option value="asap">{how === "delivery" ? "As soon as possible" : "As soon as it\u2019s ready (about 20 min)"}</option>}
-                {win.slots.map((s) => (
-                  <option key={s.toISOString()} value={s.toISOString()}>Today, {manilaTime(s)}</option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <p className="checkout-note">
-              {settings[branch].ordersOpen ? `${chosen.name} is closed for the rest of today.` : `${chosen.name} isn't taking online orders right now.`}{" "}
-              {otherOpen ? `You can order from ${otherOpen.name} instead.` : "Please come back during opening hours, or drop by."}
-            </p>
-          )}
-        </fieldset>
-
         <fieldset className="slip-course" disabled={!open}>
-          <legend>Items</legend>
+          <legend>Menu</legend>
           <div className="order-cats" role="group" aria-label="Menu section">
             {menu.categories.map((c) => (
               <button key={c.id} type="button" aria-pressed={c.id === cat.id} onClick={() => setCatId(c.id)}>{c.title}</button>
             ))}
           </div>
           {cat.note && <p className="order-hint">{cat.note}</p>}
-          <ul className="pick-list">
+          <ul className="menu-picks">
             {cat.items.map((i) => {
               const ch = choiceOf(i);
               const addOns = cat.kind === "drink" ? menu.addOns.filter((a) => a.available) : [];
+              const prices = i.prices.flatMap((p) => (p == null ? [] : [p]));
+              const hasChoices = Boolean(cat.sizes) || cat.upsizePrice != null || addOns.length > 0;
+              const unit = (i.prices[ch.size] ?? 0) + (ch.upsize ? (cat.upsizePrice ?? 0) : 0) + addOns.filter((a) => ch.addons.includes(a.id)).reduce((n, a) => n + a.price, 0);
+              const name = (
+                <span className="menu-pick-name">
+                  <b>{i.name}</b>
+                  {!i.available ? <small className="menu-pick-sold">Sold out</small> : i.note && <small>{i.note}</small>}
+                </span>
+              );
+              const price = <span className="menu-pick-price">{prices.length > 1 ? `from ${peso(Math.min(...prices))}` : peso(prices[0] ?? 0)}</span>;
+              if (!i.available) return <li key={i.id} className="menu-pick is-sold-out"><div className="menu-pick-row">{name}{price}</div></li>;
+              if (!hasChoices) {
+                return (
+                  <li key={i.id} className="menu-pick">
+                    <div className="menu-pick-row">
+                      {name}
+                      {price}
+                      <button type="button" className="pick-add" onClick={() => add(cat, i)} aria-label={`Add ${i.name}`}>Add</button>
+                    </div>
+                  </li>
+                );
+              }
               return (
-                <li key={i.id} className={i.available ? undefined : "is-sold-out"}>
-                  <div className="pick-name">
-                    <b>{i.name}</b>
-                    {!i.available ? <small className="pick-sold">Sold out</small> : i.note && <small>{i.note}</small>}
-                  </div>
-                  {i.available && (
-                    <div className="pick-options">
-                      {cat.sizes ? (
-                        <select aria-label={`${i.name} size`} value={ch.size} onChange={(e) => setChoice(i, { size: Number(e.target.value) })}>
-                          {cat.sizes.map((s, n) => (i.prices[n] == null ? null : <option key={s} value={n}>{s} · {peso(i.prices[n]!)}</option>))}
-                        </select>
-                      ) : (
-                        <span className="pick-price">{peso(i.prices[0]!)}</span>
+                <li key={i.id} className="menu-pick">
+                  <details>
+                    <summary className="menu-pick-row">
+                      {name}
+                      {price}
+                      <span className="menu-pick-toggle"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span>
+                    </summary>
+                    <div className="menu-pick-options">
+                      {cat.sizes && (
+                        <fieldset className="menu-sizes">
+                          <legend className="sr-only">{i.name} size</legend>
+                          {cat.sizes.map((s, n) =>
+                            i.prices[n] == null ? null : (
+                              <label key={s} className="menu-size">
+                                <input type="radio" name={`size-${i.id}`} checked={ch.size === n} onChange={() => setChoice(i, { size: n })} />
+                                <span>{s}<small>{peso(i.prices[n]!)}</small></span>
+                              </label>
+                            ),
+                          )}
+                        </fieldset>
                       )}
                       {cat.upsizePrice != null && (
                         <label className="pick-check">
@@ -246,25 +296,23 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
                         </label>
                       )}
                       {addOns.length > 0 && (
-                        <details className="pick-addons">
-                          <summary>Add-ons{ch.addons.length ? ` (${ch.addons.length})` : ""}</summary>
-                          <div>
-                            {addOns.map((a) => (
-                              <label key={a.id} className="pick-check">
-                                <input
-                                  type="checkbox"
-                                  checked={ch.addons.includes(a.id)}
-                                  onChange={(e) => setChoice(i, { addons: e.target.checked ? [...ch.addons, a.id] : ch.addons.filter((x) => x !== a.id) })}
-                                />
-                                {a.name} +{peso(a.price)}
-                              </label>
-                            ))}
-                          </div>
-                        </details>
+                        <div className="menu-addons">
+                          <span className="menu-addons-title">Add-ons</span>
+                          {addOns.map((a) => (
+                            <label key={a.id} className="pick-check">
+                              <input
+                                type="checkbox"
+                                checked={ch.addons.includes(a.id)}
+                                onChange={(e) => setChoice(i, { addons: e.target.checked ? [...ch.addons, a.id] : ch.addons.filter((x) => x !== a.id) })}
+                              />
+                              {a.name} +{peso(a.price)}
+                            </label>
+                          ))}
+                        </div>
                       )}
-                      <button type="button" className="pick-add" onClick={() => add(cat, i)} aria-label={`Add ${i.name}`}>Add</button>
+                      <button type="button" className="pick-add menu-pick-add" onClick={() => add(cat, i)}>Add · {peso(unit)}</button>
                     </div>
-                  )}
+                  </details>
                 </li>
               );
             })}

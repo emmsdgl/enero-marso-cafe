@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { asc, inArray, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import ActionButton from "@/components/staff/ActionButton";
-import ActionForm from "@/components/staff/ActionForm";
+import EditSheet from "@/components/staff/EditSheet";
 import { branchNetworks, db, kiosks, staff } from "@/db";
 import { branches } from "@/data/branches";
 import { listBlocked } from "@/lib/blocklist";
@@ -13,9 +12,24 @@ import { getOrderSettings } from "@/lib/orders";
 import { listPaymentAccounts, qrSvg } from "@/lib/payments";
 import { clientIp, hashKioskToken, KIOSK_COOKIE, manila, requireStaff } from "@/lib/staff";
 import { unblockNumberAction } from "../orders/actions";
-import { registerKiosk, registerNetwork, removeNetwork, revokeKiosk, saveOrderCutoff, setOrdersOpen } from "../actions";
-import DeliverySetup, { type AccountRow } from "./DeliverySetup";
-import HoursSetup from "./HoursSetup";
+import {
+  type AccountRow,
+  BranchPinForm,
+  ClockInTablet,
+  ClockInWifi,
+  CutoffForm,
+  DeliveryAreaForm,
+  deliveryMissing,
+  deliverySummary,
+  DeliverySwitch,
+  HoursSummary,
+  OrdersSwitch,
+  PaymentAccounts,
+  SpecialDayForm,
+  SpecialDays,
+  specialDayText,
+  WeeklyHoursForm,
+} from "./BranchParts";
 
 export const metadata: Metadata = { title: "Branch setup" };
 
@@ -54,94 +68,100 @@ export default async function BranchSetupPage() {
         const here = bNets.some((n) => n.ip === ip);
         return (
           <section key={b.id} className="staff-card branch-setup" aria-labelledby={`b-${b.id}`}>
-            <h2 id={`b-${b.id}`}>{b.name}</h2>
-            <HoursSetup branchId={b.id} schedule={orderSettings[b.id].schedule} special={special[b.id] ?? []} />
-            <div className="orders-setup">
-              <h3>Online orders</h3>
-              {orderSettings[b.id].ordersOpen ? (
-                <p className="staff-note is-ok">Taking online orders. Pause them on a night you can&rsquo;t keep up; the order page tells customers right away.</p>
-              ) : (
-                <p className="staff-note is-warn">Not taking online orders. Customers see this branch as unavailable on the order page.</p>
-              )}
-              <div className="orders-setup-row">
-                <ActionButton
-                  action={setOrdersOpen.bind(null, b.id, !orderSettings[b.id].ordersOpen)}
-                  label={orderSettings[b.id].ordersOpen ? "Pause online orders" : "Start taking online orders"}
-                  confirm={orderSettings[b.id].ordersOpen ? "Pause online orders?" : undefined}
-                />
-                <ActionForm action={saveOrderCutoff} submit="Save" className="is-row" resetOnOk={false}>
-                  <input type="hidden" name="branch" value={b.id} />
-                  <label>
-                    Last online order
-                    <select name="cutoff" defaultValue={orderSettings[b.id].cutoff}>
-                      <option value={30}>30 minutes before closing</option>
-                      <option value={45}>45 minutes before closing</option>
-                      <option value={60}>1 hour before closing</option>
-                    </select>
-                  </label>
-                </ActionForm>
-              </div>
-            </div>
-            <DeliverySetup branchId={b.id} settings={orderSettings[b.id]} accounts={accounts.filter((a) => a.branchId === b.id)} />
-            <div className="staff-grid">
-              <div>
-                <h3>Branch Wi-Fi</h3>
-                <p className="staff-help">
-                  Staff can clock in from their own phone only while on a connection listed here. Register it while you&rsquo;re at the
-                  branch, connected to its Wi-Fi. If the internet provider changes the address, phones stop clocking in until you
-                  register it again; the tablet keeps working.
-                </p>
-                {bNets.length === 0 ? (
-                  <p className="staff-empty">No Wi-Fi registered yet.</p>
-                ) : (
-                  <ul className="setup-list">
-                    {bNets.map((n) => (
-                      <li key={n.id}>
-                        <span><b>{n.label}</b><small>{n.ip} · added {manila.date(n.createdAt)}</small></span>
-                        <ActionButton action={removeNetwork.bind(null, n.id)} label="Remove" confirm="Remove this Wi-Fi?" />
-                      </li>
-                    ))}
+            {(() => {
+              const s = orderSettings[b.id];
+              const acc = accounts.filter((a) => a.branchId === b.id);
+              const missing = deliveryMissing(s.delivery, acc);
+              const days = special[b.id] ?? [];
+              const shown = acc.filter((a) => a.active);
+              return (
+                <>
+                  <h2 id={`b-${b.id}`}>{b.name}</h2>
+                  <ul className="branch-rows">
+                    <li className="branch-row">
+                      <div className="branch-row-text">
+                        <h3>Opening hours</h3>
+                        <HoursSummary schedule={s.schedule} />
+                        <p className="branch-row-sub">{days.length ? `Next special day: ${specialDayText(days[0])}` : "No holidays or special days coming up"}</p>
+                      </div>
+                      <div className="branch-row-do">
+                        <EditSheet label="Change opening hours" title="Opening hours" subtitle={b.name}>
+                          <div className="branch-sheet"><WeeklyHoursForm branchId={b.id} schedule={s.schedule} inSheet /></div>
+                        </EditSheet>
+                        <EditSheet label="Holidays and special days" title="Holidays and special days" subtitle={b.name}>
+                          <div className="branch-sheet">
+                            <SpecialDays branchId={b.id} special={days} />
+                            <h4>Add a day</h4>
+                            <SpecialDayForm branchId={b.id} />
+                          </div>
+                        </EditSheet>
+                      </div>
+                    </li>
+                    <li className="branch-row">
+                      <div className="branch-row-text">
+                        <h3>Online orders</h3>
+                        <p className="branch-status"><span className={`dot${s.ordersOpen ? " is-on" : ""}`} aria-hidden="true" />{s.ordersOpen ? "Taking online orders" : "Paused: customers can’t order online"}</p>
+                        <p className="branch-row-sub">Last order {s.cutoff === 60 ? "1 hour" : `${s.cutoff} minutes`} before closing</p>
+                      </div>
+                      <div className="branch-row-do">
+                        <OrdersSwitch branchId={b.id} open={s.ordersOpen} />
+                        <EditSheet label="Change last-order time" title="Last online order" subtitle={b.name}>
+                          <div className="branch-sheet"><CutoffForm branchId={b.id} cutoff={s.cutoff} inSheet /></div>
+                        </EditSheet>
+                      </div>
+                    </li>
+                    <li className="branch-row">
+                      <div className="branch-row-text">
+                        <h3>Delivery</h3>
+                        <p className="branch-status">
+                          <span className={`dot${s.delivery.open ? " is-on" : ""}`} aria-hidden="true" />
+                          {s.delivery.open ? "Delivering" : missing.length ? `Not delivering yet: ${missing.join(" and ")} first` : "Not delivering: pickup only"}
+                        </p>
+                        <p className="branch-row-sub">{deliverySummary(s.delivery)}</p>
+                      </div>
+                      <div className="branch-row-do">
+                        <DeliverySwitch branchId={b.id} open={s.delivery.open} missing={missing} />
+                        <EditSheet label="Change delivery area" title="Delivery area" subtitle={b.name}>
+                          <div className="branch-sheet"><DeliveryAreaForm branchId={b.id} d={s.delivery} inSheet /></div>
+                        </EditSheet>
+                        <EditSheet label={s.delivery.store ? "Move the branch pin" : "Set the branch location"} title="Branch location" subtitle={b.name}>
+                          <div className="branch-sheet"><BranchPinForm branchId={b.id} d={s.delivery} inSheet /></div>
+                        </EditSheet>
+                      </div>
+                    </li>
+                    <li className="branch-row">
+                      <div className="branch-row-text">
+                        <h3>Payment accounts</h3>
+                        <p className="branch-row-sub">{shown.length ? `Customers see: ${shown.map((a) => a.label).join(", ")}` : "None yet: delivery customers have nowhere to pay"}</p>
+                      </div>
+                      <div className="branch-row-do">
+                        <EditSheet label="Manage payment accounts" title="Payment accounts" subtitle={b.name}>
+                          <div className="branch-sheet"><PaymentAccounts branchId={b.id} accounts={acc} /></div>
+                        </EditSheet>
+                      </div>
+                    </li>
+                    <li className="branch-row">
+                      <div className="branch-row-text">
+                        <h3>Clock-in</h3>
+                        <p className="branch-row-sub">
+                          {bNets.length ? `Phones: ${bNets.length === 1 ? "1 Wi-Fi" : `${bNets.length} Wi-Fi connections`} set up` : "Phones: no Wi-Fi set up"}
+                          {" · "}
+                          {bTabs.length ? `Tablet: ${bTabs.length === 1 ? "set up" : `${bTabs.length} set up`}` : "Tablet: not set up"}
+                        </p>
+                      </div>
+                      <div className="branch-row-do">
+                        <EditSheet label={bNets.length ? "Manage Wi-Fi" : "Set up Wi-Fi"} title="Clock-in from phones" subtitle={b.name}>
+                          <div className="branch-sheet"><ClockInWifi branchId={b.id} nets={bNets} here={here} /></div>
+                        </EditSheet>
+                        <EditSheet label={bTabs.length ? "Manage tablet" : "Set up the tablet"} title="Clock-in tablet" subtitle={b.name}>
+                          <div className="branch-sheet"><ClockInTablet branchId={b.id} tabs={bTabs} thisDevice={thisDevice} /></div>
+                        </EditSheet>
+                      </div>
+                    </li>
                   </ul>
-                )}
-                {here ? (
-                  <p className="staff-note is-ok">You&rsquo;re on this branch&rsquo;s registered Wi-Fi right now.</p>
-                ) : (
-                  <ActionForm action={registerNetwork} submit="Register the connection I'm on" className="is-row">
-                    <input type="hidden" name="branch" value={b.id} />
-                    <label>Name it<input name="label" defaultValue="Cafe Wi-Fi" /></label>
-                    <small className="staff-help">This device&rsquo;s connection: {ip}</small>
-                  </ActionForm>
-                )}
-              </div>
-
-              <div>
-                <h3>Clock-in tablet</h3>
-                <p className="staff-help">
-                  The tablet at the counter. Staff tap their name and type their PIN. Register it on the tablet itself, then open{" "}
-                  <b>/kiosk</b> and leave it there.
-                </p>
-                {bTabs.length === 0 ? (
-                  <p className="staff-empty">No tablet registered yet.</p>
-                ) : (
-                  <ul className="setup-list">
-                    {bTabs.map((t) => (
-                      <li key={t.id}>
-                        <span><b>{t.label}{t.id === thisDevice?.id && " (this device)"}</b><small>added {manila.date(t.createdAt)}</small></span>
-                        <ActionButton action={revokeKiosk.bind(null, t.id)} label="Remove" confirm="Stop this tablet clocking people in?" />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {thisDevice?.branchId === b.id ? (
-                  <p className="staff-note is-ok">This device is a clock-in tablet. <Link href="/kiosk">Open the clock-in screen</Link></p>
-                ) : (
-                  <ActionForm action={registerKiosk} submit="Make this device the clock-in tablet" className="is-row">
-                    <input type="hidden" name="branch" value={b.id} />
-                    <label>Name it<input name="label" defaultValue="Counter tablet" /></label>
-                  </ActionForm>
-                )}
-              </div>
-            </div>
+                </>
+              );
+            })()}
           </section>
         );
       })}

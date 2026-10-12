@@ -114,16 +114,18 @@ export default async function TimePage({ searchParams }: PageProps<"/staff/time"
                       {r.editedAt && <small title={r.note ?? undefined}>Edited{r.note ? `: ${r.note}` : ""}</small>}
                     </td>
                     {canEdit && (
-                      <td className="staff-actions">
-                        <details className="staff-edit">
-                          <summary>Fix</summary>
-                          <ActionForm action={saveEntry} submit="Save" resetOnOk={false}>
-                            <input type="hidden" name="id" value={r.id} />
-                            <label>Clock in<input type="datetime-local" name="clockIn" defaultValue={toManilaInput(r.clockIn)} required /></label>
-                            <label>Clock out<input type="datetime-local" name="clockOut" defaultValue={toManilaInput(r.clockOut)} /></label>
-                            <label>Reason<input name="note" defaultValue={r.note ?? ""} placeholder="Forgot to clock out" required /></label>
-                          </ActionForm>
-                        </details>
+                      <td>
+                        <div className="staff-actions">
+                          <details className="staff-edit">
+                            <summary>Fix</summary>
+                            <ActionForm action={saveEntry} submit="Save" resetOnOk={false}>
+                              <input type="hidden" name="id" value={r.id} />
+                              <label>Clock in<input type="datetime-local" name="clockIn" defaultValue={toManilaInput(r.clockIn)} required /></label>
+                              <label>Clock out<input type="datetime-local" name="clockOut" defaultValue={toManilaInput(r.clockOut)} /></label>
+                              <label>Reason<input name="note" defaultValue={r.note ?? ""} placeholder="Forgot to clock out" required /></label>
+                            </ActionForm>
+                          </details>
+                        </div>
                       </td>
                     )}
                   </tr>

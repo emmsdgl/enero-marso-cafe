@@ -28,6 +28,14 @@ export const ChevronIcon = ({ dir = "right", ...p }: P & { dir?: "left" | "right
   </svg>
 );
 
+export const CupIcon = (p: P) => (
+  <svg viewBox="0 0 24 24" strokeWidth={1.7} {...base} aria-hidden="true" {...p}>
+    <path d="M5 9h11v4.5a5.5 5.5 0 0 1-5.5 5.5v0A5.5 5.5 0 0 1 5 13.5V9z" />
+    <path d="M16 10.5h1.25a2.75 2.75 0 0 1 0 5.5H15.5" />
+    <path d="M8.5 3.5c-.7.9-.7 1.8 0 2.7M12 3.5c-.7.9-.7 1.8 0 2.7" />
+  </svg>
+);
+
 export const PinIcon = (p: P) => (
   <svg viewBox="0 0 24 24" strokeWidth={1.6} {...base} aria-hidden="true" {...p}>
     <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" />

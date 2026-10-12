@@ -79,7 +79,8 @@
 .staff-msg.is-ok { color: #2f5a22; }
 
 /* ——— Tables ——— */
-.staff-table-wrap { overflow-x: auto; margin: 0 -0.25rem; }
+/* Positioned so hidden column labels (.sr-only) stay inside the scroll box instead of widening the page */
+.staff-table-wrap { position: relative; overflow-x: auto; margin: 0 -0.25rem; }
 .staff-table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
 .staff-table th, .staff-table td { padding: 0.75rem 0.6rem; text-align: left; vertical-align: top; border-bottom: 1px solid rgb(21 18 17 / 0.1); }
 .staff-table thead th { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cocoa); border-bottom: 1.5px solid rgb(21 18 17 / 0.3); white-space: nowrap; }
@@ -99,6 +100,7 @@
 .tag.is-ok { background: #dcebd5; color: #24461a; }
 .tag.is-off { background: rgb(21 18 17 / 0.12); }
 .tag.is-sold { background: #f6dcd8; color: #6e1710; }
+.tag.is-warn { background: #f7e7cf; color: #5c3a0d; }
 
 /* ——— Today ——— */
 .clock-status { display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem 0.6rem; margin: 0 0 1.25rem; font-size: 1.125rem; }
@@ -235,6 +237,92 @@
 /* ——— Team > Past team members ——— */
 .team-past summary { cursor: pointer; font-weight: 700; }
 .team-past .staff-help { margin: 0.75rem 0 0.25rem; }
+.team-past small { overflow-wrap: anywhere; }
+/* The team list: search and filter chips (TeamFilter) over one line per person where there's room, two on a phone */
+.team-filter-bar { display: grid; gap: 0.7rem; }
+@media (min-width: 48rem) { .team-filter-bar { grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr); align-items: center; } }
+.team-search { position: relative; display: block; }
+.team-search svg { position: absolute; left: 0.85rem; top: 50%; translate: 0 -50%; color: var(--cocoa); pointer-events: none; }
+.team-search input {
+  width: 100%; padding: 0.7rem 0.8rem 0.7rem 2.5rem; border: 1.5px solid rgb(21 18 17 / 0.3); border-radius: 0.5rem;
+  background: #fffaf1; color: var(--ink); font: 500 1rem var(--brand);
+}
+.team-search input::placeholder { color: #7a5f52; }
+.team-search input:focus { outline: 2px solid var(--gold); outline-offset: 1px; border-color: var(--ink); }
+.team-chips { display: flex; gap: 0.4rem; min-width: 0; margin: 0; padding: 0.2rem; border: 0; overflow-x: auto; scrollbar-width: none; }
+.team-chips::-webkit-scrollbar { display: none; }
+/* Positioned so each chip's hidden radio stays inside it */
+.team-chip {
+  position: relative; display: inline-flex; align-items: center; gap: 0.45rem; flex: none; padding: 0.5rem 0.85rem;
+  border: 1.5px solid rgb(21 18 17 / 0.2); border-radius: 999px; font-size: 0.8125rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.team-chip:hover { border-color: var(--ink); }
+.team-chip > span { color: var(--cocoa); font-weight: 700; font-variant-numeric: tabular-nums; }
+.team-chip:has(input:checked) { background: var(--ink); border-color: var(--ink); color: var(--cream); }
+.team-chip:has(input:checked) > span { color: var(--gold); }
+.team-chip:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+.team-shown { margin: 0.6rem 0 0; font-size: 0.8125rem; color: var(--cocoa); }
+.team-shown:empty { margin: 0; }
+.team-empty { margin: 1rem 0 0; color: var(--cocoa); }
+.team-empty button { padding: 0; border: 0; background: none; color: var(--brown); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; }
+.team-list { list-style: none; margin: 0; padding: 0; container-type: inline-size; }
+/* Narrow: name and Manage, then the email on its own line, then role · branch with the tags after it (wrapping when needed) */
+.team-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.75rem; padding: 0.8rem 0; border-bottom: 1px solid rgb(21 18 17 / 0.1); }
+.team-row:last-child { border-bottom: 0; }
+.team-row.is-off :is(.team-who > *, .team-meta, .team-tags) { opacity: 0.55; }
+.team-who { display: contents; }
+.team-who b { flex: 1 1 0; min-width: 0; font-weight: 600; }
+.team-do { order: 1; }
+.team-who small { order: 2; flex-basis: 100%; color: var(--cocoa); font-size: 0.8125rem; overflow-wrap: anywhere; }
+.team-meta { order: 3; font-size: 0.875rem; }
+.team-tags { order: 4; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.5rem; }
+.team-pin { color: var(--cocoa); font-size: 0.8125rem; white-space: nowrap; }
+/* Wide: one line per person */
+@container (min-width: 38rem) {
+  .team-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto; grid-template-areas: "who meta tags do"; gap: 0.25rem 1rem; }
+  .team-who { grid-area: who; display: grid; min-width: 0; }
+  .team-meta { grid-area: meta; min-width: 0; }
+  .team-tags { grid-area: tags; }
+  .team-do { grid-area: do; justify-self: end; }
+}
+
+/* ——— Edit panel (EditSheet): centered over the page, a sheet from the bottom on a phone ——— */
+.edit-sheet {
+  width: min(26rem, calc(100vw - 2rem)); max-width: none; max-height: calc(100dvh - 2rem); margin: auto; padding: 0; border: 0; border-radius: 0.9rem;
+  background: var(--cream); color: var(--ink); box-shadow: 0 1.5rem 3rem -1rem rgb(21 18 17 / 0.5); overflow: auto; white-space: normal; text-align: left;
+  font-size: 0.9375rem; opacity: 0; transform: translateY(0.75rem);
+  transition: opacity 0.2s ease, transform 0.3s var(--ease), overlay 0.3s allow-discrete, display 0.3s allow-discrete;
+}
+.edit-sheet[open] { opacity: 1; transform: none; }
+@starting-style { .edit-sheet[open] { opacity: 0; transform: translateY(0.75rem); } }
+.edit-sheet::backdrop { background: rgb(21 18 17 / 0.45); }
+.edit-sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 1.1rem 1.25rem 0.9rem; border-bottom: 1px solid rgb(21 18 17 / 0.1); }
+.edit-sheet-head span { display: grid; gap: 0.1rem; min-width: 0; overflow-wrap: anywhere; }
+.edit-sheet-head b { font-size: 1rem; font-weight: 700; }
+.edit-sheet-head small { color: var(--cocoa); font-size: 0.8125rem; }
+.edit-sheet-close {
+  display: grid; place-items: center; flex: none; width: 2.5rem; height: 2.5rem; margin: -0.45rem -0.6rem 0 0;
+  border: 0; border-radius: 50%; background: transparent; color: var(--ink); cursor: pointer;
+}
+.edit-sheet-close:hover { background: rgb(21 18 17 / 0.08); }
+.edit-sheet-close:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.edit-sheet > .staff-form { padding: 1.1rem 1.25rem 1.3rem; }
+/* Other actions in the panel (PIN, remove), each a row below the form */
+.edit-sheet-part { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1rem; padding: 1rem 1.25rem; border-top: 1px solid rgb(21 18 17 / 0.1); }
+.edit-sheet-head + .edit-sheet-part { border-top: 0; }
+.edit-sheet-part > span:first-child { display: grid; gap: 0.15rem; flex: 1 1 12rem; min-width: 0; }
+.edit-sheet-part b { font-weight: 700; }
+.edit-sheet-part small { color: var(--cocoa); font-size: 0.8125rem; }
+.edit-sheet-part.is-danger b { color: #8a1f17; }
+.edit-sheet-part.is-danger .staff-inline > .staff-btn { border-color: rgb(138 31 23 / 0.45); color: #8a1f17; }
+.edit-sheet-part.is-danger .staff-inline > .staff-btn:hover:not(:disabled) { background: #8a1f17; border-color: #8a1f17; color: #fff; }
+@media (max-width: 40rem) {
+  .edit-sheet { width: 100%; margin: auto 0 0; border-radius: 1rem 1rem 0 0; padding-bottom: env(safe-area-inset-bottom); transform: translateY(100%); }
+  .edit-sheet[open] { transform: none; }
+  @starting-style { .edit-sheet[open] { transform: translateY(100%); } }
+}
+@media (prefers-reduced-motion: reduce) { .edit-sheet { transition: none; } }
 
 /* ——— Help ——— */
 .help { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 1.25rem; align-items: start; }
@@ -260,8 +348,6 @@
 .push-nudge { background: #fbf3e4; border-color: rgb(207 157 87 / 0.6); color: var(--cocoa); }
 
 /* ——— Branch > Opening hours ——— */
-.hours-setup { display: grid; gap: 0.75rem; margin: 0.25rem 0 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid rgb(21 18 17 / 0.12); }
-.hours-setup h3, .hours-setup h4, .hours-setup .staff-help { margin: 0; }
 .hours-now { margin: 0; display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; font-size: 0.9375rem; }
 .hours-now b { margin-right: 0.35rem; }
 .hours-table { border-collapse: collapse; width: 100%; max-width: 34rem; font-size: 0.9375rem; }
@@ -273,9 +359,6 @@
 .hours-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
 
 /* ——— Branch > Delivery ——— */
-.delivery-setup { display: grid; gap: 1rem; margin: 1.5rem 0; padding: 1.25rem 0; border-block: 1px solid rgb(21 18 17 / 0.12); }
-.delivery-setup h3 { margin: 0; }
-.delivery-setup h4 { margin: 0 0 0.4rem; font-weight: 700; font-size: 0.9375rem; }
 .store-pin { display: grid; gap: 0.4rem; }
 .store-pin .staff-help { margin: 0; }
 .staff-form label small { font-weight: 400; color: var(--cocoa); }
@@ -289,7 +372,6 @@
 .pay-accounts-info { display: grid; gap: 0.15rem; }
 .pay-accounts-title { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .pay-accounts-info small { color: var(--cocoa); font-size: 0.8125rem; }
-.pay-add summary { font-size: 0.9375rem; }
 .qr-upload { display: grid; gap: 0.4rem; }
 .qr-upload input[type="file"] { padding: 0.5rem 0; border: 0; background: none; font: 500 0.875rem var(--brand); }
 .qr-upload-preview { width: 7rem; height: auto; border: 1px solid rgb(21 18 17 / 0.2); border-radius: 0.35rem; }
@@ -320,11 +402,42 @@
 @media (max-width: 40rem) { .board-done li { grid-template-columns: minmax(0, 1fr) auto; } }
 
 /* Online orders switch on the branch page */
-.orders-setup { display: grid; gap: 0.75rem; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid rgb(21 18 17 / 0.1); }
-.orders-setup-row { display: flex; align-items: flex-end; gap: 1rem 1.5rem; flex-wrap: wrap; }
 
 /* ——— Branch setup ——— */
 .branch-setup h2 { font-size: 1.25rem; color: var(--brown); }
+/* One row per topic: what it's set to now, in plain words, and buttons that open a panel to change it */
+.branch-rows { list-style: none; margin: 0; padding: 0; display: grid; }
+.branch-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem 1.5rem; padding: 1.1rem 0; border-bottom: 1px solid rgb(21 18 17 / 0.1); }
+.branch-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.branch-row h3 { margin: 0 0 0.2rem; font-size: 1rem; }
+.branch-row-text { display: grid; gap: 0.25rem; min-width: 0; }
+.branch-row-sub { margin: 0; font-size: 0.875rem; color: var(--cocoa); }
+.branch-status { display: flex; align-items: flex-start; gap: 0.5rem; margin: 0; font-weight: 600; font-size: 0.9375rem; }
+.branch-status .dot { flex: none; margin-top: 0.3em; }
+.branch-row-do { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+@media (min-width: 48rem) {
+  .branch-row { grid-template-columns: minmax(0, 1fr) minmax(0, auto); align-items: center; }
+  .branch-row-do { justify-content: flex-end; max-width: 28rem; }
+}
+/* Inside the panels; the hours, map and payment panels get more room */
+.branch-sheet { display: grid; gap: 0.85rem; padding: 1.1rem 1.25rem 1.3rem; }
+.branch-sheet h4 { margin: 0.4rem 0 0; font-size: 0.9375rem; font-weight: 700; }
+.branch-sheet .setup-list, .branch-sheet .staff-help, .branch-sheet .staff-empty, .branch-sheet .pay-accounts { margin: 0; }
+.edit-sheet:has(.hours-table, .store-pin, .pay-accounts) { width: min(34rem, calc(100vw - 2rem)); }
+@media (max-width: 40rem) {
+  .edit-sheet:has(.hours-table, .store-pin, .pay-accounts) { width: 100%; }
+  /* Each day as a small block: the day and Closed on top, labeled Opens and Closes side by side */
+  .hours-table, .hours-table tbody { display: block; }
+  .hours-table thead { display: none; }
+  .hours-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "day off" "open close"; gap: 0.35rem 0.75rem; padding: 0.65rem 0; border-bottom: 1px solid rgb(21 18 17 / 0.1); }
+  .hours-table th, .hours-table td { padding: 0; }
+  .hours-table tbody th { grid-area: day; align-self: center; }
+  .hours-table .hours-off { grid-area: off; justify-self: end; }
+  .hours-table .hours-open { grid-area: open; }
+  .hours-table .hours-close { grid-area: close; }
+  .hours-table td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 0.2rem; font-size: 0.75rem; font-weight: 700; color: var(--cocoa); }
+  .hours-table input[type="time"] { min-width: 0; }
+}
 .setup-list { list-style: none; margin: 0 0 1rem; padding: 0; }
 .setup-list li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.65rem 0; border-bottom: 1px solid rgb(21 18 17 / 0.1); }
 .setup-list span { display: grid; }

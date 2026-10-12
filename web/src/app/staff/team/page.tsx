@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
 import ActionForm from "@/components/staff/ActionForm";
 import ActionButton from "@/components/staff/ActionButton";
+import EditSheet from "@/components/staff/EditSheet";
+import TeamFilter from "@/components/staff/TeamFilter";
 import { db, staff } from "@/db";
 import { branches } from "@/data/branches";
 import { manila, requireStaff } from "@/lib/staff";
@@ -51,31 +53,34 @@ export default async function TeamPage() {
 
       <section className="staff-card" aria-labelledby="list-title">
         <h2 id="list-title">{team.length} {team.length === 1 ? "person" : "people"}</h2>
-        <div className="staff-table-wrap">
-          <table className="staff-table">
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Role</th>
-                <th scope="col">Branch</th>
-                <th scope="col">Account</th>
-                <th scope="col">PIN</th>
-                <th scope="col"><span className="sr-only">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {team.map((p) => (
-                <tr key={p.id} className={p.active ? "" : "is-off"}>
-                  <th scope="row"><b>{p.name}</b><small>{p.email}</small></th>
-                  <td>{ROLES.find((r) => r.value === p.role)!.label.replace(" (both branches)", "")}</td>
-                  <td>{short(p.branchId)}</td>
-                  <td>{!p.active ? <span className="tag is-off">Deactivated</span> : p.authUserId ? <span className="tag is-ok">Active</span> : <span className="tag">Invited</span>}</td>
-                  <td>{p.pinHash ? "Set" : "—"}</td>
-                  <td className="staff-actions">
-                    {me.role === "admin" && (
-                      <details className="staff-edit">
-                        <summary>Edit</summary>
-                        <ActionForm action={updateStaff} submit="Save" resetOnOk={false}>
+        <TeamFilter
+          people={team.map((p) => ({
+            id: p.id,
+            text: `${p.name} ${p.email}`.toLowerCase(),
+            tags: [p.branchId ?? "both", p.role, ...(!p.authUserId || (p.role !== "admin" && !p.pinHash) ? ["setup"] : []), ...(p.active ? [] : ["off"])],
+          }))}
+          filters={[
+            { id: "all", label: "Everyone", count: team.length },
+            ...(me.role === "admin" ? branches.map((b) => ({ id: b.id as string, label: short(b.id), count: team.filter((p) => p.branchId === b.id).length })) : []),
+            { id: "manager", label: "Managers", count: team.filter((p) => p.role === "manager").length },
+            { id: "setup", label: "Needs setup", count: team.filter((p) => !p.authUserId || (p.role !== "admin" && !p.pinHash)).length },
+            { id: "off", label: "Deactivated", count: team.filter((p) => !p.active).length },
+          ].filter((f) => f.id === "all" || f.count > 0)}
+        >
+          <ul className="team-list">
+            {[...team].sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
+              <li key={p.id} data-person-id={p.id} className={p.active ? "team-row" : "team-row is-off"}>
+                <span className="team-who"><b>{p.name}</b><small>{p.email}</small></span>
+                <span className="team-meta">{ROLES.find((r) => r.value === p.role)!.label.replace(" (both branches)", "")} · {p.branchId ? short(p.branchId) : "Both branches"}</span>
+                <span className="team-tags">
+                  {!p.active ? <span className="tag is-off">Deactivated</span> : p.authUserId ? <span className="tag is-ok">Active</span> : <span className="tag">Invited</span>}
+                  {p.pinHash ? <span className="team-pin">PIN set</span> : p.role !== "admin" && <span className="tag is-warn">No PIN yet</span>}
+                </span>
+                <span className="team-do">
+                  {(me.role === "admin" || (p.pinHash && p.role === "employee")) && (
+                    <EditSheet label="Manage" title={p.name} subtitle={p.email}>
+                      {me.role === "admin" && (
+                        <ActionForm action={updateStaff} submit="Save" resetOnOk={false} closeOnOk>
                           <input type="hidden" name="id" value={p.id} />
                           <label>Role
                             <select name="role" defaultValue={p.role}>{ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</select>
@@ -85,24 +90,30 @@ export default async function TeamPage() {
                           </label>
                           <label className="staff-check"><input type="checkbox" name="active" defaultChecked={p.active} /> Can sign in and clock in</label>
                         </ActionForm>
-                      </details>
-                    )}
-                    {p.pinHash && (me.role === "admin" || p.role === "employee") && (
-                      <ActionButton action={clearPin.bind(null, p.id)} label="Reset PIN" confirm={`Clear ${p.name}'s PIN?`} />
-                    )}
-                    {me.role === "admin" && p.role !== "admin" && p.id !== me.id && (
-                      <ActionButton
-                        action={removeStaff.bind(null, p.id)}
-                        label="Remove"
-                        confirm={`Remove ${p.name}? They lose access at once; their hours stay.`}
-                      />
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      )}
+                      {p.pinHash && (me.role === "admin" || p.role === "employee") && (
+                        <div className="edit-sheet-part">
+                          <span><b>Clock-in PIN</b><small>Clears the PIN they use on the clock-in tablet.</small></span>
+                          <ActionButton action={clearPin.bind(null, p.id)} label="Reset PIN" confirm={`Clear ${p.name}'s PIN?`} />
+                        </div>
+                      )}
+                      {me.role === "admin" && p.role !== "admin" && p.id !== me.id && (
+                        <div className="edit-sheet-part is-danger">
+                          <span><b>Remove from team</b><small>They lose access at once; their hours stay.</small></span>
+                          <ActionButton
+                            action={removeStaff.bind(null, p.id)}
+                            label="Remove"
+                            confirm={`Remove ${p.name}? They lose access at once; their hours stay.`}
+                          />
+                        </div>
+                      )}
+                    </EditSheet>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </TeamFilter>
       </section>
 
       {past.length > 0 && (

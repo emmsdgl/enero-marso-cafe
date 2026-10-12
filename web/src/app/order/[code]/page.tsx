@@ -88,6 +88,75 @@ export default async function TrackOrderPage({ params, searchParams }: PageProps
   const fee = order.deliveryFee === null ? "The cafe confirms it" : order.deliveryFee === 0 ? "Free" : peso(order.deliveryFee);
   const canCancel = order.paymentStatus === "unpaid" && (order.status === "pending" || order.status === "awaiting_payment");
 
+  // From the pay step on, the page is tabs, so the QR (then the chat) isn't buried under the order details:
+  // Pay, Messages and Your order while paying; Messages and Your order once paid (delivery) or accepted (pickup)
+  const settled = !["pending", "awaiting_payment", "cancelled"].includes(order.status);
+  const tabbed = paying || settled;
+  const count = order.items.reduce((sum, i) => sum + i.qty, 0);
+  const paid = delivery && order.paymentStatus === "verified";
+  const summary = `${count} ${count === 1 ? "item" : "items"} · ${peso(order.total)}${paid ? " · paid" : !delivery && order.status !== "done" ? " · pay at the counter" : ""}`;
+
+  const details = (
+    <>
+      <dl className="track-facts">
+        {delivery ? (
+          <div>
+            <dt>Deliver to</dt>
+            <dd>
+              {order.address}
+              <small>{[order.landmark, order.distanceMeters != null && `about ${formatDistance(order.distanceMeters)} from ${cafe}`].filter(Boolean).join(" · ")}</small>
+            </dd>
+          </div>
+        ) : (
+          <div><dt>Pickup</dt><dd>{branch.name}<small>{branch.address} · <a href={branch.mapsUrl} target="_blank" rel="noopener noreferrer">Directions</a></small></dd></div>
+        )}
+        <div><dt>When</dt><dd>{when}</dd></div>
+        <div><dt>Name</dt><dd>{order.customerName}<small>{formatPhone(order.customerPhone)}</small></dd></div>
+        {order.notes && <div><dt>Notes</dt><dd>{order.notes}</dd></div>}
+      </dl>
+      <ul className="track-items">
+        {order.items.map((i) => (
+          <li key={i.id}>
+            <span>
+              {i.qty} × {i.name}
+              {(i.size || i.upsized || i.addons.length > 0) && (
+                <small>{[i.size, i.upsized && "upsized", ...i.addons.map((a) => `+ ${a.name}`)].filter(Boolean).join(" · ")}</small>
+              )}
+            </span>
+            <span>{peso(i.lineTotal)}</span>
+          </li>
+        ))}
+        {delivery && <li className="track-fee"><span>Delivery</span><span>{fee}</span></li>}
+        <li className="track-total"><span>Total</span><span>{peso(order.total)}</span></li>
+      </ul>
+      {!delivery && order.status !== "cancelled" && order.status !== "done" && <p className="track-pay">Pay at the counter when you pick up: cash or GCash.</p>}
+      {delivery && order.status === "pending" && (
+        <p className="track-pay">You&rsquo;ll pay by GCash, Maya or bank transfer once the cafe confirms the delivery fee. Nothing to pay yet.</p>
+      )}
+      {paid && order.status !== "cancelled" && <p className="track-pay">Paid. Thank you!</p>}
+    </>
+  );
+  const chatSection = (
+    <section id="messages" className="track-chat" aria-labelledby="messages-title">
+      <h2 id="messages-title">Messages</h2>
+      {settled && chat.open && <p className="track-chat-intro">Questions about your order? Message {cafe} here.</p>}
+      <CustomerChat
+        code={order.code}
+        token={token}
+        lines={lines}
+        open={chat.open}
+        unread={unread}
+        branchName={cafe}
+        closedNote={
+          <>
+            {chat.reason === "cancelled" ? "This chat closed when the order was cancelled." : `This chat closed at ${at(chat.closesAt)}.`}{" "}
+            For anything else, message <a href={branch.socials.facebook} target="_blank" rel="noopener noreferrer">{branch.name}</a> on Facebook.
+          </>
+        }
+      />
+    </section>
+  );
+
   return (
     <>
       <SiteHeader />
@@ -101,11 +170,17 @@ export default async function TrackOrderPage({ params, searchParams }: PageProps
             {order.status === "out_for_delivery" && order.trackingUrl && (
               <a href={order.trackingUrl} className="track-rider" target="_blank" rel="noopener noreferrer">Track your rider</a>
             )}
-            {unread > 0 && (
-              <a href="#messages" className="track-alert">
-                {unread === 1 ? "New message" : `${unread} new messages`} from {cafe}
-              </a>
-            )}
+            {unread > 0 &&
+              (tabbed ? (
+                // Switches to the Messages tab
+                <label htmlFor="track-tab-chat" className="track-alert">
+                  {unread === 1 ? "New message" : `${unread} new messages`} from {cafe}
+                </label>
+              ) : (
+                <a href="#messages" className="track-alert">
+                  {unread === 1 ? "New message" : `${unread} new messages`} from {cafe}
+                </a>
+              ))}
           </header>
 
           {order.status !== "cancelled" && (
@@ -123,71 +198,48 @@ export default async function TrackOrderPage({ params, searchParams }: PageProps
             </p>
           )}
 
-          {paying && (
-            <PayPanel
-              code={order.code}
-              token={token}
-              total={order.total}
-              accounts={accounts}
-              sent={order.paymentStatus === "submitted" ? order.gcashRef : null}
-            />
-          )}
-
-          <dl className="track-facts">
-            {delivery ? (
-              <div>
-                <dt>Deliver to</dt>
-                <dd>
-                  {order.address}
-                  <small>{[order.landmark, order.distanceMeters != null && `about ${formatDistance(order.distanceMeters)} from ${cafe}`].filter(Boolean).join(" · ")}</small>
-                </dd>
+          {tabbed ? (
+            <>
+              <fieldset className="track-tabs">
+                <legend className="sr-only">Show</legend>
+                {paying && (
+                  <label className="track-tab">
+                    <input type="radio" name="track-tab" value="pay" defaultChecked className="sr-only" />
+                    Pay
+                  </label>
+                )}
+                <label className="track-tab">
+                  <input type="radio" name="track-tab" id="track-tab-chat" value="chat" defaultChecked={!paying} className="sr-only" />
+                  Messages{unread > 0 && <b>{unread}</b>}
+                </label>
+                <label className="track-tab">
+                  <input type="radio" name="track-tab" value="order" className="sr-only" />
+                  Your order
+                </label>
+              </fieldset>
+              {paying && (
+                <div className="track-pane" data-pane="pay">
+                  <PayPanel
+                    code={order.code}
+                    token={token}
+                    total={order.total}
+                    accounts={accounts}
+                    sent={order.paymentStatus === "submitted" ? order.gcashRef : null}
+                  />
+                </div>
+              )}
+              <div className="track-pane" data-pane="chat">{chatSection}</div>
+              <div className="track-pane" data-pane="order">
+                <p className="track-pane-sum">{summary}</p>
+                {details}
               </div>
-            ) : (
-              <div><dt>Pickup</dt><dd>{branch.name}<small>{branch.address} · <a href={branch.mapsUrl} target="_blank" rel="noopener noreferrer">Directions</a></small></dd></div>
-            )}
-            <div><dt>When</dt><dd>{when}</dd></div>
-            <div><dt>Name</dt><dd>{order.customerName}<small>{formatPhone(order.customerPhone)}</small></dd></div>
-            {order.notes && <div><dt>Notes</dt><dd>{order.notes}</dd></div>}
-          </dl>
-
-          <ul className="track-items">
-            {order.items.map((i) => (
-              <li key={i.id}>
-                <span>
-                  {i.qty} × {i.name}
-                  {(i.size || i.upsized || i.addons.length > 0) && (
-                    <small>{[i.size, i.upsized && "upsized", ...i.addons.map((a) => `+ ${a.name}`)].filter(Boolean).join(" · ")}</small>
-                  )}
-                </span>
-                <span>{peso(i.lineTotal)}</span>
-              </li>
-            ))}
-            {delivery && <li className="track-fee"><span>Delivery</span><span>{fee}</span></li>}
-            <li className="track-total"><span>Total</span><span>{peso(order.total)}</span></li>
-          </ul>
-          {!delivery && order.status !== "cancelled" && order.status !== "done" && <p className="track-pay">Pay at the counter when you pick up: cash or GCash.</p>}
-          {delivery && order.status === "pending" && (
-            <p className="track-pay">You&rsquo;ll pay by GCash, Maya or bank transfer once the cafe confirms the delivery fee. Nothing to pay yet.</p>
+            </>
+          ) : (
+            <>
+              {details}
+              {chatSection}
+            </>
           )}
-          {delivery && order.paymentStatus === "verified" && order.status !== "cancelled" && <p className="track-pay">Paid. Thank you!</p>}
-
-          <section id="messages" className="track-chat" aria-labelledby="messages-title">
-            <h2 id="messages-title">Messages</h2>
-            <CustomerChat
-              code={order.code}
-              token={token}
-              lines={lines}
-              open={chat.open}
-              unread={unread}
-              branchName={cafe}
-              closedNote={
-                <>
-                  {chat.reason === "cancelled" ? "This chat closed when the order was cancelled." : `This chat closed at ${at(chat.closesAt)}.`}{" "}
-                  For anything else, message <a href={branch.socials.facebook} target="_blank" rel="noopener noreferrer">{branch.name}</a> on Facebook.
-                </>
-              }
-            />
-          </section>
 
           {order.status !== "done" && order.status !== "cancelled" && <OrderLink code={order.code} />}
           {canCancel && <CancelOrder code={order.code} token={token} />}

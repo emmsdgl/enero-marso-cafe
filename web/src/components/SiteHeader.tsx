@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CloseIcon, MenuIcon } from "./Icons";
-import OrderBanner from "./order/OrderBanner";
+import OrderBubble from "./order/OrderBubble";
 
 const links = [
   { href: "/home", label: "Home" },
@@ -62,7 +62,7 @@ export default function SiteHeader({ overlay = false }: { overlay?: boolean }) {
           </button>
         </div>
       </header>
-      <OrderBanner />
+      <OrderBubble />
     </>
   );
 }

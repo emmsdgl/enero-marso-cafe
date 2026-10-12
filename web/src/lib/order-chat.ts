@@ -118,7 +118,7 @@ export async function staffUnread(orderIds: string[]): Promise<Record<string, Un
 
 export type Glance =
   | { code: string; found: false }
-  | { code: string; found: true; status: OrderStatus; fulfillment: Fulfillment; unread: number; chatOpen: boolean };
+  | { code: string; found: true; status: OrderStatus; fulfillment: Fulfillment; unread: number; chatOpen: boolean; chatClosesAt: string };
 
 /**
  * For the "order in progress" bar on the customer's phone: status and new messages for the
@@ -138,6 +138,10 @@ export async function glanceOrders(list: { code: string; token: string }[]): Pro
   return list.map((l, i) => {
     const o = mine[i];
     if (!o) return { code: l.code, found: false };
-    return { code: o.code, found: true, status: o.status, fulfillment: o.fulfillment, unread: unread.filter((m) => m.orderId === o.id).length, chatOpen: chatState(o).open };
+    const chat = chatState(o);
+    return {
+      code: o.code, found: true, status: o.status, fulfillment: o.fulfillment,
+      unread: unread.filter((m) => m.orderId === o.id).length, chatOpen: chat.open, chatClosesAt: chat.closesAt.toISOString(),
+    };
   });
 }
