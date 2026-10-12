@@ -276,6 +276,8 @@ export const orders = pgTable(
     // Chat: when each side last looked, so the other side's newer messages count as unread
     staffLastReadAt: timestamp("staff_last_read_at", { withTimezone: true }),
     customerLastReadAt: timestamp("customer_last_read_at", { withTimezone: true }),
+    // After a year the customer's details are removed (lib/retention.ts); totals stay for the books
+    anonymizedAt: timestamp("anonymized_at", { withTimezone: true }),
   },
   (t) => [
     index("orders_branch_created").on(t.branchId, t.createdAt),
@@ -348,6 +350,14 @@ export const pushSubscriptions = pgTable(
   },
   (t) => [index("push_subscriptions_staff").on(t.staffId)],
 );
+
+/** Numbers that can't order online (pranks, repeated no-shows). Managers block them from an order's page. */
+export const blockedPhones = pgTable("blocked_phones", {
+  phone: text("phone").primaryKey(), // 09XXXXXXXXX
+  reason: text("reason").notNull(),
+  blockedBy: uuid("blocked_by").references(() => staff.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export type Staff = typeof staff.$inferSelect;
 export type Role = Staff["role"];

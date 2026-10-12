@@ -6,9 +6,22 @@ const nextConfig: NextConfig = {
   // The QR reader for payment accounts: loaded from node_modules at run time, with its engine file
   serverExternalPackages: ["zxing-wasm"],
   outputFileTracingIncludes: { "/staff/branch": ["./node_modules/zxing-wasm/dist/reader/zxing_reader.wasm"] },
-  // A customer's order link carries their private token: never pass it on, never index it
   async headers() {
     return [
+      // Every page: no framing by other sites (clickjacking), no type guessing, only the features we use
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), payment=(), geolocation=(self)" },
+          { key: "Strict-Transport-Security", value: "max-age=63072000" },
+        ],
+      },
+      // A customer's order link carries their private token: never pass it on, never index it.
+      // Listed after the rule above, so its Referrer-Policy wins for order pages.
       {
         source: "/order/:code",
         headers: [

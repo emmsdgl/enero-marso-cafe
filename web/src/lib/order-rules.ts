@@ -144,3 +144,6 @@ export function unreadCount(messages: { sender: Sender; createdAt: Date }[], sid
   const from: Sender = side === "staff" ? "customer" : "staff";
   return messages.filter((m) => m.sender === from && (!lastReadAt || m.createdAt > lastReadAt)).length;
 }
+
+/** Why a manager blocked a number from ordering online (lib/blocklist.ts) */
+export const BLOCK_REASONS = ["Didn't pick up the order", "Prank or fake order", "Abusive messages"] as const;

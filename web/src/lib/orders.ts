@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, gte, inArray } from "drizzle-orm";
 import { branches as branchDefs } from "@/data/branches";
-import { branches, db, orderItems, orderMessages, orders, paymentAccounts, type Order, type OrderItem, type Staff } from "@/db";
+import { blockedPhones, branches, db, orderItems, orderMessages, orders, paymentAccounts, type Order, type OrderItem, type Staff } from "@/db";
 import { checkDelivery, isLatLng, MAX_DELIVERY_FEE, plusCode, type DeliverySettings } from "./delivery";
 import type { Schedule } from "./hours";
 import { loadSchedules } from "./hours-store";
@@ -83,10 +83,13 @@ export async function placeOrder(input: PlaceOrderInput, ip: string): Promise<{ 
   if (notes && notes.length > 300) return { ok: false, error: "Keep the notes under 300 characters." };
 
   const hourAgo = new Date(now.getTime() - 3_600_000);
-  const [[byIp], [byPhone]] = await Promise.all([
+  const [[byIp], [byPhone], [blocked]] = await Promise.all([
     db.select({ n: count() }).from(orders).where(and(eq(orders.createdIp, ip), gte(orders.createdAt, hourAgo))),
     db.select({ n: count() }).from(orders).where(and(eq(orders.customerPhone, phone), gte(orders.createdAt, hourAgo))),
+    // Managers block numbers after pranks or repeated no-shows (lib/blocklist.ts)
+    db.select({ phone: blockedPhones.phone }).from(blockedPhones).where(eq(blockedPhones.phone, phone)).limit(1),
   ]);
+  if (blocked) return fail("We can't take online orders from this number. Please call or visit the branch.");
   if (byIp.n >= PER_IP_PER_HOUR || byPhone.n >= PER_PHONE_PER_HOUR) {
     return { ok: false, error: "You've placed several orders in the last hour. To add more, please call the branch." };
   }

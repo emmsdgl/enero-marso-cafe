@@ -23,7 +23,9 @@ export default function SiteFooter() {
           ))}
         </p>
       </div>
-      <p className="footer-fine">© {new Date().getFullYear()} Enero Marso Cafe · Taguig</p>
+      <p className="footer-fine">
+        © {new Date().getFullYear()} Enero Marso Cafe · Taguig · <Link href="/privacy">Privacy</Link>
+      </p>
     </footer>
   );
 }

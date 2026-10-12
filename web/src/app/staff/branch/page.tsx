@@ -6,10 +6,13 @@ import ActionButton from "@/components/staff/ActionButton";
 import ActionForm from "@/components/staff/ActionForm";
 import { branchNetworks, db, kiosks, staff } from "@/db";
 import { branches } from "@/data/branches";
+import { listBlocked } from "@/lib/blocklist";
 import { upcomingSpecialDays } from "@/lib/hours-store";
+import { formatPhone } from "@/lib/pricing";
 import { getOrderSettings } from "@/lib/orders";
 import { listPaymentAccounts, qrSvg } from "@/lib/payments";
 import { clientIp, hashKioskToken, KIOSK_COOKIE, manila, requireStaff } from "@/lib/staff";
+import { unblockNumberAction } from "../orders/actions";
 import { registerKiosk, registerNetwork, removeNetwork, revokeKiosk, saveOrderCutoff, setOrdersOpen } from "../actions";
 import DeliverySetup, { type AccountRow } from "./DeliverySetup";
 import HoursSetup from "./HoursSetup";
@@ -23,12 +26,13 @@ export default async function BranchSetupPage() {
   const token = (await cookies()).get(KIOSK_COOKIE)?.value;
   const thisDeviceHash = token ? hashKioskToken(token) : null;
 
-  const [nets, tabs, orderSettings, accountList, special] = await Promise.all([
+  const [nets, tabs, orderSettings, accountList, special, blocked] = await Promise.all([
     db.select().from(branchNetworks).orderBy(asc(branchNetworks.createdAt)),
     db.select().from(kiosks).where(isNull(kiosks.revokedAt)).orderBy(asc(kiosks.createdAt)),
     getOrderSettings(),
     listPaymentAccounts(mine.map((b) => b.id)),
     upcomingSpecialDays(mine.map((b) => b.id)),
+    listBlocked(),
   ]);
   const thisDevice = tabs.find((t) => t.tokenHash === thisDeviceHash);
   const editorIds = [...new Set(accountList.flatMap((a) => (a.updatedBy ? [a.updatedBy] : [])))];
@@ -141,6 +145,23 @@ export default async function BranchSetupPage() {
           </section>
         );
       })}
+
+      <section className="staff-card" aria-labelledby="blocked-title">
+        <h2 id="blocked-title">Blocked numbers</h2>
+        <p className="staff-help">These numbers can&rsquo;t order online at either branch. Block a number from its order&rsquo;s page.</p>
+        {blocked.length === 0 ? (
+          <p className="staff-empty">No blocked numbers.</p>
+        ) : (
+          <ul className="setup-list">
+            {blocked.map((b) => (
+              <li key={b.phone}>
+                <span><b>{formatPhone(b.phone)}</b><small>{b.reason} · {manila.date(b.createdAt)}{b.by && ` by ${b.by}`}</small></span>
+                <ActionButton action={unblockNumberAction.bind(null, b.phone)} label="Unblock" confirm="Let this number order online again?" />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

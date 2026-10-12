@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { blockOrderPhone, unblockPhone } from "@/lib/blocklist";
 import { markStaffRead, postStaffMessage } from "@/lib/order-chat";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/order-rules";
 import { moveOrder, quoteDelivery, reissueOrderLink, reviewPayment, sendOut } from "@/lib/orders";
@@ -59,4 +60,19 @@ export async function reissueLinkAction(orderId: string): Promise<{ error?: stri
   if (!r.ok) return { error: r.error };
   refresh();
   return { path: r.path };
+}
+
+// ——— Blocking a number (managers and the admin) ———
+export async function blockNumberAction(orderId: string, reason: string): Promise<{ ok?: string; error?: string }> {
+  const me = await requireStaff(["manager", "admin"]);
+  const r = await blockOrderPhone(me, String(orderId), String(reason));
+  refresh();
+  return r.ok ? { ok: "Blocked. This number can't order online any more." } : { error: r.error };
+}
+
+export async function unblockNumberAction(phone: string): Promise<{ ok?: string; error?: string }> {
+  const me = await requireStaff(["manager", "admin"]);
+  const r = await unblockPhone(me, String(phone));
+  refresh();
+  return r.ok ? { ok: "Unblocked." } : { error: r.error };
 }

@@ -327,7 +327,7 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
         </button>
         <p className="slip-privacy">
           We use your name, number{how === "delivery" ? ", address and pin" : ""} only to prepare this order and reach you about it.
-          Order details are kept for a year, then your personal details are removed.
+          Order details are kept for a year, then your personal details are removed. <a href="/privacy" target="_blank">Privacy notice</a>
         </p>
       </aside>
 

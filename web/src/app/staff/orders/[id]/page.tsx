@@ -3,10 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import CopyText from "@/components/CopyText";
 import LiveRefresh from "@/components/LiveRefresh";
+import BlockNumber from "@/components/staff/BlockNumber";
 import PinMap from "@/components/map/PinMap";
 import { OrderCard } from "@/components/staff/OrderBoard";
 import ReissueLink from "@/components/staff/ReissueLink";
 import StaffChat from "@/components/staff/StaffChat";
+import { blockedEntry } from "@/lib/blocklist";
 import { formatDistance, mapsLink } from "@/lib/delivery";
 import { listMessages } from "@/lib/order-chat";
 import { chatState, statusLabel, unreadCount } from "@/lib/order-rules";
@@ -23,7 +25,13 @@ export default async function OrderDetailPage({ params }: PageProps<"/staff/orde
   const order = await getStaffOrder(me, (await params).id);
   if (!order) notFound();
 
-  const [messages, context, settings] = await Promise.all([listMessages(order.id), boardContext([order], [order.branchId]), getOrderSettings()]);
+  const manager = me.role === "manager" || me.role === "admin";
+  const [messages, context, settings, blocked] = await Promise.all([
+    listMessages(order.id),
+    boardContext([order], [order.branchId]),
+    getOrderSettings(),
+    manager && order.customerPhone ? blockedEntry(order.customerPhone) : null,
+  ]);
   const chat = chatState(order);
   const firstName = order.customerName.split(" ")[0];
   const lines = messages.map((m) => ({
@@ -70,6 +78,13 @@ export default async function OrderDetailPage({ params }: PageProps<"/staff/orde
         <section className="staff-card order-detail-link" aria-labelledby="link-title">
           <h2 id="link-title">Customer&rsquo;s link</h2>
           <ReissueLink orderId={order.id} code={order.code} phone={order.customerPhone} />
+          {manager && order.customerPhone && (
+            <BlockNumber
+              orderId={order.id}
+              phone={order.customerPhone}
+              blocked={blocked ? { reason: blocked.reason, since: manila.date(blocked.createdAt) } : null}
+            />
+          )}
         </section>
 
         <section className="staff-card order-detail-chat" aria-labelledby="chat-title">

@@ -30,6 +30,7 @@ export default async function StaffLayout({ children }: LayoutProps<"/staff">) {
     { href: "/staff/time", label: "Hours" },
     ...(me.role !== "employee" ? [{ href: "/staff/team", label: "Team" }, { href: "/staff/branch", label: "Branch" }] : []),
     { href: "/staff/account", label: "Account" },
+    { href: "/staff/help", label: "Help" },
   ];
   return (
     <div className="staff-shell">
