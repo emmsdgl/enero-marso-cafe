@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
 import ActionForm from "@/components/staff/ActionForm";
 import ActionButton from "@/components/staff/ActionButton";
 import { db, staff } from "@/db";
 import { branches } from "@/data/branches";
-import { requireStaff } from "@/lib/staff";
-import { addStaff, clearPin, updateStaff } from "../actions";
+import { manila, requireStaff } from "@/lib/staff";
+import { addStaff, clearPin, removeStaff, restoreStaff, updateStaff } from "../actions";
 
 export const metadata: Metadata = { title: "Team" };
 
@@ -21,8 +21,9 @@ export default async function TeamPage() {
   const team = await db
     .select()
     .from(staff)
-    .where(me.role === "manager" ? eq(staff.branchId, me.branchId!) : undefined)
+    .where(and(isNull(staff.removedAt), me.role === "manager" ? eq(staff.branchId, me.branchId!) : undefined))
     .orderBy(asc(staff.role), asc(staff.name));
+  const past = me.role === "admin" ? await db.select().from(staff).where(isNotNull(staff.removedAt)).orderBy(asc(staff.name)) : [];
 
   return (
     <div className="staff-page">
@@ -89,6 +90,13 @@ export default async function TeamPage() {
                     {p.pinHash && (me.role === "admin" || p.role === "employee") && (
                       <ActionButton action={clearPin.bind(null, p.id)} label="Reset PIN" confirm={`Clear ${p.name}'s PIN?`} />
                     )}
+                    {me.role === "admin" && p.role !== "admin" && p.id !== me.id && (
+                      <ActionButton
+                        action={removeStaff.bind(null, p.id)}
+                        label="Remove"
+                        confirm={`Remove ${p.name}? They lose access at once; their hours stay.`}
+                      />
+                    )}
                   </td>
                 </tr>
               ))}
@@ -96,6 +104,29 @@ export default async function TeamPage() {
           </table>
         </div>
       </section>
+
+      {past.length > 0 && (
+        <details className="staff-card team-past">
+          <summary>Past team members · {past.length}</summary>
+          <p className="staff-help">
+            Removed from the team: they can&rsquo;t sign in or clock in. Their hours stay in Hours, and their name stays on orders they
+            handled. Restore someone who comes back to work.
+          </p>
+          <ul className="setup-list">
+            {past.map((p) => (
+              <li key={p.id}>
+                <span>
+                  <b>{p.name}</b>
+                  <small>
+                    {ROLES.find((r) => r.value === p.role)!.label} · {short(p.branchId)} · {p.email} · removed {manila.date(p.removedAt!)}
+                  </small>
+                </span>
+                <ActionButton action={restoreStaff.bind(null, p.id)} label="Restore" />
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </div>
   );
 }

@@ -83,6 +83,8 @@ export const staff = pgTable(
     pinHash: text("pin_hash"), // for the clock-in tablet
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    // Removed from the team by the admin: no access, hidden from the team list, history kept
+    removedAt: timestamp("removed_at", { withTimezone: true }),
   },
   (t) => [
     check("staff_role_branch", sql`(${t.role} = 'admin') or (${t.branchId} is not null)`),

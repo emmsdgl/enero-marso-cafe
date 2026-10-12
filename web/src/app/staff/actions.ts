@@ -3,7 +3,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { branchNetworks, branches, db, kiosks, paymentAccounts, staff, timeEntries } from "@/db";
+import { branchNetworks, branches, db, kiosks, paymentAccounts, pushSubscriptions, staff, timeEntries } from "@/db";
 import { auth } from "@/lib/auth/server";
 import { toggleClock } from "@/lib/clock";
 import { FREE_DELIVERY_OPTIONS, formatDistance, inPhilippines, isLatLng, MAX_DELIVERY_OPTIONS, MIN_ORDER_OPTIONS } from "@/lib/delivery";
@@ -43,13 +43,59 @@ export async function addStaff(_: ActionState, form: FormData): Promise<ActionSt
   if (branchId && !BRANCHES.includes(branchId)) return { error: "Choose a branch." };
   if (role !== "admin" && !branchId) return { error: "Employees and managers need a branch." };
 
-  const [dupe] = await db.select({ id: staff.id }).from(staff).where(eq(sql`lower(${staff.email})`, email)).limit(1);
+  const [dupe] = await db.select({ id: staff.id, removedAt: staff.removedAt }).from(staff).where(eq(sql`lower(${staff.email})`, email)).limit(1);
+  if (dupe?.removedAt) return { error: "That email belongs to a past team member. Restore them from Past team members below." };
   if (dupe) return { error: "Someone with that email is already on the team." };
 
   const [row] = await db.insert(staff).values({ name, email, role, branchId }).returning({ id: staff.id });
   await audit(me.id, "staff.add", { staffId: row.id, name, email, role, branchId });
   revalidatePath("/staff/team");
   return { ok: `${name} added. They can now set up their account at /login/setup with ${email}.` };
+}
+
+/**
+ * Takes someone off the team. A person with no history yet (say, added by mistake) is deleted
+ * outright. Anyone with history keeps it: their hours stay for payroll, and their name stays on
+ * orders they handled. They lose access at once, their phones stop getting notifications, an
+ * open shift is closed, and they move to Past team members, where the admin can restore them.
+ */
+export async function removeStaff(id: string): Promise<ActionState> {
+  const me = await requireStaff(["admin"]);
+  const [p] = await db.select().from(staff).where(eq(staff.id, String(id))).limit(1);
+  if (!p || p.removedAt) return { error: "That person isn't on the team any more." };
+  if (p.id === me.id) return { error: "You can't remove yourself." };
+  if (p.role === "admin") return { error: "Admins can't be removed here. Change their role first." };
+
+  const now = new Date();
+  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.staffId, p.id));
+  await db
+    .update(timeEntries)
+    .set({ clockOut: now, outMethod: "manual", note: "Closed when removed from the team", editedBy: me.id, editedAt: now })
+    .where(and(eq(timeEntries.staffId, p.id), isNull(timeEntries.clockOut)));
+  let deleted = true;
+  try {
+    await db.delete(staff).where(eq(staff.id, p.id));
+  } catch (e) {
+    // Still referenced (time records, orders, messages): keep the row, end the access
+    const c = (e as { cause?: { code?: string }; code?: string }).cause ?? (e as { code?: string });
+    if (c?.code !== "23503") throw e;
+    deleted = false;
+    await db.update(staff).set({ active: false, pinHash: null, removedAt: now }).where(eq(staff.id, p.id));
+  }
+  await audit(me.id, deleted ? "staff.delete" : "staff.remove", { staffId: p.id, name: p.name, email: p.email, role: p.role, branchId: p.branchId });
+  revalidatePath("/staff/team");
+  return { ok: deleted ? `${p.name} was deleted.` : `${p.name} was removed. They can't sign in or clock in; their hours stay in Hours.` };
+}
+
+/** Brings a past team member back, with the same login. They set a new PIN. */
+export async function restoreStaff(id: string): Promise<ActionState> {
+  const me = await requireStaff(["admin"]);
+  const [p] = await db.select().from(staff).where(eq(staff.id, String(id))).limit(1);
+  if (!p?.removedAt) return { error: "That person is already on the team." };
+  await db.update(staff).set({ active: true, removedAt: null }).where(eq(staff.id, p.id));
+  await audit(me.id, "staff.restore", { staffId: p.id, name: p.name });
+  revalidatePath("/staff/team");
+  return { ok: `${p.name} is back on the team. They'll need to set a new PIN.` };
 }
 
 export async function updateStaff(_: ActionState, form: FormData): Promise<ActionState> {

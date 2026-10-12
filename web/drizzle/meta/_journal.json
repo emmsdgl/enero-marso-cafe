@@ -71,6 +71,13 @@
       "when": 1791786945730,
       "tag": "0009_launch",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791804455566,
+      "tag": "0010_staff_removal",
+      "breakpoints": true
     }
   ]
 }
