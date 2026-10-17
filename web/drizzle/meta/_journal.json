@@ -78,6 +78,13 @@
       "when": 1791804455566,
       "tag": "0010_staff_removal",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792218872839,
+      "tag": "0011_menu_editor",
+      "breakpoints": true
     }
   ]
 }

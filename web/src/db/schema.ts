@@ -178,6 +178,7 @@ export const menuItems = pgTable(
     categoryId: uuid("category_id").notNull().references(() => menuCategories.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     note: text("note"),
+    description: text("description"), // what customers read when they tap (i) on the order page
     prices: jsonb("prices").$type<(number | null)[]>().notNull(),
     star: boolean("star").notNull().default(false), // marked ★ on the printed menu
     available: boolean("available").notNull().default(true), // false = sold out

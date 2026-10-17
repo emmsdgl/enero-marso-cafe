@@ -3,6 +3,7 @@ import { asc } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { branches, db, menuAddons, menuCategories, menuItems } from "@/db";
 import { fromPrice, type BranchId, type Highlight, type MenuCategory, type Menus } from "./menu";
+import { forCustomers } from "./menu-rules";
 
 /** Everything the public site shows from the menu carries this tag; staff edits expire it */
 export const MENU_TAG = "menu";
@@ -30,7 +31,7 @@ export async function loadMenus(): Promise<Menus> {
         upsizePrice: c.upsizePrice,
         items: items
           .filter((i) => i.categoryId === c.id)
-          .map((i) => ({ id: i.id, name: i.name, note: i.note, prices: i.prices, star: i.star, available: i.available, homePick: i.homePick })),
+          .map((i) => ({ id: i.id, name: i.name, note: i.note, description: i.description, prices: i.prices, star: i.star, available: i.available, homePick: i.homePick })),
       })),
     addOns: addons
       .filter((a) => a.branchId === branch)
@@ -43,9 +44,10 @@ export async function loadMenus(): Promise<Menus> {
 
 /**
  * The public site's copy: kept in Next's data cache so page views don't wake the database,
- * refreshed the moment staff change the menu (and at least hourly).
+ * refreshed the moment staff change the menu (and at least hourly). Items still waiting for a
+ * price, and groups with nothing in them yet, stay on the staff page until they're ready.
  */
-export const getMenus = unstable_cache(loadMenus, ["menus"], { tags: [MENU_TAG], revalidate: 3600 });
+export const getMenus = unstable_cache(async () => forCustomers(await loadMenus()), ["menus-v2"], { tags: [MENU_TAG], revalidate: 3600 });
 
 /** The homepage rows: the main cafe's featured drinks and food, in the order staff picked */
 export async function getHighlights(): Promise<{ drinks: Highlight[]; food: Highlight[] }> {

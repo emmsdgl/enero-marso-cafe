@@ -66,11 +66,12 @@
 .staff-form label, .auth-form label { display: grid; gap: 0.35rem; font-weight: 600; font-size: 0.875rem; }
 .staff-form.is-row { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); align-items: end; }
 .staff-form.is-row .staff-form-foot, .staff-form.is-row .staff-help { grid-column: 1 / -1; margin: 0; }
-.staff-form input:not([type="checkbox"]), .staff-form select, .auth-form input {
+.staff-form input:not([type="checkbox"]):not([type="radio"]), .staff-form select, .staff-form textarea, .auth-form input {
   width: 100%; padding: 0.7rem 0.8rem; border: 1.5px solid rgb(21 18 17 / 0.3); border-radius: 0.5rem; background: #fffaf1; color: var(--ink);
   font: 500 1rem var(--brand);
 }
-.staff-form input:focus, .staff-form select:focus, .auth-form input:focus { outline: 2px solid var(--gold); outline-offset: 1px; border-color: var(--ink); }
+.staff-form textarea { resize: vertical; line-height: 1.45; }
+.staff-form input:focus, .staff-form select:focus, .staff-form textarea:focus, .auth-form input:focus { outline: 2px solid var(--gold); outline-offset: 1px; border-color: var(--ink); }
 .staff-check { display: flex !important; align-items: center; gap: 0.5rem; font-weight: 500 !important; }
 .staff-check input { width: 1.1rem; height: 1.1rem; accent-color: var(--brown); }
 .staff-form-foot { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
@@ -131,6 +132,22 @@
 .menu-table tr.is-sold-out th, .menu-table tr.is-sold-out td.num { color: var(--cocoa); }
 .menu-table tr.is-sold-out td.num { text-decoration: line-through; }
 .menu-prices { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); gap: 0.6rem; }
+/* A group's name with its buttons beside it (wrapping under it on a phone) */
+.menu-cat-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.5rem 1rem; margin-bottom: 0.85rem; }
+.menu-cat-head h2 { margin: 0; }
+.menu-new-group { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1rem; }
+.menu-new-group > span { display: grid; gap: 0.15rem; flex: 1 1 18rem; }
+.menu-new-group small { color: var(--cocoa); font-size: 0.875rem; }
+.menu-kind, .size-rows { display: grid; gap: 0.5rem; margin: 0; padding: 0; border: 0; min-width: 0; }
+.menu-kind legend, .size-rows legend { padding: 0; margin-bottom: 0.35rem; font-weight: 600; font-size: 0.875rem; }
+.size-rows ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
+.size-rows li, .size-add { display: flex; align-items: center; gap: 0.4rem; }
+.size-rows li input, .size-add input { flex: 1; min-width: 0; }
+.size-rows li small { color: var(--cocoa); font-size: 0.75rem; }
+.size-do { display: flex; gap: 0.3rem; flex: none; }
+.size-arrow { display: grid; place-items: center; padding: 0.4rem 0.5rem; }
+.size-arrow.is-down svg { transform: rotate(180deg); }
+.size-rows .staff-note, .size-rows .staff-help { margin: 0; }
 /* On a phone each item becomes a small card: name and status on top, prices, then the buttons */
 @media (max-width: 40rem) {
   .menu-table thead { display: none; }

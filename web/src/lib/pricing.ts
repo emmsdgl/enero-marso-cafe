@@ -1,7 +1,11 @@
 import type { BranchMenu } from "./menu";
 
-/** What the browser sends: which item, which size, extras and how many. Never a price. */
-export type CartLine = { itemId: string; size: number; upsize: boolean; addons: string[]; qty: number };
+/**
+ * What the browser sends: which item, which size, extras and how many. Never a price.
+ * `sizeName` is the size the customer saw; if staff renamed or removed sizes since, the
+ * line is refused instead of quietly becoming another size. (Pages from before it existed omit it.)
+ */
+export type CartLine = { itemId: string; size: number; sizeName?: string | null; upsize: boolean; addons: string[]; qty: number };
 
 export type PricedLine = {
   itemId: string;
@@ -36,6 +40,9 @@ export function priceCart(menu: BranchMenu, lines: CartLine[]): { ok: true; line
     if (!Number.isInteger(l.qty) || l.qty < 1 || l.qty > MAX_QTY) return { ok: false, error: `Choose 1 to ${MAX_QTY} of ${item.name}.` };
 
     const slots = category.sizes?.length ?? 1;
+    if (l.sizeName !== undefined && (category.sizes?.[l.size] ?? null) !== l.sizeName) {
+      return { ok: false, error: `The menu just changed: please add ${item.name} to your order again.` };
+    }
     const price = Number.isInteger(l.size) && l.size >= 0 && l.size < slots ? item.prices[l.size] : null;
     if (price == null) return { ok: false, error: `Choose a size for ${item.name}.` };
 

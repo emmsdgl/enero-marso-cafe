@@ -3,7 +3,7 @@ import type { BranchMenu } from "./menu";
 import { formatPhone, normalizePhone, priceCart, type CartLine } from "./pricing";
 
 const item = (id: string, name: string, prices: (number | null)[], available = true) =>
-  ({ id, name, note: null, prices, star: false, available, homePick: null });
+  ({ id, name, note: null, description: null, prices, star: false, available, homePick: null });
 
 const menu: BranchMenu = {
   branch: "main",
@@ -30,6 +30,16 @@ const menu: BranchMenu = {
 const line = (over: Partial<CartLine>): CartLine => ({ itemId: "americano", size: 0, upsize: false, addons: [], qty: 1, ...over });
 
 describe("pricing an order on the server", () => {
+  it("refuses a line whose size was renamed or removed since the customer chose it", () => {
+    expect(priceCart(menu, [line({ size: 1, sizeName: "Medium" })]).ok).toBe(true);
+    // Staff removed Tall: the old "Medium" (1) would now be Large, so it's refused, not repriced
+    expect(priceCart(menu, [line({ size: 1, sizeName: "Tall" })])).toEqual({ ok: false, error: "The menu just changed: please add Americano to your order again." });
+    expect(priceCart(menu, [line({ itemId: "burger", size: 0, sizeName: null })]).ok).toBe(true);
+    expect(priceCart(menu, [line({ itemId: "burger", size: 0, sizeName: "Large" })]).ok).toBe(false);
+    // Pages loaded before this check existed send no size name and are priced as before
+    expect(priceCart(menu, [line({ size: 1 })]).ok).toBe(true);
+  });
+
   it("takes every price from the menu, with sizes, upsizes and add-ons", () => {
     const r = priceCart(menu, [line({ size: 2, qty: 2, addons: ["shot"] }), line({ itemId: "pb", upsize: true }), line({ itemId: "burger" })]);
     expect(r.ok).toBe(true);

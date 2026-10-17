@@ -9,6 +9,8 @@ export type MenuItem = {
   id: string;
   name: string;
   note: string | null;
+  /** A few lines about the drink or dish, shown behind the (i) on the order page */
+  description: string | null;
   prices: (number | null)[];
   star: boolean;
   available: boolean;

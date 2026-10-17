@@ -10,7 +10,7 @@ import type { OrderSettings } from "@/lib/orders";
 import { pickupWindow, type PickupWindow } from "@/lib/pickup";
 
 type Choice = { size: number; upsize: boolean; addons: string[] };
-type Line = Choice & { key: string; itemId: string; name: string; detail: string; unit: number; qty: number };
+type Line = Choice & { key: string; itemId: string; name: string; sizeName: string | null; detail: string; unit: number; qty: number };
 
 const manilaTime = (d: Date) => d.toLocaleTimeString("en-PH", { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" });
 const firstSize = (i: MenuItem) => Math.max(0, i.prices.findIndex((p) => p !== null));
@@ -85,7 +85,7 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
     setLines((ls) => {
       const hit = ls.find((l) => l.key === key);
       if (hit) return ls.map((l) => (l.key === key ? { ...l, qty: Math.min(20, l.qty + 1) } : l));
-      return [...ls, { key, itemId: i.id, name: i.name, detail, unit, qty: 1, ...ch }];
+      return [...ls, { key, itemId: i.id, name: i.name, sizeName: c.sizes?.[ch.size] ?? null, detail, unit, qty: 1, ...ch }];
     });
   };
   const bump = (key: string, d: number) => setLines((ls) => ls.flatMap((l) => (l.key !== key ? [l] : l.qty + d <= 0 ? [] : [{ ...l, qty: Math.min(20, l.qty + d) }])));
@@ -98,7 +98,7 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
         branch,
         fulfillment: how,
         wantedAt: effectiveWhen === "asap" ? null : effectiveWhen,
-        lines: lines.map(({ itemId, size, upsize, addons, qty }) => ({ itemId, size, upsize, addons, qty })),
+        lines: lines.map(({ itemId, size, sizeName, upsize, addons, qty }) => ({ itemId, size, sizeName, upsize, addons, qty })),
         name,
         phone,
         notes,

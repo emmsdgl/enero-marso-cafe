@@ -74,6 +74,18 @@ export default async function HelpPage() {
           </ul>
         </section>
 
+        {manager && (
+          <section className="staff-card">
+            <h2>Changing the menu</h2>
+            <ul>
+              <li>On <Link href="/staff/menu">Menu</Link>, <b>Edit group</b> changes a group&rsquo;s name, note and cup sizes. Renaming a size keeps its prices; removing one deletes its prices from every item in the group.</li>
+              <li><b>Add item</b> puts a new drink or dish in a group. <b>Edit</b> on an item changes its prices, its description (customers read it behind the (i)) or its group.</li>
+              <li>An item without a price, or a group with nothing in it, stays off the website until it&rsquo;s ready.</li>
+              <li>Ran out for today? Mark it <b>sold out</b> instead of removing it.</li>
+            </ul>
+          </section>
+        )}
+
         <section className="staff-card">
           <h2>Closing</h2>
           <ul>
