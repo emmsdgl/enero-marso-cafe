@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { branches } from "@/data/branches";
-import { peso, type MenuCategory, type Menus } from "@/lib/menu";
+import { peso, searchMenu, type MenuCategory, type Menus } from "@/lib/menu";
 import { SearchIcon } from "./Icons";
 
 type BranchId = "main" | "noir";
@@ -23,18 +23,7 @@ export default function MenuBoard({ menus }: { menus: Menus }) {
   const menu = menus[branch];
   const info = branches.find((b) => b.id === branch)!;
   const term = q.trim().toLowerCase();
-  const shown = useMemo<MenuCategory[]>(
-    () =>
-      menu.categories
-        .map((c) => ({
-          ...c,
-          items: term
-            ? c.items.filter((i) => `${i.name} ${i.note ?? ""} ${c.title}`.toLowerCase().includes(term))
-            : c.items,
-        }))
-        .filter((c) => c.items.length),
-    [menu, term],
-  );
+  const shown = useMemo<MenuCategory[]>(() => searchMenu(menu.categories, term), [menu, term]);
   const count = shown.reduce((n, c) => n + c.items.length, 0);
   const hasStars = menu.categories.some((c) => c.items.some((i) => i.star));
 

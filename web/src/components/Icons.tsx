@@ -56,3 +56,11 @@ export const FacebookIcon = (p: P) => (
     <path d="M14.5 8H16V4.5h-2.2C11.6 4.5 10 6.1 10 8.4V11H8v3.4h2V20h3.6v-5.6H16l.5-3.4h-2.9V8.9c0-.6.3-.9.9-.9z" />
   </svg>
 );
+
+export const InfoIcon = (p: P) => (
+  <svg viewBox="0 0 24 24" strokeWidth={1.8} {...base} aria-hidden="true" {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 11v5.5" />
+    <path d="M12 7.6v.1" strokeWidth={2.4} />
+  </svg>
+);

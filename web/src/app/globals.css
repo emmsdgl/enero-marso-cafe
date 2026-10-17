@@ -397,22 +397,25 @@ h1, h2, h3 { margin: 0; }
 .menu-picks { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
 .menu-pick { border-bottom: 1px solid rgb(21 18 17 / 0.2); }
 .menu-pick-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 0.25rem 0.85rem; padding: 0.85rem 0; }
-summary.menu-pick-row { cursor: pointer; list-style: none; }
-summary.menu-pick-row::-webkit-details-marker { display: none; }
-summary.menu-pick-row:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .menu-pick-name { display: grid; min-width: 0; }
+.menu-pick-title { display: flex; align-items: center; gap: 0.2rem; min-width: 0; }
+/* (i): what the drink is, in its sheet */
+.menu-pick-info {
+  display: grid; place-items: center; flex: none; width: 2rem; height: 2rem; margin: -0.4rem 0; padding: 0;
+  border: 0; border-radius: 50%; background: none; color: var(--brown); cursor: pointer; transition: background-color 0.2s ease;
+}
+.menu-pick-info svg { width: 1.15rem; height: 1.15rem; }
+.menu-pick-info:hover { background: var(--sand); }
 .menu-pick-name b { font-weight: 600; font-size: 0.9375rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .menu-pick-name small { margin-top: 0.1rem; font-size: 0.8125rem; color: var(--cocoa); }
 .menu-pick-name .menu-pick-sold { color: var(--brown); font-weight: 700; font-size: 0.6875rem; letter-spacing: 0.16em; text-transform: uppercase; }
 .menu-pick.is-sold-out .menu-pick-name b, .menu-pick.is-sold-out .menu-pick-price { color: var(--cocoa); }
 .menu-pick-price { font-weight: 700; font-size: 0.875rem; color: var(--brown); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .menu-pick-toggle {
-  display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: var(--brown); color: var(--cream);
-  transition: transform 0.25s var(--ease), background-color 0.2s ease;
+  display: grid; place-items: center; width: 2.25rem; height: 2.25rem; padding: 0; border: 0; border-radius: 50%; background: var(--brown); color: var(--cream);
+  cursor: pointer; transition: background-color 0.2s ease;
 }
-summary.menu-pick-row:hover .menu-pick-toggle { background: var(--ink); }
-details[open] > summary .menu-pick-toggle { transform: rotate(45deg); background: var(--ink); }
-.menu-pick-options { display: grid; gap: 0.85rem; padding: 0 0 1.1rem; }
+.menu-pick-toggle:hover, .menu-pick-toggle.is-added, .pick-add.is-added { background: var(--ink); }
 .menu-sizes { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0; padding: 0; border: 0; }
 .menu-size { position: relative; cursor: pointer; }
 .menu-size input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
@@ -424,10 +427,6 @@ details[open] > summary .menu-pick-toggle { transform: rotate(45deg); background
 .menu-size input:checked + span { background: var(--ink); color: var(--cream); }
 .menu-size input:checked + span small { color: var(--gold); }
 .menu-size input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
-.menu-addons { display: flex; flex-wrap: wrap; gap: 0.45rem 1.1rem; align-items: center; }
-.menu-addons-title { flex-basis: 100%; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cocoa); }
-.menu-pick-add { justify-self: start; }
-@media (prefers-reduced-motion: reduce) { .menu-pick-toggle { transition: none; } }
 .pick-check { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
 .pick-check input { width: 1rem; height: 1rem; margin: 0; accent-color: var(--brown); }
 .pick-add {
@@ -476,6 +475,76 @@ details[open] > summary .menu-pick-toggle { transform: rotate(45deg); background
 .order-link { background: none; border: 0; padding: 0; font: 600 0.9375rem var(--brand); color: var(--brown); text-decoration: underline; text-underline-offset: 0.25em; cursor: pointer; }
 .checkout-bar { display: none; }
 .checkout-note { margin: 0; padding: 0.85rem 1rem; background: var(--sand); font-size: 0.9375rem; }
+/* Switching branch with items in the order: say it empties the order first */
+.checkout-switch { display: grid; gap: 0.6rem; margin-top: 0.85rem; padding: 0.85rem 1rem; background: #f7e7cf; font-size: 0.9375rem; }
+.checkout-switch p { margin: 0; }
+.checkout-switch span { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+
+/* Menu search: a brown pill on cream, the whole field takes the focus ring */
+.order-search {
+  display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1rem; padding: 0 1.1rem; border: 2px solid var(--brown); border-radius: 999px;
+  background: #fffaf1; color: var(--brown); cursor: text;
+}
+.order-search svg { width: 1.2rem; height: 1.2rem; flex: none; }
+.order-search input { flex: 1; min-width: 0; padding: 0.8rem 0; border: 0; background: none; font: 500 1rem var(--brand); color: var(--ink); outline: none; }
+.order-search input::placeholder { color: #7a5a44; }
+.order-search:focus-within { outline: 2px solid var(--gold); outline-offset: 3px; }
+.slip-course:disabled .order-search { opacity: 0.45; }
+.order-group + .order-group { margin-top: 1.4rem; }
+.order-group-title { margin: 0 0 0.5rem; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--cocoa); }
+.order-empty { margin: 0; padding: 1.25rem 0; text-align: center; }
+.order-empty button { font: inherit; color: var(--brown); background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; }
+
+/* The last step: pickup or delivery, when, and where */
+.checkout-how { display: grid; gap: 0.9rem; scroll-margin-top: 5.5rem; }
+.checkout-how > .order-toggle { justify-self: start; }
+.checkout-how .order-hint { margin: 0; }
+.checkout-when { display: grid; gap: 0.4rem; }
+.checkout-when > span { font-weight: 700; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brown); }
+
+/* ——— Sheet: a panel over the page (an item's choices). Square like the order slip; it rises from the bottom on a phone ——— */
+.sheet {
+  width: min(30rem, calc(100vw - 2rem)); max-width: none; max-height: calc(100dvh - 2rem); margin: auto; padding: 0;
+  border: 3px solid var(--ink); background: var(--cream); color: var(--ink); box-shadow: 0 1.5rem 3rem -1rem rgb(21 18 17 / 0.5);
+  overflow: auto; overscroll-behavior: contain; opacity: 0; transform: translateY(0.75rem);
+  transition: opacity 0.2s ease, transform 0.3s var(--ease), overlay 0.3s allow-discrete, display 0.3s allow-discrete;
+}
+.sheet[open] { opacity: 1; transform: none; }
+@starting-style { .sheet[open] { opacity: 0; transform: translateY(0.75rem); } }
+.sheet::backdrop { background: rgb(21 18 17 / 0.5); }
+body:has(.sheet[open]) { overflow: hidden; }
+.sheet-head {
+  position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;
+  padding: 1.15rem 1.25rem 0.95rem; background: var(--cream); border-bottom: 2px solid var(--ink);
+}
+.sheet-head h2 { font-weight: 700; font-size: 1.0625rem; letter-spacing: 0.08em; text-transform: uppercase; overflow-wrap: anywhere; }
+.sheet-close { display: grid; place-items: center; flex: none; width: 2.5rem; height: 2.5rem; margin: -0.5rem -0.6rem 0 0; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--ink); cursor: pointer; }
+.sheet-close svg { width: 1.25rem; height: 1.25rem; }
+.sheet-close:hover { background: var(--sand); }
+.sheet-body { display: grid; gap: 1.15rem; padding: 1.15rem 1.25rem 0; }
+@media (max-width: 40rem) {
+  .sheet { width: 100%; max-height: 88dvh; margin: auto 0 0; border-width: 3px 0 0; transform: translateY(100%); }
+  .sheet[open] { transform: none; }
+  @starting-style { .sheet[open] { transform: translateY(100%); } }
+}
+@media (prefers-reduced-motion: reduce) { .sheet { transition: none; } }
+
+/* An item's sheet: what it is, its choices, and Add at the bottom */
+.item-about { display: grid; gap: 0.35rem; font-size: 0.9375rem; line-height: 1.55; }
+.item-about p { margin: 0; }
+.item-note { font-weight: 600; font-size: 0.8125rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cocoa); }
+.item-sold { margin: 0 0 1.25rem; padding: 0.75rem 0.9rem; background: var(--sand); font-weight: 500; }
+.item-course { display: grid; margin: 0; padding: 0; border: 0; min-width: 0; }
+.item-course legend { padding: 0; margin-bottom: 0.55rem; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brown); }
+.item-addons { display: grid; gap: 0.15rem; }
+.item-check { display: flex; gap: 0.6rem; padding: 0.45rem 0; font-size: 0.9375rem; font-weight: 500; }
+.item-check input { width: 1.15rem; height: 1.15rem; }
+.item-check span { margin-left: auto; font-weight: 700; color: var(--brown); font-variant-numeric: tabular-nums; }
+.item-foot {
+  position: sticky; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  margin: 0 -1.25rem; padding: 0.95rem 1.25rem calc(1rem + env(safe-area-inset-bottom, 0px)); background: var(--cream); border-top: 2px solid var(--ink);
+}
+.item-add { padding: 0.95rem 1.5rem; font-size: 0.8125rem; }
 
 /* ——— Your order: the customer's private tracking page ——— */
 .track { max-width: 40rem; margin: 0 auto; display: grid; gap: 1.5rem; padding: clamp(1.5rem, 4vw, 2.5rem); background: var(--cream); border: 3px solid var(--ink); outline: 1px solid var(--ink); outline-offset: 6px; }
@@ -705,9 +774,9 @@ body:has(.landing):has(.order-bubble) { padding-bottom: 0; }
     display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.95rem 1.25rem; border-radius: 999px;
     background: var(--ink); color: var(--cream); text-decoration: none; box-shadow: 0 0.75rem 1.5rem -0.75rem rgb(21 18 17 / 0.6);
   }
-  .checkout-bar span { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .checkout-bar span { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
   body:has(.checkout-bar) .order-bubbles { bottom: calc(env(safe-area-inset-bottom, 0px) + 5.25rem); }
-  .checkout-bar b { font-size: 0.8125rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+  .checkout-bar b { font-size: 0.8125rem; letter-spacing: 0.16em; text-transform: uppercase; text-align: right; color: var(--gold); }
   .site-header { grid-template-columns: 1fr auto; }
   .nav-toggle { display: grid; }
   .site-nav {

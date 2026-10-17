@@ -43,3 +43,20 @@ export const peso = (n: number) => `₱${n.toLocaleString("en-PH")}`;
 export const fromPrice = (i: Pick<MenuItem, "prices">) => Math.min(...i.prices.filter((p): p is number => p !== null));
 
 export const isBranchId = (v: unknown): v is BranchId => v === "main" || v === "noir";
+
+/** Lowercase without accents, so "cafe" finds "Café Mocha" */
+const fold = (s: string) => s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/**
+ * The menu narrowed to what a customer typed: matches the item's name, note and description and
+ * its group's title. Groups with nothing left are dropped; an empty search keeps everything.
+ */
+export function searchMenu(categories: MenuCategory[], query: string): MenuCategory[] {
+  const words = fold(query).split(/\s+/).filter(Boolean);
+  return categories
+    .map((c) => ({
+      ...c,
+      items: words.length ? c.items.filter((i) => words.every((w) => fold(`${i.name} ${i.note ?? ""} ${i.description ?? ""} ${c.title}`).includes(w))) : c.items,
+    }))
+    .filter((c) => c.items.length > 0);
+}
