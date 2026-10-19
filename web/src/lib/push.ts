@@ -5,6 +5,7 @@ import webpush from "web-push";
 import { db, pushSubscriptions, staff, timeEntries, type PushSubscriptionRow, type Staff } from "@/db";
 import { defaultOnShiftOnly, deviceName, recipients, type Payload, type PushKind } from "./push-rules";
 import { manila } from "./staff";
+import { missedTalkPayload, missedTalkRecipients } from "./talk-rules";
 
 /**
  * Staff phone notifications (standard Web Push, signed with the site's VAPID keys). Messages are
@@ -77,13 +78,43 @@ export function notifyBranch(branchId: string, kind: PushKind, payload: Payload)
   });
 }
 
+/**
+ * A saved talk clip that some of the branch's clocked-in staff (or the owner) didn't hear live.
+ * Runs after the response is sent.
+ */
+export function notifyMissedTalk(
+  clip: { id: string; name: string; ms: number; branches: string[]; speakerId: string | null },
+  heardLive: Set<string>,
+) {
+  if (!pushConfigured) return;
+  after(async () => {
+    try {
+      const rows = await db
+        .select({ sub: pushSubscriptions, role: staff.role, staffBranch: staff.branchId, active: staff.active })
+        .from(pushSubscriptions)
+        .innerJoin(staff, eq(staff.id, pushSubscriptions.staffId))
+        .where(and(eq(staff.active, true), eq(pushSubscriptions.talk, true), or(inArray(staff.branchId, clip.branches), eq(staff.role, "admin"))));
+      if (rows.length === 0) return;
+      const shifts = await db
+        .select({ staffId: timeEntries.staffId })
+        .from(timeEntries)
+        .where(and(inArray(timeEntries.staffId, [...new Set(rows.map((r) => r.sub.staffId))]), isNull(timeEntries.clockOut)));
+      const devices = rows.map((r) => ({ ...r.sub, role: r.role, branchId: r.staffBranch, active: r.active }));
+      const to = missedTalkRecipients(devices, clip, new Set(shifts.map((s) => s.staffId)), heardLive);
+      await send(to, missedTalkPayload(clip));
+    } catch (e) {
+      console.error("Push failed", e);
+    }
+  });
+}
+
 // ——— The staff member's own devices (Staff > Account) ———
 
-export type DeviceView = { id: string; endpoint: string; device: string; orders: boolean; messages: boolean; onShiftOnly: boolean; added: string; lastSent: string | null };
+export type DeviceView = { id: string; endpoint: string; device: string; orders: boolean; messages: boolean; talk: boolean; onShiftOnly: boolean; added: string; lastSent: string | null };
 
 // Dates are written here, in Manila time, so the page shows the same text on the server and the phone
 const toView = (r: PushSubscriptionRow): DeviceView => ({
-  id: r.id, endpoint: r.endpoint, device: r.device, orders: r.orders, messages: r.messages, onShiftOnly: r.onShiftOnly,
+  id: r.id, endpoint: r.endpoint, device: r.device, orders: r.orders, messages: r.messages, talk: r.talk, onShiftOnly: r.onShiftOnly,
   added: manila.date(r.createdAt), lastSent: r.lastSentAt ? `${manila.date(r.lastSentAt)}, ${manila.time(r.lastSentAt)}` : null,
 });
 
@@ -132,10 +163,10 @@ export async function refreshSubscription(me: Staff, input: SubscriptionInput) {
     .where(and(eq(pushSubscriptions.endpoint, sub.endpoint), eq(pushSubscriptions.staffId, me.id)));
 }
 
-export async function updatePrefs(me: Staff, id: string, prefs: { orders: boolean; messages: boolean; onShiftOnly: boolean }) {
+export async function updatePrefs(me: Staff, id: string, prefs: { orders: boolean; messages: boolean; talk: boolean; onShiftOnly: boolean }) {
   await db
     .update(pushSubscriptions)
-    .set({ orders: prefs.orders === true, messages: prefs.messages === true, onShiftOnly: prefs.onShiftOnly === true })
+    .set({ orders: prefs.orders === true, messages: prefs.messages === true, talk: prefs.talk === true, onShiftOnly: prefs.onShiftOnly === true })
     .where(and(eq(pushSubscriptions.id, id), eq(pushSubscriptions.staffId, me.id)));
 }
 

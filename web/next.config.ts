@@ -20,6 +20,13 @@ const nextConfig: NextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=63072000" },
         ],
       },
+      // Push-to-talk needs the microphone. Browsers keep the policy of the first page loaded, and the
+      // staff app and sign-in move between screens without reloading, so all of them allow it.
+      // Listed after the rule above, so this Permissions-Policy wins on these pages.
+      ...["/staff/:path*", "/kiosk/:path*", "/login/:path*"].map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), payment=(), geolocation=(self)" }],
+      })),
       // A customer's order link carries their private token: never pass it on, never index it.
       // Listed after the rule above, so its Referrer-Policy wins for order pages.
       {

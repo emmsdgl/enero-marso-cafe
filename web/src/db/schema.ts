@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, date, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, customType, date, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { CARD_KINDS } from "@/lib/chat-cards";
 import { ORDER_STATUSES } from "@/lib/order-rules";
 
@@ -351,6 +351,7 @@ export const pushSubscriptions = pgTable(
     device: text("device").notNull(), // "Chrome on Android"
     orders: boolean("orders").notNull().default(true), // new orders and payments to check
     messages: boolean("messages").notNull().default(true), // customer messages
+    talk: boolean("talk").notNull().default(true), // talk this device missed (Staff > Talk)
     onShiftOnly: boolean("on_shift_only").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
@@ -365,6 +366,79 @@ export const blockedPhones = pgTable("blocked_phones", {
   blockedBy: uuid("blocked_by").references(() => staff.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ——— Push-to-talk (Staff > Talk and the counter tablet) ———
+
+/** Binary data, for the saved talk clips. Sent and read in Postgres's hex form, which the HTTP driver passes as text. */
+const bytea = customType<{ data: Buffer; driverData: string | Uint8Array }>({
+  dataType: () => "bytea",
+  toDriver: (v) => `\\x${v.toString("hex")}`,
+  fromDriver: (v) => (typeof v === "string" ? Buffer.from(v.replace(/^\\x/, ""), "hex") : Buffer.from(v)),
+});
+
+/** Who holds each branch's Talk channel: one row per branch, free again once `until` has passed */
+export const talkFloor = pgTable("talk_floor", {
+  branchId: text("branch_id").primaryKey().references(() => branches.id),
+  sessionId: text("session_id").notNull(), // the talking device's live audio session
+  name: text("name").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  until: timestamp("until", { withTimezone: true }).notNull(),
+});
+
+/**
+ * Devices on Talk now: someone's Talk screen or a counter tablet. Each keeps a live audio session at
+ * Cloudflare, and the others pull its microphone. A device that stops checking in has left.
+ */
+export const talkPresence = pgTable(
+  "talk_presence",
+  {
+    sessionId: text("session_id").primaryKey(),
+    staffId: uuid("staff_id").references(() => staff.id, { onDelete: "cascade" }),
+    kioskId: uuid("kiosk_id").references(() => kiosks.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    branches: text("branches").array().notNull(), // the channels it's on
+    trackName: text("track_name"), // set on its first press, once its microphone track has carried sound
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    seenAt: timestamp("seen_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("talk_presence_seen").on(t.seenAt),
+    check("talk_presence_who", sql`${t.staffId} is not null or ${t.kioskId} is not null`),
+  ],
+);
+
+/** Each press of the talk button, kept 7 days for anyone who wasn't listening (removed nightly) */
+export const talkClips = pgTable(
+  "talk_clips",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    branches: text("branches").array().notNull(),
+    staffId: uuid("staff_id").references(() => staff.id, { onDelete: "set null" }), // null for a counter tablet
+    kioskId: uuid("kiosk_id").references(() => kiosks.id, { onDelete: "set null" }),
+    name: text("name").notNull(), // who spoke, as shown at the time
+    mime: text("mime").notNull(),
+    ms: integer("ms").notNull(),
+    audio: bytea("audio").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("talk_clips_created").on(t.createdAt),
+    check("talk_clips_size", sql`octet_length(${t.audio}) <= 1500000`),
+    check("talk_clips_length", sql`${t.ms} between 0 and 65000`),
+  ],
+);
+
+/** Who has heard a clip, live or played back later */
+export const talkHeard = pgTable(
+  "talk_heard",
+  {
+    clipId: uuid("clip_id").notNull().references(() => talkClips.id, { onDelete: "cascade" }),
+    staffId: uuid("staff_id").notNull().references(() => staff.id, { onDelete: "cascade" }),
+    live: boolean("live").notNull().default(false),
+    heardAt: timestamp("heard_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.clipId, t.staffId] })],
+);
 
 export type Staff = typeof staff.$inferSelect;
 export type Role = Staff["role"];

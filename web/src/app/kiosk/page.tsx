@@ -3,9 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import KioskBoard from "@/components/staff/KioskBoard";
+import KioskTalk from "@/components/talk/KioskTalk";
 import { db, staff, timeEntries } from "@/db";
 import { branches } from "@/data/branches";
 import { currentKiosk } from "@/lib/kiosk";
+import { talkConfigured } from "@/lib/realtime-sfu";
 import "@/components/staff/staff.css";
 
 export const metadata: Metadata = { title: "Clock in", robots: { index: false } };
@@ -43,6 +45,7 @@ export default async function KioskPage() {
         const o = open.find((x) => x.staffId === t.id);
         return { id: t.id, name: t.name, since: o ? o.clockIn.toISOString() : null };
       })}
+      talk={talkConfigured() ? <KioskTalk /> : null}
     />
   );
 }

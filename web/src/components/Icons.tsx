@@ -64,3 +64,23 @@ export const InfoIcon = (p: P) => (
     <path d="M12 7.6v.1" strokeWidth={2.4} />
   </svg>
 );
+
+export const MicIcon = (p: P) => (
+  <svg viewBox="0 0 24 24" strokeWidth={1.8} {...base} aria-hidden="true" {...p}>
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 13 0" />
+    <path d="M12 17.5V21" />
+  </svg>
+);
+
+export const PlayIcon = (p: P) => (
+  <svg viewBox="0 0 24 24" strokeWidth={1.8} {...base} aria-hidden="true" {...p}>
+    <path d="M8 5.5v13l10.5-6.5z" fill="currentColor" />
+  </svg>
+);
+
+export const PauseIcon = (p: P) => (
+  <svg viewBox="0 0 24 24" strokeWidth={1.8} {...base} aria-hidden="true" {...p}>
+    <path d="M8.5 5.5v13M15.5 5.5v13" strokeWidth={2.6} />
+  </svg>
+);

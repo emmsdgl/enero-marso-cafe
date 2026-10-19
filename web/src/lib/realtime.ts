@@ -18,6 +18,7 @@ function pusher() {
 export const channels = {
   branch: (branchId: string) => `branch-${branchId}`,
   order: (orderId: string) => `order-${orderId}`,
+  talk: (branchId: string) => `talk-${branchId}`, // someone joined, talked or stopped: Talk screens check
 };
 
 export async function announce(names: string[]) {

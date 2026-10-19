@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, useTran
 import { moveOrderAction } from "@/app/staff/orders/actions";
 import CopyText from "@/components/CopyText";
 import { useTabTitle } from "@/components/useTabTitle";
+import { useWakeLock } from "@/components/useWakeLock";
 import { branches } from "@/data/branches";
 import { formatDistance, mapsLink } from "@/lib/delivery";
 import { peso } from "@/lib/menu";
@@ -23,7 +24,6 @@ const STEP_LABEL: Partial<Record<OrderStatus, string>> = {
 };
 const REASONS = ["An item ran out", "Too busy right now", "We're closing soon", "Customer asked to cancel", "Couldn't reach the customer"];
 
-const noSubscribe = () => () => {};
 // A shared clock for "12 min ago": ticks every 15 s, and is blank in the server render
 const subscribeClock = (tick: () => void) => {
   const t = window.setInterval(tick, 15_000);
@@ -81,25 +81,6 @@ function useChime() {
 }
 
 /** Keeps a tablet's screen from sleeping while the board is open */
-function useWakeLock() {
-  const lock = useRef<WakeLockSentinel | null>(null);
-  const supported = useSyncExternalStore(noSubscribe, () => "wakeLock" in navigator, () => false);
-  const [awake, setAwake] = useState(false);
-  useEffect(() => {
-    if (!awake) {
-      lock.current?.release().catch(() => {});
-      lock.current = null;
-      return;
-    }
-    const grab = () => navigator.wakeLock.request("screen").then((l) => { lock.current = l; }).catch(() => setAwake(false));
-    grab();
-    const again = () => document.visibilityState === "visible" && grab();
-    document.addEventListener("visibilitychange", again);
-    return () => document.removeEventListener("visibilitychange", again);
-  }, [awake]);
-  return { supported, awake, toggle: () => setAwake((a) => !a) };
-}
-
 type Props = { orders: FullOrder[]; unread: Record<string, Unread>; showBranch: boolean; context: BoardContext };
 
 export default function OrderBoard({ orders, unread, showBranch, context }: Props) {

@@ -95,8 +95,8 @@ export default function PushSetup({ devices, configured }: { devices: DeviceView
       setMessage(r.error ? { error: r.error } : { ok: "Sent. It should appear in a few seconds, even if you leave this page." });
     });
 
-  const setPref = (key: "orders" | "messages" | "onShiftOnly", value: boolean) =>
-    here && start(async () => savePushPrefs(here.id, { orders: here.orders, messages: here.messages, onShiftOnly: here.onShiftOnly, [key]: value }));
+  const setPref = (key: "orders" | "messages" | "talk" | "onShiftOnly", value: boolean) =>
+    here && start(async () => savePushPrefs(here.id, { orders: here.orders, messages: here.messages, talk: here.talk, onShiftOnly: here.onShiftOnly, [key]: value }));
 
   return (
     <div className="push-setup">
@@ -129,7 +129,7 @@ export default function PushSetup({ devices, configured }: { devices: DeviceView
       )}
       {status === "off" && (
         <>
-          <p className="staff-help">Get new orders, payments to check and customer messages on this device, even when the board is closed.</p>
+          <p className="staff-help">Get new orders, payments to check, customer messages and talk you missed on this device, even when the app is closed.</p>
           <button type="button" className="staff-btn is-primary" onClick={turnOn} disabled={pending}>{pending ? "Turning on…" : "Turn on notifications"}</button>
         </>
       )}
@@ -140,6 +140,7 @@ export default function PushSetup({ devices, configured }: { devices: DeviceView
             <legend>Ring for</legend>
             <label className="staff-check"><input type="checkbox" checked={here.orders} onChange={(e) => setPref("orders", e.target.checked)} /> New orders and payments to check</label>
             <label className="staff-check"><input type="checkbox" checked={here.messages} onChange={(e) => setPref("messages", e.target.checked)} /> Customer messages</label>
+            <label className="staff-check"><input type="checkbox" checked={here.talk} onChange={(e) => setPref("talk", e.target.checked)} /> Talk I missed</label>
             <label className="staff-check"><input type="checkbox" checked={here.onShiftOnly} onChange={(e) => setPref("onShiftOnly", e.target.checked)} /> Only while I&rsquo;m clocked in</label>
           </fieldset>
           <div className="staff-form-foot">

@@ -57,6 +57,18 @@ export default async function HelpPage() {
         </section>
 
         <section className="staff-card">
+          <h2>Talk</h2>
+          <ul>
+            <li>Talk is a walkie-talkie between the owner and whoever is on shift. Open <Link href="/staff/talk">Talk</Link>, tap <b>Turn on Talk</b>, then hold the round button to speak and let go to stop.</li>
+            <li>Once it&rsquo;s on, a small talk button stays in the corner while you use Orders and the other screens.</li>
+            <li>The counter tablet listens all day. After it restarts, tap <b>Tap to turn on Talk sound</b> on it.</li>
+            <li>You hear talk live only while Talk is on and the app is open. On an iPhone keep the app on screen: in the background you get a <b>Missed talk</b> notification instead, and can play it on Talk. (Turn on notifications in <Link href="/staff/account#notifications">Account</Link>.)</li>
+            <li>One person talks at a time, up to a minute per press. Each press is kept for 7 days, then deleted.</li>
+            <li>Talk is for people who are clocked in, and the owner. Clocking out turns it off.</li>
+          </ul>
+        </section>
+
+        <section className="staff-card">
           <h2>Cancelling</h2>
           <ul>
             <li>You can cancel until preparing starts. Pick the reason the customer will see.</li>

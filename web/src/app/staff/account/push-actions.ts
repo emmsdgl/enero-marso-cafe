@@ -18,7 +18,7 @@ export async function refreshPush(sub: SubscriptionInput) {
   await refreshSubscription(me, sub);
 }
 
-export async function savePushPrefs(id: string, prefs: { orders: boolean; messages: boolean; onShiftOnly: boolean }) {
+export async function savePushPrefs(id: string, prefs: { orders: boolean; messages: boolean; talk: boolean; onShiftOnly: boolean }) {
   const me = await requireStaff();
   await updatePrefs(me, String(id), prefs);
   revalidatePath("/staff/account");

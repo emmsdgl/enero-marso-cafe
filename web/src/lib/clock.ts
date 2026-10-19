@@ -1,6 +1,7 @@
 import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 import { db, timeEntries, type Staff } from "@/db";
+import { endTalkFor } from "./talk";
 
 export type Punch = { action: "in" | "out"; at: Date; hours?: number };
 
@@ -22,6 +23,8 @@ export async function toggleClock(member: Staff, branchId: string, method: "tabl
       .update(timeEntries)
       .set({ clockOut: now, outMethod: method, outIp: ip })
       .where(eq(timeEntries.id, open.id));
+    // Talk is for people on shift: it ends on all of their devices
+    if (member.role !== "admin") await endTalkFor(member.id).catch((e) => console.error("Ending talk failed", e));
     return { action: "out", at: now, hours: (now.getTime() - open.clockIn.getTime()) / 3_600_000 };
   }
   await db.insert(timeEntries).values({ staffId: member.id, branchId, clockIn: now, inMethod: method, inIp: ip });

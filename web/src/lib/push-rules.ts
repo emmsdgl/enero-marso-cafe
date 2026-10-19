@@ -34,7 +34,7 @@ export function recipients<D extends Device>(devices: D[], branchId: string, kin
 /** Employees are notified while they're on shift; managers and the admin, always. Each device can change it. */
 export const defaultOnShiftOnly = (role: Device["role"]) => role === "employee";
 
-export type Payload = { kind: PushKind | "test"; title: string; body: string; url: string; tag: string };
+export type Payload = { kind: PushKind | "talk" | "test"; title: string; body: string; url: string; tag: string };
 
 const BRANCH_SHORT: Record<string, string> = { main: "Cafe", noir: "Cafe Noir" };
 const time = (d: Date) => d.toLocaleTimeString("en-PH", { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" });

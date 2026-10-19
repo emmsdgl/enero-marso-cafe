@@ -11,7 +11,7 @@ const timeOf = (iso: string) =>
   new Date(iso).toLocaleTimeString("en-PH", { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" });
 
 /** Shared counter tablet: tap your name, type your PIN, see a confirmation, back to the list */
-export default function KioskBoard({ branchName, people }: { branchName: string; people: Person[] }) {
+export default function KioskBoard({ branchName, people, talk }: { branchName: string; people: Person[]; talk?: React.ReactNode }) {
   const router = useRouter();
   const [who, setWho] = useState<Person | null>(null);
   const [pin, setPin] = useState("");
@@ -143,6 +143,7 @@ export default function KioskBoard({ branchName, people }: { branchName: string;
           </button>
         </section>
       )}
+      {talk}
     </main>
   );
 }

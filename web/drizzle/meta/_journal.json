@@ -92,6 +92,13 @@
       "when": 1792388360886,
       "tag": "0012_chat_cards",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792406202325,
+      "tag": "0013_talk",
+      "breakpoints": true
     }
   ]
 }
