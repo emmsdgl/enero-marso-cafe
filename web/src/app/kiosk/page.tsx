@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { InstallKiosk } from "@/components/staff/KioskApp";
 import KioskBoard from "@/components/staff/KioskBoard";
 import KioskTalk from "@/components/talk/KioskTalk";
 import { db, staff, timeEntries } from "@/db";
@@ -20,9 +21,10 @@ export default async function KioskPage() {
     return (
       <main className="kiosk is-empty">
         <Image src="/brand/enero-marso-monogram-gold.png" alt="" width={439} height={500} className="kiosk-mark" />
-        <h1>This device isn&rsquo;t a clock-in tablet</h1>
-        <p>A branch manager can set it up: sign in on this device, go to <b>Branch setup</b>, and choose &ldquo;Make this device the clock-in tablet&rdquo;.</p>
-        <Link className="staff-btn is-primary" href="/login">Staff sign in</Link>
+        <h1>This device isn&rsquo;t a clock-in tablet yet</h1>
+        <p>A branch manager sets it up once: tap below and sign in. You&rsquo;re signed out again as soon as it&rsquo;s done.</p>
+        <InstallKiosk />
+        <Link className="staff-btn is-primary" href="/login?tablet=1&next=/staff/branch/tablet">Set up this tablet</Link>
       </main>
     );
   }

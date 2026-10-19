@@ -16,6 +16,7 @@ export default function AuthCard({
   submit,
   action,
   footer,
+  hidden,
 }: {
   title: string;
   intro?: string;
@@ -23,6 +24,7 @@ export default function AuthCard({
   submit: string;
   action: (state: FormState, form: FormData) => Promise<FormState>;
   footer?: { text: string; href: string; link: string };
+  hidden?: Record<string, string>; // sent along unseen, like where to go after signing in
 }) {
   const [state, run, pending] = useActionState(action, undefined);
   return (
@@ -34,6 +36,7 @@ export default function AuthCard({
         <h1>{title}</h1>
         {intro && <p className="auth-intro">{intro}</p>}
         <form action={run} className="auth-form" noValidate={false}>
+          {Object.entries(hidden ?? {}).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}
           {fields.map((f) => (
             <label key={f.name}>
               {f.label}

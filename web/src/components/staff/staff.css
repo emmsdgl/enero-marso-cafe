@@ -480,7 +480,28 @@
 .auth-foot a { color: var(--brown); font-weight: 600; text-underline-offset: 0.2em; }
 
 /* ——— Counter tablet ——— */
-.kiosk { min-height: 100svh; background: var(--ink); color: var(--cream); padding: clamp(1.25rem, 3vw, 2.25rem) var(--gutter) 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
+/* Installed as its own app it runs full screen, so it keeps clear of the iPad's status bar and rounded corners */
+.kiosk {
+  min-height: 100svh; background: var(--ink); color: var(--cream); display: flex; flex-direction: column; gap: 1.5rem;
+  padding: calc(env(safe-area-inset-top, 0px) + clamp(1.25rem, 3vw, 2.25rem)) max(var(--gutter), env(safe-area-inset-right, 0px))
+    calc(env(safe-area-inset-bottom, 0px) + 2rem) max(var(--gutter), env(safe-area-inset-left, 0px));
+}
+.kiosk-install {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; padding: 0.85rem 1.1rem; border-radius: 0.85rem;
+  background: rgb(207 157 87 / 0.12); border: 1px solid rgb(207 157 87 / 0.35); color: var(--cream); text-align: left;
+}
+.kiosk .kiosk-install p { margin: 0; flex: 1 1 20rem; max-width: 60ch; font-size: 0.9375rem; color: var(--cream); }
+.kiosk-install-go {
+  min-height: 2.75rem; padding: 0 1.25rem; border: 0; border-radius: 999px; background: var(--gold); color: var(--ink);
+  font: 700 0.9375rem var(--brand); cursor: pointer;
+}
+.kiosk-install-later {
+  padding: 0.5rem; border: 0; background: none; color: var(--card); cursor: pointer;
+  font: 600 0.875rem var(--brand); text-decoration: underline; text-underline-offset: 0.2em;
+}
+.kiosk-install-go:focus-visible, .kiosk-install-later:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.kiosk.is-empty .kiosk-install { max-width: 34rem; }
+.tablet-setup { max-width: 40rem; }
 .kiosk-top { display: flex; align-items: center; gap: 1rem; }
 .kiosk-mark { width: 2.75rem; height: auto; }
 .kiosk-top h1 { font-weight: 700; font-size: clamp(1.15rem, 2.5vw, 1.5rem); }

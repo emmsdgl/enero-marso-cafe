@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { kioskPunch, type KioskResult } from "@/app/kiosk/actions";
+import { useWakeLock } from "@/components/useWakeLock";
+import { InstallKiosk } from "./KioskApp";
 
 type Person = { id: string; name: string; since: string | null };
 
@@ -18,6 +20,8 @@ export default function KioskBoard({ branchName, people, talk }: { branchName: s
   const [result, setResult] = useState<KioskResult | null>(null);
   const [pending, start] = useTransition();
   const [clock, setClock] = useState<Date | null>(null);
+  // The tablet stays on all day
+  useWakeLock(true);
 
   // Live clock, and refresh the list every minute so statuses stay current
   useEffect(() => {
@@ -85,6 +89,7 @@ export default function KioskBoard({ branchName, people, talk }: { branchName: s
           {clock ? clock.toLocaleTimeString("en-PH", { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" }) : ""}
         </time>
       </header>
+      <InstallKiosk dismissible />
 
       {!who ? (
         people.length === 0 ? (

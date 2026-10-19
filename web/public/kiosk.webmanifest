@@ -1,0 +1,17 @@
+{
+  "id": "/kiosk",
+  "name": "Enero Marso Clock-in",
+  "short_name": "EM Clock-in",
+  "description": "The counter tablet: staff clock in and out, and Talk listens all day",
+  "start_url": "/kiosk",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#151211",
+  "theme_color": "#151211",
+  "icons": [
+    { "src": "/icons/kiosk-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/kiosk-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/kiosk-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -302,7 +302,10 @@ export function ClockInWifi({ branchId, nets, here }: { branchId: string; nets: 
 export function ClockInTablet({ branchId, tabs, thisDevice }: { branchId: string; tabs: Tablet[]; thisDevice: { id: string; branchId: string } | undefined }) {
   return (
     <>
-      <p className="staff-help">The tablet at the counter, where staff tap their name and type their PIN. Set it up on the tablet itself.</p>
+      <p className="staff-help">
+        The tablet at the counter, where staff tap their name and type their PIN. Set it up on the tablet itself: open{" "}
+        <Link href="/kiosk">the clock-in screen</Link> there, install it as an app, then tap <b>Set up this tablet</b> inside the app.
+      </p>
       {tabs.length === 0 ? (
         <p className="staff-empty">No tablet set up yet.</p>
       ) : (
@@ -321,6 +324,7 @@ export function ClockInTablet({ branchId, tabs, thisDevice }: { branchId: string
         <ActionForm action={registerKiosk} submit="Use this device as the clock-in tablet" className="is-row">
           <input type="hidden" name="branch" value={branchId} />
           <label>Name it<input name="label" defaultValue="Counter tablet" /></label>
+          <small className="staff-help">You&rsquo;ll be signed out on this device, and it opens the clock-in screen.</small>
         </ActionForm>
       )}
     </>

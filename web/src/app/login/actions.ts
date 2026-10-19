@@ -14,6 +14,11 @@ export type FormState = { error?: string; email?: string } | undefined;
 
 const clean = (v: FormDataEntryValue | null) => String(v ?? "").trim();
 const lower = (v: FormDataEntryValue | null) => clean(v).toLowerCase();
+/** Where to go after signing in: a staff page on this site (like Branch setup for the tablet), else Today */
+const staffPath = (v: FormDataEntryValue | null) => {
+  const path = clean(v);
+  return /^\/staff(\/[\w-]+)*([?#][\w=&%-]*)?$/.test(path) ? path : "/staff";
+};
 
 /**
  * One sign-in for everyone: "Name or email" plus "Password or PIN".
@@ -44,7 +49,7 @@ export async function signIn(_: FormState, form: FormData): Promise<FormState> {
     }
     await startPinSession(found.id);
     await audit(found.id, "sign-in.pin");
-    redirect("/staff");
+    redirect(staffPath(form.get("next")));
   }
 
   // ——— Password ———
@@ -58,7 +63,7 @@ export async function signIn(_: FormState, form: FormData): Promise<FormState> {
     return { error: "This account doesn't have staff access. Ask the admin to add you.", email: who };
   }
   await endPinSession();
-  redirect("/staff");
+  redirect(staffPath(form.get("next")));
 }
 
 /** Match an email, a full name, or a first name that only one active, set-up person has */

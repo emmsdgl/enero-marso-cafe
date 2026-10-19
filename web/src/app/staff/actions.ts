@@ -3,6 +3,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { branchNetworks, branches, db, kiosks, paymentAccounts, pushSubscriptions, staff, timeEntries } from "@/db";
 import { auth } from "@/lib/auth/server";
 import { toggleClock } from "@/lib/clock";
@@ -10,6 +11,7 @@ import { FREE_DELIVERY_OPTIONS, formatDistance, inPhilippines, isLatLng, MAX_DEL
 import { removeSpecialDay, saveSpecialDay, saveWeek } from "@/lib/hours-store";
 import { peso } from "@/lib/menu";
 import { savePaymentAccount, setPaymentAccountActive } from "@/lib/payments";
+import { endPinSession } from "@/lib/pin-session";
 import {
   audit, canActOnBranch, clientIp, hashKioskToken, hashPin, KIOSK_COOKIE, newKioskToken, onBranchNetwork, PIN_RULE, requireStaff,
 } from "@/lib/staff";
@@ -180,8 +182,10 @@ export async function registerKiosk(_: ActionState, form: FormData): Promise<Act
     httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 400,
   });
   await audit(me.id, "kiosk.add", { branchId, label });
-  revalidatePath("/staff/branch");
-  return { ok: "This device is now the clock-in tablet. Open /kiosk on it and leave it there." };
+  // A shared tablet shouldn't stay signed in as a manager: sign out here, straight to the clock-in screen
+  await endPinSession();
+  await auth.signOut().catch(() => {});
+  redirect("/kiosk");
 }
 
 export async function revokeKiosk(id: string): Promise<ActionState> {

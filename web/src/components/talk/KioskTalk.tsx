@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { MicIcon } from "@/components/Icons";
-import { useWakeLock } from "@/components/useWakeLock";
 import { nameList } from "@/lib/talk-rules";
 import HoldButton, { talkerOf, useTalk } from "./HoldButton";
 
@@ -12,7 +11,6 @@ import HoldButton, { talkerOf, useTalk } from "./HoldButton";
  */
 export default function KioskTalk() {
   const { engine, snap } = useTalk("/kiosk/talk");
-  useWakeLock(true);
   useEffect(() => {
     engine.start();
   }, [engine]);

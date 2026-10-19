@@ -98,6 +98,19 @@ export default async function HelpPage() {
           </section>
         )}
 
+        {manager && (
+          <section className="staff-card">
+            <h2>Setting up the counter tablet</h2>
+            <ol>
+              <li>On the tablet, open the website and add <b>/kiosk</b> to the address (the clock-in screen).</li>
+              <li>Install it: on Android tap <b>Install the app</b>; on an iPad tap <b>Share</b>, then <b>Add to Home Screen</b>. Then open <b>EM Clock-in</b> from the home screen.</li>
+              <li>In the app, tap <b>Set up this tablet</b>, sign in with your password, and tap <b>Make this the clock-in tablet</b>. You&rsquo;re signed out on the tablet straight away.</li>
+              <li>Leave it on the clock-in screen. It keeps the screen on; after a restart, tap <b>Tap to turn on Talk sound</b>.</li>
+              <li>A lost or replaced tablet: remove it under <Link href="/staff/branch">Branch</Link> &gt; Clock-in &gt; <b>Manage tablet</b>.</li>
+            </ol>
+          </section>
+        )}
+
         <section className="staff-card">
           <h2>Closing</h2>
           <ul>
