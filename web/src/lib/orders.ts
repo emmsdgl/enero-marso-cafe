@@ -8,6 +8,7 @@ import type { Schedule } from "./hours";
 import { loadSchedules } from "./hours-store";
 import { isBranchId, peso, type BranchId } from "./menu";
 import { loadMenus } from "./menu-store";
+import { NOT_FOUND_REASONS, type Card } from "./chat-cards";
 import { canMove, cleanPaymentRef, statusNote, type OrderStatus } from "./order-rules";
 import { hashOrderToken, newOrderCode, newOrderToken, tokenMatches } from "./order-token";
 import { pickupAllowed } from "./pickup";
@@ -198,9 +199,15 @@ async function staffOrder(me: Staff, orderId: string): Promise<{ ok: true; order
   return { ok: true, order: o };
 }
 
-/** Writes a system line in the order's chat, and tells both screens to refresh */
-async function noteAndAnnounce(o: Order, body: string | null) {
-  if (body) await db.insert(orderMessages).values({ orderId: o.id, sender: "system", body });
+/** A chat line's kind and details, from its card */
+const cardRow = (card?: Card) => (card ? { kind: card.kind, meta: Object.fromEntries(Object.entries(card).filter(([k]) => k !== "kind")) } : {});
+
+/**
+ * Writes a system line in the order's chat (as a card, when there is one), and tells both screens
+ * to refresh. The text is what staff read, and what a page without the card shows.
+ */
+async function noteAndAnnounce(o: Order, body: string | null, card?: Card) {
+  if (body) await db.insert(orderMessages).values({ orderId: o.id, sender: "system", body, ...cardRow(card) });
   await announce([channels.branch(o.branchId), channels.order(o.id)]);
 }
 
@@ -230,7 +237,7 @@ export async function moveOrder(me: Staff, orderId: string, from: OrderStatus, t
   if (to === "cancelled" && o.paymentStatus === "verified") note += ` Your payment of ${peso(o.total)} will be refunded.`;
   if (to === "cancelled" && o.paymentStatus === "submitted") note += ` If you already paid, the cafe will refund ${peso(o.total)}.`;
   if (to === "cancelled") await audit(me.id, "order.cancel", { orderId: o.id, code: o.code, reason: why, payment: o.paymentStatus });
-  await noteAndAnnounce(o, note || null);
+  await noteAndAnnounce(o, note || null, { kind: "step", status: to });
   return { ok: true };
 }
 
@@ -267,6 +274,7 @@ export async function quoteDelivery(me: Staff, orderId: string, feeInput: unknow
     requote
       ? `The cafe changed the delivery fee to ${feeWords}. Total to pay: ${peso(total)}.`
       : `The cafe confirmed the order. Delivery: ${feeWords}. Total to pay: ${peso(total)}.`,
+    { kind: "quote", fee, total, requote },
   );
   return { ok: true };
 }
@@ -292,20 +300,25 @@ export async function submitPayment(code: string, token: string, accountId: unkn
     .where(and(eq(orders.id, o.id), eq(orders.status, "awaiting_payment"), eq(orders.paymentStatus, "unpaid")))
     .returning({ id: orders.id });
   if (done.length === 0) return fail("Your order changed in the meantime. Check the page and try again.");
-  await noteAndAnnounce(o, `The customer sent payment reference ${ref} (paid to ${account.label}). The cafe is checking it.`);
+  await noteAndAnnounce(o, `The customer sent payment reference ${ref} (paid to ${account.label}). The cafe is checking it.`, {
+    kind: "pay_sent", ref, account: account.label, amount: o.total,
+  });
   notifyBranch(o.branchId, "payment", paymentPayload(o, account.label));
   return { ok: true };
 }
 
 /**
  * Delivery, step 3: staff look for the payment in the cafe's GCash or bank app. Found: the order
- * is paid and accepted in one tap. Not found: the customer is asked to check and send it again.
+ * is paid and accepted in one tap. Not found: the customer is asked to check and send it again,
+ * with the reason staff picked, on a card that stands out on their page.
  */
-export async function reviewPayment(me: Staff, orderId: string, received: boolean): Promise<{ ok: true } | Fail> {
+export async function reviewPayment(me: Staff, orderId: string, received: boolean, reasonInput?: unknown): Promise<{ ok: true } | Fail> {
   const found = await staffOrder(me, orderId);
   if (!found.ok) return found;
   const o = found.order;
   if (o.status !== "awaiting_payment" || o.paymentStatus !== "submitted") return STALE;
+  const reason = NOT_FOUND_REASONS.find((r) => r === reasonInput) ?? null;
+  if (!received && reasonInput !== undefined && !reason) return fail("Choose why the payment wasn't found.");
   const now = new Date();
   const where = and(eq(orders.id, o.id), eq(orders.status, "awaiting_payment"), eq(orders.paymentStatus, "submitted"));
   const done = received
@@ -320,12 +333,14 @@ export async function reviewPayment(me: Staff, orderId: string, received: boolea
         .where(where)
         .returning({ id: orders.id });
   if (done.length === 0) return STALE;
-  await audit(me.id, received ? "order.payment-ok" : "order.payment-not-found", { orderId: o.id, code: o.code, ref: o.gcashRef, total: o.total });
+  // Keep the key "ref": the yearly clean-up removes it from these entries (lib/retention.ts)
+  await audit(me.id, received ? "order.payment-ok" : "order.payment-not-found", { orderId: o.id, code: o.code, ref: o.gcashRef, total: o.total, ...(reason ? { reason } : {}) });
   await noteAndAnnounce(
     o,
     received
       ? "Payment received. The cafe accepted the order."
-      : "The cafe couldn't find this payment yet. Check the reference number and send it again, or message the cafe here.",
+      : `The cafe couldn't find this payment${reason ? ` (${reason.toLowerCase()})` : " yet"}. Check the reference number and send it again, or message the cafe here.`,
+    received ? { kind: "pay_ok", amount: o.total } : { kind: "pay_missing", amount: o.total, ref: o.gcashRef, reason },
   );
   return { ok: true };
 }
@@ -358,6 +373,7 @@ export async function sendOut(me: Staff, orderId: string, providerInput: unknown
     provider === "own_rider"
       ? "The order is on its way with our staff."
       : `The order is on its way with Lalamove.${link ? " Follow the rider with the tracking link on this page." : ""}`,
+    { kind: "step", status: "out_for_delivery", provider },
   );
   return { ok: true };
 }
@@ -389,7 +405,7 @@ export async function cancelByCustomer(code: string, token: string): Promise<{ o
     .where(and(eq(orders.id, o.id), eq(orders.status, o.status), eq(orders.paymentStatus, "unpaid")))
     .returning({ id: orders.id });
   if (done.length === 0) return accepted;
-  await db.insert(orderMessages).values({ orderId: o.id, sender: "system", body: "The customer cancelled the order." });
+  await db.insert(orderMessages).values({ orderId: o.id, sender: "system", body: "The customer cancelled the order.", ...cardRow({ kind: "step", status: "cancelled", byCustomer: true }) });
   await announce([channels.branch(o.branchId), channels.order(o.id)]);
   return { ok: true };
 }

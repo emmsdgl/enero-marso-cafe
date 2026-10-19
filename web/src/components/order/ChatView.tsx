@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useId, useOptimistic, useState, useTransition } from "react";
+import { useEffect, useId, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 import { MESSAGE_MAX, type Sender } from "@/lib/order-rules";
 
 /** One chat line, ready to show. Times are formatted on the server, so both renders agree. */
-export type ChatLine = { id: string; sender: Sender; body: string; time: string; who: string | null; sending?: boolean };
+export type ChatLine = { id: string; sender: Sender; body: string; time: string; who: string | null; kind?: string; sending?: boolean };
 
 type Props = {
   side: "customer" | "staff";
@@ -20,24 +20,37 @@ type Props = {
   suggestions?: string[];
   send: (body: string) => Promise<{ error?: string }>;
   seen: () => Promise<void>;
+  /** The customer's page: a card before the first line (the order itself) */
+  intro?: ReactNode;
+  /** Cards drawn by the page for system lines, by line id; lines without one show as text */
+  cards?: Record<string, ReactNode>;
+  /** A card after the last line (a pay form the order's lines don't carry) */
+  outro?: ReactNode;
 };
 
 /** The order chat, shared by the customer's order page and the staff order page */
-export default function ChatView({ side, lines, open, unread, myName, placeholder, emptyNote, closedNote, suggestions, send, seen }: Props) {
+export default function ChatView({ side, lines, open, unread, myName, placeholder, emptyNote, closedNote, suggestions, send, seen, intro, cards, outro }: Props) {
   const id = useId();
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [shown, addSending] = useOptimistic(lines, (now: ChatLine[], line: ChatLine) => [...now, line]);
 
-  // New messages count as read once this page is actually on screen
+  // New messages count as read once the end of the chat is on screen, and the page is in front
   const lastId = lines.at(-1)?.id;
+  const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (unread === 0) return;
-    const look = () => { if (document.visibilityState === "visible") seen().catch(() => {}); };
-    look();
+    const spot = end.current;
+    if (unread === 0 || !spot) return;
+    let inView = false;
+    const look = () => { if (inView && document.visibilityState === "visible") seen().catch(() => {}); };
+    const watch = new IntersectionObserver(([e]) => { inView = e.isIntersecting; look(); });
+    watch.observe(spot);
     document.addEventListener("visibilitychange", look);
-    return () => document.removeEventListener("visibilitychange", look);
+    return () => {
+      watch.disconnect();
+      document.removeEventListener("visibilitychange", look);
+    };
   }, [unread, lastId, seen]);
 
   const submit = () => {
@@ -59,13 +72,18 @@ export default function ChatView({ side, lines, open, unread, myName, placeholde
 
   return (
     <div className={`chat is-${side}`}>
-      {shown.length > 0 ? (
+      {shown.length > 0 || intro ? (
         <ol className="chat-log" aria-label="Messages" aria-live="polite">
+          {intro && <li className="chat-line is-card">{intro}</li>}
           {shown.map((l) =>
             l.sender === "system" ? (
-              <li key={l.id} className="chat-line is-system">
-                <p>{l.body} <small>· {l.time}</small></p>
-              </li>
+              cards?.[l.id] ? (
+                <li key={l.id} className="chat-line is-card">{cards[l.id]}</li>
+              ) : (
+                <li key={l.id} className={`chat-line is-system${l.kind && l.kind !== "text" ? ` is-${l.kind.replace("_", "-")}` : ""}`}>
+                  <p>{l.body} <small>· {l.time}</small></p>
+                </li>
+              )
             ) : (
               <li key={l.id} className={`chat-line ${l.sender === side ? "is-mine" : "is-theirs"}${l.sending ? " is-sending" : ""}`}>
                 <p className="chat-bubble">{l.body}</p>
@@ -73,10 +91,11 @@ export default function ChatView({ side, lines, open, unread, myName, placeholde
               </li>
             ),
           )}
+          {outro && <li className="chat-line is-card">{outro}</li>}
         </ol>
-      ) : (
-        open && <p className="chat-empty">{emptyNote}</p>
-      )}
+      ) : null}
+      {open && shown.length === 0 && <p className="chat-empty">{emptyNote}</p>}
+      <div ref={end} id="chat-end" className="chat-end" />
 
       {open ? (
         <form className="chat-compose" onSubmit={(e) => { e.preventDefault(); submit(); }}>

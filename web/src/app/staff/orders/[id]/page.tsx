@@ -35,7 +35,7 @@ export default async function OrderDetailPage({ params }: PageProps<"/staff/orde
   const chat = chatState(order);
   const firstName = order.customerName.split(" ")[0];
   const lines = messages.map((m) => ({
-    id: m.id, sender: m.sender, body: m.body, time: manila.time(m.createdAt),
+    id: m.id, sender: m.sender, body: m.body, time: manila.time(m.createdAt), kind: m.kind,
     who: m.sender === "customer" ? order.customerName : m.sender === "staff" ? (m.staffName ?? "Staff") : null,
   }));
   const pin = order.lat != null && order.lng != null ? { lat: order.lat, lng: order.lng } : null;

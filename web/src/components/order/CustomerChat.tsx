@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, type ReactNode } from "react";
 import { markOrderSeen, sendCustomerMessage } from "@/app/order/actions";
+import { useTabTitle } from "@/components/useTabTitle";
 import ChatView, { type ChatLine } from "./ChatView";
 
 type Props = {
@@ -11,12 +12,18 @@ type Props = {
   open: boolean;
   unread: number;
   branchName: string;
-  closedNote: React.ReactNode;
+  closedNote: ReactNode;
+  intro: ReactNode;
+  cards: Record<string, ReactNode>;
+  outro?: ReactNode;
 };
 
-export default function CustomerChat({ code, token, lines, open, unread, branchName, closedNote }: Props) {
+/** The customer's whole order page below the header: the order's steps as cards, and the chat with the branch */
+export default function CustomerChat({ code, token, lines, open, unread, branchName, closedNote, intro, cards, outro }: Props) {
   const send = useCallback((body: string) => sendCustomerMessage(code, token, body), [code, token]);
   const seen = useCallback(() => markOrderSeen(code, token), [code, token]);
+  // Seen from another tab: a new message, or a payment the cafe couldn't find
+  useTabTitle(`${unread ? `(${unread}) ` : ""}Your order ${code} · Enero Marso`);
   return (
     <ChatView
       side="customer"
@@ -29,6 +36,9 @@ export default function CustomerChat({ code, token, lines, open, unread, branchN
       closedNote={closedNote}
       send={send}
       seen={seen}
+      intro={intro}
+      cards={cards}
+      outro={outro}
     />
   );
 }

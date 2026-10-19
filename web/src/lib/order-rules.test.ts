@@ -107,6 +107,16 @@ describe("chat messages", () => {
     expect(unreadCount(msgs, "customer", null)).toBe(1);
     expect(unreadCount(msgs, "customer", at("2026-10-10T11:03:00Z"))).toBe(0);
   });
+
+  it("tells the customer about a payment the cafe couldn't find, like a message; staff don't count it", () => {
+    const msgs = [
+      { sender: "system" as const, kind: "quote", createdAt: at("2026-10-10T11:01:00Z") },
+      { sender: "system" as const, kind: "pay_missing", createdAt: at("2026-10-10T11:05:00Z") },
+    ];
+    expect(unreadCount(msgs, "customer", null)).toBe(1);
+    expect(unreadCount(msgs, "customer", at("2026-10-10T11:06:00Z"))).toBe(0);
+    expect(unreadCount(msgs, "staff", null)).toBe(0);
+  });
 });
 
 describe("delivery payments", () => {

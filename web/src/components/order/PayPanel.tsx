@@ -6,14 +6,15 @@ import CopyText from "@/components/CopyText";
 import { peso } from "@/lib/menu";
 import type { PayAccount } from "@/lib/payments";
 
-type Props = { code: string; token: string; total: number; accounts: PayAccount[]; sent: string | null };
+/** `bare`: inside a chat card, whose title already says "Pay ₱X" */
+type Props = { code: string; token: string; total: number; accounts: PayAccount[]; sent: string | null; bare?: boolean };
 
 /**
  * Paying for a delivery: the cafe's QR and number, the exact amount, then the receipt's
  * reference number. Customers usually order and pay on the same phone, so the QR can be saved
  * to the gallery and uploaded in the GCash, Maya or bank app's QR scanner.
  */
-export default function PayPanel({ code, token, total, accounts, sent }: Props) {
+export default function PayPanel({ code, token, total, accounts, sent, bare = false }: Props) {
   const [chosen, setChosen] = useState(accounts[0]?.id ?? "");
   const [ref, setRef] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -47,8 +48,8 @@ export default function PayPanel({ code, token, total, accounts, sent }: Props) 
   };
 
   return (
-    <section className="pay" aria-labelledby="pay-title">
-      <h2 id="pay-title">Pay {peso(total)}</h2>
+    <section className={`pay${bare ? " is-bare" : ""}`} aria-labelledby="pay-title">
+      <h2 id="pay-title" className={bare ? "sr-only" : undefined}>Pay {peso(total)}</h2>
       <p className="pay-how">Pay from GCash, Maya or your bank app, the exact amount. Then type the reference number from your receipt below.</p>
 
       {accounts.length > 1 && (

@@ -89,9 +89,9 @@ export default function OrderBubble() {
         return [{
           code: g.code,
           href: recent.find((r) => r.code === g.code)!.href,
-          label: done ? `${status} · chat open until ${clock(g.chatClosesAt)}` : status,
+          label: g.alert === "pay_missing" ? "Payment not found · check and send it again" : done ? `${status} · chat open until ${clock(g.chatClosesAt)}` : status,
           unread: g.unread,
-          key: `${g.code}|${g.status}|${g.unread}`,
+          key: `${g.code}|${g.status}|${g.unread}|${g.alert ?? ""}`,
           needsYou: g.unread > 0 || g.status === "awaiting_payment" || (!delivery && g.status === "ready"),
         }];
       });

@@ -578,30 +578,9 @@ body:has(.sheet[open]) { overflow: hidden; }
   font-weight: 700; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase;
 }
 .track-alert:hover { background: var(--ink); color: var(--cream); }
+.track-alert.is-alert { background: #8a1f17; color: #fff; }
 .track-chat { display: grid; gap: 0.85rem; padding-top: 1.25rem; border-top: 2px solid var(--ink); scroll-margin-top: 6rem; }
 .track-chat h2 { font-weight: 700; font-size: 0.75rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--brown); }
-.track-chat-intro { margin: -0.35rem 0 0; font-size: 0.9375rem; color: var(--cocoa); }
-label.track-alert { cursor: pointer; }
-/* From the pay step on: Pay (while paying), Messages and Your order as tabs */
-.track-tabs { display: flex; min-width: 0; margin: 0; padding: 0; border: 0; border-bottom: 2px solid var(--ink); }
-.track-tab {
-  position: relative; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; padding: 0.85rem 0.5rem;
-  cursor: pointer; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cocoa); transition: color 0.15s ease;
-}
-.track-tab:hover { color: var(--ink); }
-.track-tab:has(input:checked) { color: var(--ink); box-shadow: inset 0 -5px 0 var(--gold); }
-.track-tab:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
-@media (max-width: 30rem) { .track-tab { flex: 1 1 auto; padding-inline: 0.3rem; letter-spacing: 0.1em; white-space: nowrap; } }
-.track-tab b { min-width: 1.4rem; padding: 0.15rem 0.4rem; border-radius: 999px; background: var(--brown); color: var(--cream); font-size: 0.6875rem; letter-spacing: 0; text-align: center; }
-.track-pane { display: grid; gap: 1.25rem; margin-top: -0.5rem; }
-.track-pane .track-chat { position: relative; border-top: 0; padding-top: 0; }
-.track-pane .track-chat h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.track-pane-sum { margin: 0; font-weight: 600; }
-.track:has(.track-tab input[value="pay"]:checked) .track-pane:not([data-pane="pay"]),
-.track:has(.track-tab input[value="chat"]:checked) .track-pane:not([data-pane="chat"]),
-.track:has(.track-tab input[value="order"]:checked) .track-pane:not([data-pane="order"]) { display: none; }
-/* The Messages tab's badge already says so; the alert only shows on Your order, where it switches back */
-.track:has(.track-tab input[value="chat"]:checked) label.track-alert { display: none; }
 .track-lost { margin: 0; }
 .track-lost-list { margin: 0; padding-left: 1.2rem; }
 .track-lost-list a { color: var(--brown); font-weight: 600; text-underline-offset: 0.2em; }
@@ -653,6 +632,53 @@ label.track-alert { cursor: pointer; }
 .chat-send:disabled { background: var(--card); color: var(--cocoa); cursor: default; }
 .chat-left { font-size: 0.75rem; color: var(--cocoa); }
 .chat-error { margin: 0; padding: 0.6rem 0.85rem; background: #f6dcd8; color: #6e1710; font-size: 0.875rem; font-weight: 500; }
+.chat-end { height: 1px; scroll-margin-bottom: 6rem; }
+/* A payment the cafe couldn't find, as a plain line (the staff page, and older pages) */
+.chat-line.is-pay-missing p { color: #8a1f17; }
+
+/* ——— Cards in the customer's chat: each step of the order, tapped open for its details ——— */
+.chat-line.is-card { justify-self: stretch; max-width: none; }
+.chat-card { border: 1px solid var(--ink); background: #fffaf1; }
+.chat-card > summary {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 0.75rem;
+  padding: 0.75rem 0.9rem; cursor: pointer; list-style: none;
+}
+.chat-card > summary::-webkit-details-marker { display: none; }
+.chat-card > summary:focus-visible { outline: 2px solid var(--gold); outline-offset: -3px; }
+/* A small chevron that turns when the card opens */
+.chat-card > summary::after {
+  content: ""; width: 0.45rem; height: 0.45rem; margin: -0.2rem 0.15rem 0; border-right: 1.5px solid var(--cocoa); border-bottom: 1.5px solid var(--cocoa);
+  transform: rotate(45deg); transition: transform 0.25s var(--ease);
+}
+.chat-card[open] > summary::after { margin-top: 0.2rem; transform: rotate(225deg); }
+.chat-card[open] > summary { border-bottom: 1px solid rgb(21 18 17 / 0.18); }
+.chat-card-icon {
+  display: grid; place-items: center; width: 2rem; height: 2rem; border: 1.5px solid var(--brown); border-radius: 50%; color: var(--brown);
+}
+.chat-card-title { display: grid; min-width: 0; }
+.chat-card-title b { font-weight: 700; font-size: 0.9375rem; }
+.chat-card-title small { font-size: 0.8125rem; color: var(--cocoa); overflow-wrap: anywhere; }
+.chat-card-time { font-size: 0.75rem; color: var(--cocoa); white-space: nowrap; }
+.chat-card-body { display: grid; gap: 0.85rem; padding: 0.95rem 0.9rem 1.05rem; font-size: 0.9375rem; line-height: 1.5; }
+.chat-card-body > p { margin: 0; }
+.chat-card-body .track-link { margin: 0; }
+.chat-card-code { justify-self: start; padding: 0.6rem 1.1rem; border: 2px dashed var(--brown); font-weight: 700; font-size: 1.6rem; letter-spacing: 0.14em; }
+/* Done steps are brown, the step now is gold on ink, money waiting is gold, a problem is red */
+.chat-card.is-done .chat-card-icon { background: var(--brown); color: var(--cream); }
+.chat-card.is-now .chat-card-icon { border-color: var(--ink); background: var(--ink); color: var(--gold); }
+.chat-card.is-pay { border: 2px solid var(--brown); }
+.chat-card.is-pay .chat-card-icon { border-color: var(--gold); background: var(--gold); color: var(--ink); }
+.chat-card.is-alert { border: 2px solid #8a1f17; background: #fbeeec; }
+.chat-card.is-alert .chat-card-icon { border-color: #8a1f17; background: #8a1f17; color: #fff; }
+.chat-card.is-alert .chat-card-title b { color: #6e1710; }
+.chat-card.is-off .chat-card-icon { border-color: var(--cocoa); color: var(--cocoa); }
+/* The pay form inside its card: the card is the frame */
+.pay.is-bare { padding: 0; border: 0; background: none; }
+@media (prefers-reduced-motion: reduce) { .chat-card > summary::after { transition: none; } }
+
+/* The customer's message box stays at the bottom of the screen while they scroll the chat; other orders' bubbles float above it */
+body:has(.track .chat-compose) .order-bubbles { bottom: calc(env(safe-area-inset-bottom, 0px) + 6.5rem); }
+.track .chat-compose { position: sticky; bottom: 0; z-index: 2; margin: 0 -0.25rem; padding: 0.6rem 0.25rem calc(0.6rem + env(safe-area-inset-bottom, 0px)); background: var(--cream); }
 
 /* ——— Delivery: the map pin, at checkout and on staff pages ——— */
 .pin-map { display: grid; gap: 0.6rem; }

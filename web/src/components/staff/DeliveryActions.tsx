@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { quoteDeliveryAction, reviewPaymentAction, sendOutAction } from "@/app/staff/orders/actions";
 import CopyText from "@/components/CopyText";
+import { NOT_FOUND_REASONS } from "@/lib/chat-cards";
 import { formatDistance, MAX_DELIVERY_FEE } from "@/lib/delivery";
 import { peso } from "@/lib/menu";
 import type { FullOrder } from "@/lib/orders";
@@ -17,6 +18,7 @@ export default function DeliveryActions({ order: o, freeWithin, accountLabel, cl
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [changingFee, setChangingFee] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   const run = (act: () => Promise<{ error?: string }>, after?: () => void) =>
     start(async () => {
       setError(null);
@@ -46,12 +48,25 @@ export default function DeliveryActions({ order: o, freeWithin, accountLabel, cl
           <p className="staff-msg is-error">This reference number was also sent for {clashes.join(", ")}. Check carefully.</p>
         )}
         <small>Find it in the account&rsquo;s app history, with the same amount, before you accept.</small>
-        <div className="order-card-actions">
-          <button type="button" className="staff-btn is-primary" disabled={pending} onClick={() => run(() => reviewPaymentAction(o.id, true))}>
-            {pending ? "Saving…" : "Payment received"}
-          </button>
-          <button type="button" className="staff-btn is-quiet" disabled={pending} onClick={() => run(() => reviewPaymentAction(o.id, false))}>Not found</button>
-        </div>
+        {notFound ? (
+          // The customer reads the reason on their page, with the form to send the payment again
+          <div className="order-card-reasons" role="group" aria-label="Why wasn't it found?">
+            <small>Tell the customer why:</small>
+            {NOT_FOUND_REASONS.map((r) => (
+              <button key={r} type="button" className="staff-btn is-small is-quiet" disabled={pending} onClick={() => run(() => reviewPaymentAction(o.id, false, r), () => setNotFound(false))}>
+                {r}
+              </button>
+            ))}
+            <button type="button" className="order-link" onClick={() => setNotFound(false)}>Back</button>
+          </div>
+        ) : (
+          <div className="order-card-actions">
+            <button type="button" className="staff-btn is-primary" disabled={pending} onClick={() => run(() => reviewPaymentAction(o.id, true))}>
+              {pending ? "Saving…" : "Payment received"}
+            </button>
+            <button type="button" className="staff-btn is-quiet" disabled={pending} onClick={() => setNotFound(true)}>Not found</button>
+          </div>
+        )}
       </div>
     );
   } else if (o.status === "ready") {

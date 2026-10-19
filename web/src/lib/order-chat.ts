@@ -1,7 +1,8 @@
 import "server-only";
-import { and, asc, count, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { db, orderMessages, orders, staff, type Staff } from "@/db";
-import { chatState, cleanMessage, type Fulfillment, type OrderStatus, type Sender } from "./order-rules";
+import type { CardKind } from "./chat-cards";
+import { chatState, cleanMessage, CUSTOMER_ALERT_KINDS, type Fulfillment, type OrderStatus, type Sender } from "./order-rules";
 import { tokenMatches } from "./order-token";
 import { getCustomerOrder, getStaffOrder, isOrderId } from "./orders";
 import { notifyBranch } from "./push";
@@ -13,7 +14,7 @@ import { canActOnBranch } from "./staff";
  * The per-order chat. The order's own times decide whether it's open (see chatState), so a
  * closed chat needs no background job, and every write checks again on the server.
  */
-export type ChatMessage = { id: string; sender: Sender; body: string; createdAt: Date; staffName: string | null };
+export type ChatMessage = { id: string; sender: Sender; body: string; kind: string; meta: Record<string, unknown> | null; createdAt: Date; staffName: string | null };
 type Fail = { ok: false; error: string };
 
 /** Keeps one excited (or scripted) customer from flooding a branch's board */
@@ -22,7 +23,10 @@ const CUSTOMER_PER_ORDER = 40;
 
 export async function listMessages(orderId: string): Promise<ChatMessage[]> {
   return db
-    .select({ id: orderMessages.id, sender: orderMessages.sender, body: orderMessages.body, createdAt: orderMessages.createdAt, staffName: staff.name })
+    .select({
+      id: orderMessages.id, sender: orderMessages.sender, body: orderMessages.body, kind: orderMessages.kind, meta: orderMessages.meta,
+      createdAt: orderMessages.createdAt, staffName: staff.name,
+    })
     .from(orderMessages)
     .leftJoin(staff, eq(staff.id, orderMessages.staffId))
     .where(eq(orderMessages.orderId, orderId))
@@ -85,21 +89,22 @@ export async function markCustomerRead(code: string, token: string) {
   await db.update(orders).set({ customerLastReadAt: sql`now()` }).where(eq(orders.id, o.id));
 }
 
-/** Messages from (customer or staff) newer than the other side's last look, per order, oldest first */
+/**
+ * Messages from (customer or staff) newer than the other side's last look, per order, oldest first.
+ * The customer is also told about alert lines, like a payment the cafe couldn't find (unreadCount).
+ */
 async function unreadFrom(sender: "customer" | "staff", orderIds: string[]) {
   if (orderIds.length === 0) return [];
   const lastRead = sender === "customer" ? orders.staffLastReadAt : orders.customerLastReadAt;
+  const from =
+    sender === "staff"
+      ? or(eq(orderMessages.sender, "staff"), and(eq(orderMessages.sender, "system"), inArray(orderMessages.kind, CUSTOMER_ALERT_KINDS as CardKind[])))
+      : eq(orderMessages.sender, sender);
   return db
-    .select({ orderId: orderMessages.orderId, body: orderMessages.body })
+    .select({ orderId: orderMessages.orderId, body: orderMessages.body, kind: orderMessages.kind })
     .from(orderMessages)
     .innerJoin(orders, eq(orders.id, orderMessages.orderId))
-    .where(
-      and(
-        inArray(orderMessages.orderId, orderIds),
-        eq(orderMessages.sender, sender),
-        sql`${orderMessages.createdAt} > coalesce(${lastRead}, '-infinity'::timestamptz)`,
-      ),
-    )
+    .where(and(inArray(orderMessages.orderId, orderIds), from, sql`${orderMessages.createdAt} > coalesce(${lastRead}, '-infinity'::timestamptz)`))
     .orderBy(asc(orderMessages.createdAt));
 }
 
@@ -118,7 +123,11 @@ export async function staffUnread(orderIds: string[]): Promise<Record<string, Un
 
 export type Glance =
   | { code: string; found: false }
-  | { code: string; found: true; status: OrderStatus; fulfillment: Fulfillment; unread: number; chatOpen: boolean; chatClosesAt: string };
+  | {
+      code: string; found: true; status: OrderStatus; fulfillment: Fulfillment; unread: number; chatOpen: boolean; chatClosesAt: string;
+      /** Something the customer has to act on, besides a message: the cafe couldn't find their payment */
+      alert: "pay_missing" | null;
+    };
 
 /**
  * For the "order in progress" bar on the customer's phone: status and new messages for the
@@ -139,9 +148,11 @@ export async function glanceOrders(list: { code: string; token: string }[]): Pro
     const o = mine[i];
     if (!o) return { code: l.code, found: false };
     const chat = chatState(o);
+    const mineUnread = unread.filter((m) => m.orderId === o.id);
     return {
       code: o.code, found: true, status: o.status, fulfillment: o.fulfillment,
-      unread: unread.filter((m) => m.orderId === o.id).length, chatOpen: chat.open, chatClosesAt: chat.closesAt.toISOString(),
+      unread: mineUnread.length, chatOpen: chat.open, chatClosesAt: chat.closesAt.toISOString(),
+      alert: o.status === "awaiting_payment" && mineUnread.some((m) => m.kind === "pay_missing") ? "pay_missing" : null,
     };
   });
 }

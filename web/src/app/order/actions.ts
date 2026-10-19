@@ -35,8 +35,10 @@ export async function sendCustomerMessage(code: string, token: string, body: str
   return {};
 }
 
+/** The customer saw the end of the chat: clears the "new" count and the tab title */
 export async function markOrderSeen(code: string, token: string) {
   await markCustomerRead(String(code), String(token));
+  refresh();
 }
 
 /** The phone's remembered orders, checked for the "order in progress" bar */

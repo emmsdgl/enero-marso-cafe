@@ -216,6 +216,8 @@
 .order-card-step { display: grid; gap: 0.5rem; padding: 0.7rem; border-radius: 0.5rem; background: #f7e7cf; }
 .order-card-step p { margin: 0; font-size: 0.9375rem; }
 .order-card-step small { font-size: 0.8125rem; color: var(--cocoa); }
+.order-card-reasons { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.5rem; }
+.order-card-reasons small { flex-basis: 100%; }
 .order-card-step .order-link { justify-self: start; font-size: 0.875rem; }
 .order-card-step.is-payment { background: #fbe9b7; border: 1.5px solid var(--gold); }
 .order-card-fee { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; font-weight: 600; font-size: 0.9375rem; }

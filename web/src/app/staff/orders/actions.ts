@@ -26,9 +26,10 @@ export async function quoteDeliveryAction(orderId: string, fee: string): Promise
   return r.ok ? {} : { error: r.error };
 }
 
-export async function reviewPaymentAction(orderId: string, received: boolean): Promise<{ error?: string }> {
+export async function reviewPaymentAction(orderId: string, received: boolean, reason?: string): Promise<{ error?: string }> {
   const me = await requireStaff();
-  const r = await reviewPayment(me, String(orderId), received === true);
+  // A board loaded before reasons existed sends none: that's the plain "not found yet"
+  const r = await reviewPayment(me, String(orderId), received === true, received ? undefined : reason || undefined);
   refresh();
   return r.ok ? {} : { error: r.error };
 }

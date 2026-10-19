@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { boolean, check, date, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { CARD_KINDS } from "@/lib/chat-cards";
 import { ORDER_STATUSES } from "@/lib/order-rules";
 
 /** The two locations. Ids match src/data/branches.ts. */
@@ -312,7 +313,8 @@ export const orderItems = pgTable(
 );
 
 /**
- * The order's chat between the customer and the branch. System lines record each status change.
+ * The order's chat between the customer and the branch. System lines record each status change,
+ * with a kind and details so the customer's page can draw them as cards (lib/chat-cards.ts).
  * Whether the chat still takes messages is worked out from the order (see chatState), not stored.
  */
 export const orderMessages = pgTable(
@@ -323,6 +325,8 @@ export const orderMessages = pgTable(
     sender: text("sender", { enum: ["customer", "staff", "system"] }).notNull(),
     staffId: uuid("staff_id").references(() => staff.id), // who replied, for staff messages
     body: text("body").notNull(),
+    kind: text("kind", { enum: CARD_KINDS }).notNull().default("text"), // "text" for messages and plain lines
+    meta: jsonb("meta").$type<Record<string, unknown>>(), // the card's details: a status, a fee, a reference…
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

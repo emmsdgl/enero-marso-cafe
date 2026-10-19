@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { moveOrderAction } from "@/app/staff/orders/actions";
 import CopyText from "@/components/CopyText";
+import { useTabTitle } from "@/components/useTabTitle";
 import { branches } from "@/data/branches";
 import { formatDistance, mapsLink } from "@/lib/delivery";
 import { peso } from "@/lib/menu";
@@ -142,24 +143,17 @@ export default function OrderBoard({ orders, unread, showBranch, context }: Prop
     return () => window.clearInterval(t);
   }, [chime.on, oldestWaiting, play]);
 
-  // The tab title says what's waiting; Next sets its own title after us, so keep ours in place
+  // The tab title says what's waiting
   const chats = Object.keys(unread).length;
   const newOrders = waiting.filter((o) => o.status === "pending").length;
   const payments = waiting.length - newOrders;
-  useEffect(() => {
-    const n = newOrders + payments + chats;
-    const what = [
-      newOrders && plural(newOrders, "new order"),
-      payments && `${plural(payments, "payment")} to check`,
-      chats && plural(chats, "message"),
-    ].filter(Boolean).join(", ");
-    const want = n ? `(${n}) ${what.charAt(0).toUpperCase()}${what.slice(1)} · Orders` : "Orders · Staff · Enero Marso";
-    const apply = () => { if (document.title !== want) document.title = want; };
-    apply();
-    const watch = new MutationObserver(apply);
-    watch.observe(document.head, { subtree: true, childList: true, characterData: true });
-    return () => watch.disconnect();
-  }, [newOrders, payments, chats]);
+  const waitingCount = newOrders + payments + chats;
+  const what = [
+    newOrders && plural(newOrders, "new order"),
+    payments && `${plural(payments, "payment")} to check`,
+    chats && plural(chats, "message"),
+  ].filter(Boolean).join(", ");
+  useTabTitle(waitingCount ? `(${waitingCount}) ${what.charAt(0).toUpperCase()}${what.slice(1)} · Orders` : "Orders · Staff · Enero Marso");
 
   const byDue = (list: FullOrder[]) => [...list].sort((a, b) => due(a) - due(b));
   const columns = [

@@ -139,10 +139,18 @@ export function statusNote(to: OrderStatus, fulfillment: Fulfillment, reason?: s
   }
 }
 
-/** Messages from the other side that arrived after this side last looked. System lines never count. */
-export function unreadCount(messages: { sender: Sender; createdAt: Date }[], side: "customer" | "staff", lastReadAt: Date | null) {
+/** Chat lines the customer is told about like a message (see lib/chat-cards.ts): a payment the cafe couldn't find */
+export const CUSTOMER_ALERT_KINDS = ["pay_missing"];
+
+/**
+ * Messages from the other side that arrived after this side last looked. System lines don't
+ * count, except the alerts above for the customer.
+ */
+export function unreadCount(messages: { sender: Sender; createdAt: Date; kind?: string | null }[], side: "customer" | "staff", lastReadAt: Date | null) {
   const from: Sender = side === "staff" ? "customer" : "staff";
-  return messages.filter((m) => m.sender === from && (!lastReadAt || m.createdAt > lastReadAt)).length;
+  const counts = (m: { sender: Sender; kind?: string | null }) =>
+    m.sender === from || (side === "customer" && m.sender === "system" && CUSTOMER_ALERT_KINDS.includes(m.kind ?? ""));
+  return messages.filter((m) => counts(m) && (!lastReadAt || m.createdAt > lastReadAt)).length;
 }
 
 /** Why a manager blocked a number from ordering online (lib/blocklist.ts) */
