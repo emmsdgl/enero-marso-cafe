@@ -5,7 +5,7 @@ import EditSheet from "@/components/staff/EditSheet";
 import QrImageInput from "@/components/staff/QrImageInput";
 import StorePinField from "@/components/staff/StorePinField";
 import type { PaymentAccount } from "@/db";
-import { FREE_DELIVERY_OPTIONS, formatDistance, MAX_DELIVERY_OPTIONS, MIN_ORDER_OPTIONS, type DeliverySettings } from "@/lib/delivery";
+import { BASE_DISTANCE_OPTIONS, feeSummary, FREE_DELIVERY_OPTIONS, formatDistance, MAX_DELIVERY_OPTIONS, MIN_ORDER_OPTIONS, type DeliverySettings } from "@/lib/delivery";
 import { DAY_NAMES, describeWeek, formatWindow, manilaClock, shiftDate, toTimeInput, WEEK_ORDER, type Schedule } from "@/lib/hours";
 import type { SpecialDay } from "@/lib/hours-store";
 import { peso } from "@/lib/menu";
@@ -38,7 +38,12 @@ const dayLabel = (day: string) => new Date(`${day}T00:00:00Z`).toLocaleDateStrin
 export const specialDayText = (s: SpecialDay) => `${s.day === manilaClock().date ? "Today" : dayLabel(s.day)}: ${formatWindow(s.window)}${s.note ? ` (${s.note})` : ""}`;
 
 export const deliverySummary = (d: DeliverySettings) =>
-  [`Up to ${formatDistance(d.maxDistance)}`, d.freeWithin ? `free within ${formatDistance(d.freeWithin)}` : "no free delivery", d.minOrder ? `${peso(d.minOrder)} minimum` : "no minimum"].join(" · ");
+  [
+    `Up to ${formatDistance(d.maxDistance)}`,
+    feeSummary(d),
+    d.minOrder ? `${peso(d.minOrder)} minimum` : "no minimum",
+    d.cash ? "cash on delivery" : "paid online only",
+  ].join(" · ");
 
 /** What still stands between this branch and delivering */
 export const deliveryMissing = (d: DeliverySettings, accounts: AccountRow[]) =>
@@ -174,7 +179,28 @@ export function DeliveryAreaForm({ branchId, d, inSheet = false }: { branchId: s
           {MIN_ORDER_OPTIONS.map((p) => <option key={p} value={p}>{p ? peso(p) : "Any amount"}</option>)}
         </select>
       </label>
-      <p className="staff-help">Staff confirm every delivery fee before the customer pays, and can add one inside the free area if the rider charges.</p>
+      <fieldset className="fee-rules">
+        <legend>Delivery fee outside the free area</legend>
+        <label>
+          Base fee
+          <span className="peso-input"><span aria-hidden="true">₱</span><input name="baseFee" defaultValue={d.baseFee} inputMode="numeric" maxLength={4} required aria-label="Base fee in pesos" /></span>
+        </label>
+        <label>
+          Covers the first
+          <select name="baseMeters" defaultValue={d.baseMeters}>
+            {BASE_DISTANCE_OPTIONS.map((m) => <option key={m} value={m}>{formatDistance(m)}</option>)}
+          </select>
+        </label>
+        <label>
+          Then, per km
+          <span className="peso-input"><span aria-hidden="true">₱</span><input name="perKm" defaultValue={d.perKm} inputMode="numeric" maxLength={3} required aria-label="Price per extra kilometer in pesos" /></span>
+        </label>
+      </fieldset>
+      <label className="staff-check"><input type="checkbox" name="cash" defaultChecked={d.cash} /> Accept cash on delivery (the rider collects it)</label>
+      <p className="staff-help">
+        Customers see the fee at checkout, worked out from the straight-line distance: now {feeSummary(d)}. Staff can still change one order&rsquo;s fee
+        before it&rsquo;s paid, or for cash, before it leaves.
+      </p>
     </ActionForm>
   );
 }

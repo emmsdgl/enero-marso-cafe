@@ -10,5 +10,5 @@ export const PRIVACY = {
   phone: CONTACT.phone,
   tel: CONTACT.tel,
   facebook: branches[0].socials.facebook,
-  updated: "October 12, 2026",
+  updated: "October 21, 2026",
 };

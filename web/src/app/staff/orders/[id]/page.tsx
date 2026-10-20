@@ -14,6 +14,7 @@ import { listMessages } from "@/lib/order-chat";
 import { chatState, statusLabel, unreadCount } from "@/lib/order-rules";
 import { getOrderSettings, getStaffOrder } from "@/lib/orders";
 import { channels } from "@/lib/realtime";
+import { isManager } from "@/lib/roles";
 import { manila, requireStaff } from "@/lib/staff";
 import { boardContext } from "../board-context";
 
@@ -25,10 +26,10 @@ export default async function OrderDetailPage({ params }: PageProps<"/staff/orde
   const order = await getStaffOrder(me, (await params).id);
   if (!order) notFound();
 
-  const manager = me.role === "manager" || me.role === "admin";
+  const manager = isManager(me);
   const [messages, context, settings, blocked] = await Promise.all([
     listMessages(order.id),
-    boardContext([order], [order.branchId]),
+    boardContext([order], [order.branchId], manager),
     getOrderSettings(),
     manager && order.customerPhone ? blockedEntry(order.customerPhone) : null,
   ]);
@@ -70,7 +71,7 @@ export default async function OrderDetailPage({ params }: PageProps<"/staff/orde
             </dl>
             <div className="relink-actions">
               <a className="staff-btn" href={mapsLink(pin)} target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
-              <CopyText text={[order.address, order.landmark && `(${order.landmark})`, order.plusCode].filter(Boolean).join(" ")} label="Copy for Lalamove" className="staff-btn" />
+              <CopyText text={[order.address, order.landmark && `(${order.landmark})`, order.plusCode].filter(Boolean).join(" ")} label="Copy address" className="staff-btn" />
             </div>
           </section>
         )}

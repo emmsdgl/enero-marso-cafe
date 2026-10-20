@@ -1,22 +1,24 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { and, asc, count, desc, eq, gte, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 import { branches as branchDefs } from "@/data/branches";
-import { blockedPhones, branches, db, orderItems, orderMessages, orders, paymentAccounts, type Order, type OrderItem, type Staff } from "@/db";
-import { checkDelivery, isLatLng, MAX_DELIVERY_FEE, plusCode, type DeliverySettings } from "./delivery";
+import { blockedPhones, branches, db, orderItems, orderMessages, orders, paymentAccounts, staff, timeEntries, type Order, type OrderItem, type Staff } from "@/db";
+import { cashNote, readTendered } from "./cash";
+import { checkDelivery, deliveryFee, isLatLng, MAX_DELIVERY_FEE, plusCode, type DeliverySettings } from "./delivery";
 import type { Schedule } from "./hours";
 import { loadSchedules } from "./hours-store";
 import { isBranchId, peso, type BranchId } from "./menu";
 import { loadMenus } from "./menu-store";
 import { NOT_FOUND_REASONS, type Card } from "./chat-cards";
-import { canMove, cleanPaymentRef, statusNote, type OrderStatus } from "./order-rules";
+import { canMove, cleanPaymentRef, COULDNT_DELIVER_REASONS, statusNote, type OrderStatus } from "./order-rules";
 import { hashOrderToken, newOrderCode, newOrderToken, tokenMatches } from "./order-token";
 import { pickupAllowed } from "./pickup";
 import { normalizePhone, priceCart, type CartLine } from "./pricing";
-import { notifyBranch } from "./push";
-import { newOrderPayload, paymentPayload } from "./push-rules";
+import { notifyBranch, notifyStaff } from "./push";
+import { assignedPayload, newOrderPayload, paymentPayload } from "./push-rules";
 import { announce, channels } from "./realtime";
-import { audit, canActOnBranch } from "./staff";
+import { canDeliver, canSeeOrder, isManager } from "./roles";
+import { audit } from "./staff";
 
 export type BranchOrderSettings = { ordersOpen: boolean; cutoff: number; schedule: Schedule; delivery: DeliverySettings };
 export type OrderSettings = Record<BranchId, BranchOrderSettings>;
@@ -36,6 +38,10 @@ export async function getOrderSettings(): Promise<OrderSettings> {
         freeWithin: r?.freeDeliveryMeters ?? 0,
         maxDistance: r?.maxDeliveryMeters ?? 5000,
         minOrder: r?.deliveryMinOrder ?? 0,
+        baseFee: r?.deliveryBaseFee ?? 49,
+        baseMeters: r?.deliveryBaseMeters ?? 2000,
+        perKm: r?.deliveryPerKm ?? 8,
+        cash: r?.cashOnDelivery ?? false,
       },
     };
   };
@@ -52,6 +58,10 @@ export type PlaceOrderInput = {
   phone: string;
   notes: string;
   delivery?: DeliveryInput | null;
+  /** Delivery only: "online" (GCash, Maya or bank, in the chat) or "cash" to the rider */
+  pay?: string;
+  /** Cash only: "exact", or the bill they'll pay with */
+  tendered?: unknown;
 };
 type Fail = { ok: false; error: string };
 const fail = (error: string): Fail => ({ ok: false, error });
@@ -98,8 +108,9 @@ export async function placeOrder(input: PlaceOrderInput, ip: string): Promise<{ 
   const priced = priceCart((await loadMenus())[input.branch], input.lines);
   if (!priced.ok) return priced;
 
-  // Delivery: the pin decides distance and free delivery here, never the browser's numbers
+  // Delivery: the pin decides the distance and the fee here, never the browser's numbers
   let delivery: Partial<Order> = {};
+  let total = priced.subtotal;
   if (fulfillment === "delivery") {
     const d = input.delivery;
     const pin = d && isLatLng(d) ? { lat: d.lat, lng: d.lng } : null;
@@ -109,7 +120,15 @@ export async function placeOrder(input: PlaceOrderInput, ip: string): Promise<{ 
     const landmark = oneLine(d!.landmark) || null;
     if (address.length < 5 || address.length > 200) return fail("Enter the delivery address: house or unit number, street and barangay.");
     if (landmark && landmark.length > 200) return fail("Keep the landmark under 200 characters.");
-    delivery = { address, landmark, lat: pin!.lat, lng: pin!.lng, plusCode: plusCode(pin!), distanceMeters: check.distance, paymentMethod: "transfer" };
+    total = priced.subtotal + check.fee;
+    let paying: Partial<Order> = { paymentMethod: "transfer" };
+    if (input.pay === "cash") {
+      if (!settings.delivery.cash) return fail(`${branch.name} isn't taking cash on delivery right now. Choose GCash, Maya or bank.`);
+      const tendered = readTendered(input.tendered, total);
+      if (!tendered.ok) return fail(tendered.error);
+      paying = { paymentMethod: "cash", cashTendered: tendered.amount };
+    } else if (input.pay !== "online") return fail("Choose how you'll pay.");
+    delivery = { address, landmark, lat: pin!.lat, lng: pin!.lng, plusCode: plusCode(pin!), distanceMeters: check.distance, deliveryFee: check.fee, ...paying };
   }
 
   const id = randomUUID();
@@ -120,7 +139,7 @@ export async function placeOrder(input: PlaceOrderInput, ip: string): Promise<{ 
       await db.batch([
         db.insert(orders).values({
           id, code, branchId: input.branch, tokenHash: hashOrderToken(token), fulfillment, wantedAt: wanted,
-          customerName: name, customerPhone: phone, notes, subtotal: priced.subtotal, total: priced.subtotal, createdIp: ip,
+          customerName: name, customerPhone: phone, notes, subtotal: priced.subtotal, total, createdIp: ip,
           ...delivery,
         }),
         db.insert(orderItems).values(
@@ -132,7 +151,7 @@ export async function placeOrder(input: PlaceOrderInput, ip: string): Promise<{ 
       ]);
       await announce([channels.branch(input.branch)]);
       notifyBranch(input.branch, "order", newOrderPayload({
-        id, code, branchId: input.branch, fulfillment, wantedAt: wanted, total: priced.subtotal,
+        id, code, branchId: input.branch, fulfillment, wantedAt: wanted, total,
         items: priced.lines.reduce((n, l) => n + l.qty, 0), distanceMeters: delivery.distanceMeters ?? null,
       }));
       return { ok: true, code, token };
@@ -151,7 +170,7 @@ function isCodeClash(e: unknown) {
 
 export type FullOrder = Order & { items: OrderItem[] };
 
-async function withItems(list: Order[]): Promise<FullOrder[]> {
+export async function withItems(list: Order[]): Promise<FullOrder[]> {
   if (list.length === 0) return [];
   const items = await db.select().from(orderItems).where(inArray(orderItems.orderId, list.map((o) => o.id))).orderBy(asc(orderItems.sort));
   return list.map((o) => ({ ...o, items: items.filter((i) => i.orderId === o.id) }));
@@ -167,11 +186,11 @@ export async function getCustomerOrder(code: string, token: string | undefined):
 /** Order ids come from URLs; anything that isn't a UUID would only make the database complain */
 export const isOrderId = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-/** One order for the staff detail page; null if it doesn't exist or belongs to the other branch */
+/** One order for the staff detail page; null if it doesn't exist or isn't theirs to see (another branch, another rider's) */
 export async function getStaffOrder(me: Staff, orderId: string): Promise<FullOrder | null> {
   if (!isOrderId(orderId)) return null;
   const [o] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
-  if (!o || !canActOnBranch(me, o.branchId)) return null;
+  if (!o || !canSeeOrder(me, o)) return null;
   return (await withItems([o]))[0];
 }
 
@@ -195,7 +214,7 @@ async function staffOrder(me: Staff, orderId: string): Promise<{ ok: true; order
   if (!isOrderId(orderId)) return fail("That order no longer exists.");
   const [o] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
   if (!o) return fail("That order no longer exists.");
-  if (!canActOnBranch(me, o.branchId)) return fail("That order belongs to the other branch.");
+  if (!canSeeOrder(me, o)) return fail(me.role === "rider" ? "That delivery isn't yours." : "That order belongs to the other branch.");
   return { ok: true, order: o };
 }
 
@@ -219,9 +238,15 @@ export async function moveOrder(me: Staff, orderId: string, from: OrderStatus, t
   if (o.status !== from) return STALE;
   // Delivery's money steps carry a fee, a payment check or a rider; they have their own actions
   if (to === "awaiting_payment" || to === "out_for_delivery") return fail("That step isn't possible for this order.");
-  if (!canMove(o.fulfillment, from, to, o.paymentStatus)) return fail("That step isn't possible for this order.");
+  if (o.fulfillment === "delivery" && from === "pending" && to === "accepted") return fail("Accept a delivery with its fee.");
+  if (!canMove(o.fulfillment, from, to, o.paymentStatus, o.paymentMethod)) return fail("That step isn't possible for this order.");
   const why = reason?.trim();
   if (to === "cancelled" && (!why || why.length > 120)) return { ok: false, error: "Give a short reason for cancelling, so the customer knows why." };
+  // "Couldn't deliver": a manager's call, with a reason from the list
+  if (from === "out_for_delivery" && to === "cancelled") {
+    if (!isManager(me)) return fail("Ask a manager: only they can call off a delivery that's out.");
+    if (!COULDNT_DELIVER_REASONS.some((r) => r === why)) return fail("Choose why it couldn't be delivered.");
+  }
 
   const now = new Date();
   const changes: Partial<Order> = { status: to, updatedAt: now };
@@ -229,10 +254,12 @@ export async function moveOrder(me: Staff, orderId: string, from: OrderStatus, t
   if (stamp) Object.assign(changes, { [stamp]: now });
   if (to === "accepted") changes.acceptedBy = me.id;
   if (to === "cancelled") changes.cancelReason = why!;
+  // Staff marking a cash delivery delivered (the rider's phone died, say): the cash came in with it
+  if (to === "done" && o.paymentMethod === "cash") Object.assign(changes, { paymentStatus: "verified", paymentVerifiedAt: now, paymentVerifiedBy: me.id });
 
   const done = await db.update(orders).set(changes).where(and(eq(orders.id, o.id), eq(orders.status, from))).returning({ id: orders.id });
   if (done.length === 0) return STALE;
-  let note = statusNote(to, o.fulfillment, why) ?? "";
+  let note = statusNote(to, o.fulfillment, why, from) ?? "";
   // A cancelled delivery may already be paid: say so, so the refund isn't forgotten
   if (to === "cancelled" && o.paymentStatus === "verified") note += ` Your payment of ${peso(o.total)} will be refunded.`;
   if (to === "cancelled" && o.paymentStatus === "submitted") note += ` If you already paid, the cafe will refund ${peso(o.total)}.`;
@@ -242,9 +269,8 @@ export async function moveOrder(me: Staff, orderId: string, from: OrderStatus, t
 }
 
 /**
- * Delivery, step 1: staff check the pin and the items, then confirm the order with its fee.
- * ₱0 is suggested inside the free radius, but the rider may still charge, so staff decide.
- * Until the customer sends a payment, staff can change the fee.
+ * Delivery paid online, step 1: staff accept the order with its fee (worked out from the distance,
+ * or one they give), and the customer is asked to pay. Until they send a payment, the fee can change.
  */
 export async function quoteDelivery(me: Staff, orderId: string, feeInput: unknown): Promise<{ ok: true } | Fail> {
   const found = await staffOrder(me, orderId);
@@ -253,7 +279,7 @@ export async function quoteDelivery(me: Staff, orderId: string, feeInput: unknow
   if (o.fulfillment !== "delivery") return fail("Only delivery orders have a delivery fee.");
   const requote = o.status === "awaiting_payment";
   if (requote && o.paymentStatus !== "unpaid") return fail("The customer already sent a payment, so the fee can't change now.");
-  if (!requote && !canMove(o.fulfillment, o.status, "awaiting_payment")) return STALE;
+  if (!requote && !canMove(o.fulfillment, o.status, "awaiting_payment", o.paymentStatus, o.paymentMethod)) return STALE;
   const fee = Number(feeInput);
   if (String(feeInput ?? "").trim() === "" || !Number.isInteger(fee) || fee < 0 || fee > MAX_DELIVERY_FEE) {
     return fail(`Enter the delivery fee in whole pesos, from ₱0 to ${peso(MAX_DELIVERY_FEE)}.`);
@@ -345,7 +371,10 @@ export async function reviewPayment(me: Staff, orderId: string, received: boolea
   return { ok: true };
 }
 
-/** Delivery, step 4: the order leaves with a Lalamove rider (and its tracking link) or with our staff */
+/**
+ * Delivery, step 4: the order leaves with our rider (chosen first), or, as a backup when our riders
+ * are busy, with Lalamove and its tracking link. Lalamove can't collect cash for us.
+ */
 export async function sendOut(me: Staff, orderId: string, providerInput: unknown, trackingInput: unknown): Promise<{ ok: true } | Fail> {
   const found = await staffOrder(me, orderId);
   if (!found.ok) return found;
@@ -353,6 +382,8 @@ export async function sendOut(me: Staff, orderId: string, providerInput: unknown
   if (o.fulfillment !== "delivery" || o.status !== "ready") return STALE;
   const provider = providerInput === "lalamove" || providerInput === "own_rider" ? providerInput : null;
   if (!provider) return fail("Choose who's delivering it.");
+  if (provider === "own_rider" && !o.riderId) return fail("Choose who's taking it first.");
+  if (provider === "lalamove" && o.paymentMethod === "cash") return fail("This order is paid in cash to our rider, so it can't go with Lalamove. Choose one of our riders.");
   const link = String(trackingInput ?? "").trim() || null;
   if (link) {
     let ok = false;
@@ -371,7 +402,7 @@ export async function sendOut(me: Staff, orderId: string, providerInput: unknown
   await noteAndAnnounce(
     o,
     provider === "own_rider"
-      ? "The order is on its way with our staff."
+      ? `The order is on its way with our rider.${o.paymentMethod === "cash" ? ` ${cashNote(o.total, o.cashTendered)}` : ""}`
       : `The order is on its way with Lalamove.${link ? " Follow the rider with the tracking link on this page." : ""}`,
     { kind: "step", status: "out_for_delivery", provider },
   );
@@ -426,4 +457,147 @@ export async function reissueOrderLink(me: Staff, orderId: string): Promise<{ ok
   // The old link's page refreshes and finds it no longer opens
   await announce([channels.order(o.id)]);
   return { ok: true, path: `/order/${o.code}?t=${encodeURIComponent(token)}` };
+}
+
+// ——— Our own riders ———
+
+const feeError = () => fail(`Enter the delivery fee in whole pesos, from ₱0 to ${peso(MAX_DELIVERY_FEE)}.`);
+const readFee = (input: unknown) => {
+  const fee = Number(input);
+  return String(input ?? "").trim() !== "" && Number.isInteger(fee) && fee >= 0 && fee <= MAX_DELIVERY_FEE ? fee : null;
+};
+
+/**
+ * Accept a delivery in one tap. The fee was worked out from the distance at checkout (an order from
+ * before then gets it worked out now); staff may give a different one. Paying online, the customer
+ * is then asked to pay; paying cash, it's accepted and goes to the kitchen.
+ */
+export async function acceptDelivery(me: Staff, orderId: string, feeInput?: unknown): Promise<{ ok: true } | Fail> {
+  const found = await staffOrder(me, orderId);
+  if (!found.ok) return found;
+  const o = found.order;
+  if (o.fulfillment !== "delivery" || o.status !== "pending") return STALE;
+  let fee = feeInput === undefined || feeInput === null || feeInput === "" ? o.deliveryFee : readFee(feeInput);
+  if (fee === null && (feeInput === undefined || feeInput === null || feeInput === "") && o.distanceMeters != null) {
+    fee = deliveryFee((await getOrderSettings())[o.branchId as BranchId].delivery, o.distanceMeters);
+  }
+  if (fee === null) return feeError();
+  if (o.paymentMethod !== "cash") return quoteDelivery(me, o.id, fee);
+
+  const total = o.subtotal + fee;
+  const now = new Date();
+  const done = await db
+    .update(orders)
+    .set({ status: "accepted", deliveryFee: fee, total, quotedAt: now, acceptedAt: now, acceptedBy: me.id, updatedAt: now })
+    .where(and(eq(orders.id, o.id), eq(orders.status, "pending")))
+    .returning({ id: orders.id });
+  if (done.length === 0) return STALE;
+  await audit(me.id, "order.accept-cash", { orderId: o.id, code: o.code, fee, total });
+  await noteAndAnnounce(o, `The cafe accepted the order. Delivery: ${fee === 0 ? "free" : peso(fee)}. ${cashNote(total, o.cashTendered)}`, { kind: "step", status: "accepted" });
+  return { ok: true };
+}
+
+/**
+ * A different fee after accepting: paying online, until they've sent the payment; paying cash, until
+ * the order leaves (the rider collects the new total).
+ */
+export async function changeDeliveryFee(me: Staff, orderId: string, feeInput: unknown): Promise<{ ok: true } | Fail> {
+  const found = await staffOrder(me, orderId);
+  if (!found.ok) return found;
+  const o = found.order;
+  if (o.paymentMethod !== "cash") return quoteDelivery(me, orderId, feeInput);
+  if (!["accepted", "preparing", "ready"].includes(o.status)) return fail("The fee can't change once the order has left.");
+  const fee = readFee(feeInput);
+  if (fee === null) return feeError();
+  const total = o.subtotal + fee;
+  const done = await db
+    .update(orders)
+    .set({ deliveryFee: fee, total, updatedAt: new Date() })
+    .where(and(eq(orders.id, o.id), eq(orders.status, o.status)))
+    .returning({ id: orders.id });
+  if (done.length === 0) return STALE;
+  await audit(me.id, "order.quote", { orderId: o.id, code: o.code, fee, total });
+  await noteAndAnnounce(o, `The cafe changed the delivery fee to ${fee === 0 ? "free" : peso(fee)}. ${cashNote(total, o.cashTendered)}`, { kind: "quote", fee, total, requote: true });
+  return { ok: true };
+}
+
+const onShift = async (staffId: string) =>
+  (await db.select({ id: timeEntries.id }).from(timeEntries).where(and(eq(timeEntries.staffId, staffId), isNull(timeEntries.clockOut))).limit(1)).length > 0;
+
+/**
+ * Who takes the delivery: a rider, or counter staff on shift at that branch. It can change until the
+ * order leaves. The person gets a notification with the distance and what to collect.
+ */
+export async function assignRider(me: Staff, orderId: string, riderInput: unknown): Promise<{ ok: true } | Fail> {
+  const found = await staffOrder(me, orderId);
+  if (!found.ok) return found;
+  const o = found.order;
+  if (o.fulfillment !== "delivery" || !["accepted", "preparing", "ready"].includes(o.status)) {
+    return fail("Choose who's taking it once the order is accepted, until it leaves.");
+  }
+  const riderId = String(riderInput ?? "");
+  if (!riderId) {
+    await db.update(orders).set({ riderId: null, assignedAt: null, updatedAt: new Date() }).where(eq(orders.id, o.id));
+    await announce([channels.branch(o.branchId)]);
+    return { ok: true };
+  }
+  const [person] = isOrderId(riderId) ? await db.select().from(staff).where(eq(staff.id, riderId)).limit(1) : [];
+  if (!person || !canDeliver(person, o.branchId, await onShift(person.id))) {
+    return fail("They can't take it: choose a rider, or someone clocked in at this branch.");
+  }
+  const now = new Date();
+  const done = await db
+    .update(orders)
+    .set({ riderId: person.id, assignedAt: now, updatedAt: now })
+    .where(and(eq(orders.id, o.id), eq(orders.status, o.status)))
+    .returning({ id: orders.id });
+  if (done.length === 0) return STALE;
+  await audit(me.id, "order.assign", { orderId: o.id, code: o.code, riderId: person.id });
+  await announce([channels.branch(o.branchId), channels.order(o.id)]);
+  if (person.id !== o.riderId) notifyStaff(person.id, assignedPayload(o));
+  return { ok: true };
+}
+
+/**
+ * The rider's two taps: "On my way" when they leave with it (it must be ready), and "Delivered" at
+ * the door. A cash order is only delivered once they confirm they got the cash, which also marks
+ * it paid (by them).
+ */
+export async function riderStep(me: Staff, orderId: string, step: unknown, cashCollected?: unknown): Promise<{ ok: true } | Fail> {
+  const found = await staffOrder(me, orderId);
+  if (!found.ok) return found;
+  const o = found.order;
+  if (o.riderId !== me.id) return fail("That delivery isn't yours.");
+  const now = new Date();
+  if (step === "out") {
+    if (o.status !== "ready") return fail(o.status === "out_for_delivery" ? "It's already on its way." : "Wait until the cafe marks it ready.");
+    const done = await db
+      .update(orders)
+      .set({ status: "out_for_delivery", outAt: now, deliveryProvider: "own_rider", trackingUrl: null, updatedAt: now })
+      .where(and(eq(orders.id, o.id), eq(orders.status, "ready")))
+      .returning({ id: orders.id });
+    if (done.length === 0) return STALE;
+    await noteAndAnnounce(o, `The order is on its way with our rider.${o.paymentMethod === "cash" ? ` ${cashNote(o.total, o.cashTendered)}` : ""}`, {
+      kind: "step", status: "out_for_delivery", provider: "own_rider",
+    });
+    return { ok: true };
+  }
+  if (step === "delivered") {
+    if (o.status !== "out_for_delivery") return fail("Tap “On my way” when you leave with it first.");
+    const cash = o.paymentMethod === "cash";
+    if (cash && cashCollected !== true) return fail(`Confirm you got ${peso(o.total)} in cash first.`);
+    const done = await db
+      .update(orders)
+      .set({
+        status: "done", doneAt: now, updatedAt: now,
+        ...(cash ? { paymentStatus: "verified" as const, paymentVerifiedAt: now, paymentVerifiedBy: me.id } : {}),
+      })
+      .where(and(eq(orders.id, o.id), eq(orders.status, "out_for_delivery")))
+      .returning({ id: orders.id });
+    if (done.length === 0) return STALE;
+    await audit(me.id, "order.delivered", { orderId: o.id, code: o.code, ...(cash ? { cash: o.total } : {}) });
+    await noteAndAnnounce(o, statusNote("done", "delivery"), { kind: "step", status: "done" });
+    return { ok: true };
+  }
+  return fail("That step isn't possible for this order.");
 }

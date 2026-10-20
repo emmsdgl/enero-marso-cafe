@@ -21,9 +21,11 @@ type Props = {
   myName: string;
   customer: string;
   closedNote: React.ReactNode;
+  /** The rider's own quick replies, instead of the counter's */
+  quick?: string[];
 };
 
-export default function StaffChat({ orderId, delivery, lines, open, unread, myName, customer, closedNote }: Props) {
+export default function StaffChat({ orderId, delivery, lines, open, unread, myName, customer, closedNote, quick }: Props) {
   const send = useCallback((body: string) => sendStaffMessage(orderId, body), [orderId]);
   const seen = useCallback(() => markChatSeen(orderId), [orderId]);
   return (
@@ -36,7 +38,7 @@ export default function StaffChat({ orderId, delivery, lines, open, unread, myNa
       placeholder={`Message ${customer}`}
       emptyNote={<>No messages yet. Anything you send here shows on {customer}&rsquo;s order page.</>}
       closedNote={closedNote}
-      suggestions={[...QUICK, LAST[delivery ? "delivery" : "pickup"]]}
+      suggestions={quick ?? [...QUICK, LAST[delivery ? "delivery" : "pickup"]]}
       send={send}
       seen={seen}
     />

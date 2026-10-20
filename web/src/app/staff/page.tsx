@@ -5,6 +5,7 @@ import ClockButton from "@/components/staff/ClockButton";
 import { db, staff, timeEntries } from "@/db";
 import { branches } from "@/data/branches";
 import { openShift } from "@/lib/clock";
+import { isManager } from "@/lib/roles";
 import { hoursBetween, manila, onBranchNetwork, requireStaff } from "@/lib/staff";
 
 export const metadata: Metadata = { title: "Today" };
@@ -22,7 +23,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/staff">) {
 
   // Who's on shift now: managers see their branch, the admin sees both
   const onShift =
-    me.role === "employee"
+    !isManager(me)
       ? []
       : await db
           .select({ id: timeEntries.id, name: staff.name, branchId: timeEntries.branchId, clockIn: timeEntries.clockIn, inMethod: timeEntries.inMethod })

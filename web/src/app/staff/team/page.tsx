@@ -6,6 +6,7 @@ import EditSheet from "@/components/staff/EditSheet";
 import TeamFilter from "@/components/staff/TeamFilter";
 import { db, staff } from "@/db";
 import { branches } from "@/data/branches";
+import { usesPin } from "@/lib/roles";
 import { manila, requireStaff } from "@/lib/staff";
 import { addStaff, clearPin, removeStaff, restoreStaff, updateStaff } from "../actions";
 
@@ -13,6 +14,7 @@ export const metadata: Metadata = { title: "Team" };
 
 const ROLES = [
   { value: "employee", label: "Employee" },
+  { value: "rider", label: "Rider" },
   { value: "manager", label: "Branch manager" },
   { value: "admin", label: "Admin (both branches)" },
 ];
@@ -63,6 +65,7 @@ export default async function TeamPage() {
             { id: "all", label: "Everyone", count: team.length },
             ...(me.role === "admin" ? branches.map((b) => ({ id: b.id as string, label: short(b.id), count: team.filter((p) => p.branchId === b.id).length })) : []),
             { id: "manager", label: "Managers", count: team.filter((p) => p.role === "manager").length },
+            { id: "rider", label: "Riders", count: team.filter((p) => p.role === "rider").length },
             { id: "setup", label: "Needs setup", count: team.filter((p) => !p.authUserId || (p.role !== "admin" && !p.pinHash)).length },
             { id: "off", label: "Deactivated", count: team.filter((p) => !p.active).length },
           ].filter((f) => f.id === "all" || f.count > 0)}
@@ -77,7 +80,7 @@ export default async function TeamPage() {
                   {p.pinHash ? <span className="team-pin">PIN set</span> : p.role !== "admin" && <span className="tag is-warn">No PIN yet</span>}
                 </span>
                 <span className="team-do">
-                  {(me.role === "admin" || (p.pinHash && p.role === "employee")) && (
+                  {(me.role === "admin" || (p.pinHash && usesPin(p.role))) && (
                     <EditSheet label="Manage" title={p.name} subtitle={p.email}>
                       {me.role === "admin" && (
                         <ActionForm action={updateStaff} submit="Save" resetOnOk={false} closeOnOk>
@@ -91,7 +94,7 @@ export default async function TeamPage() {
                           <label className="staff-check"><input type="checkbox" name="active" defaultChecked={p.active} /> Can sign in and clock in</label>
                         </ActionForm>
                       )}
-                      {p.pinHash && (me.role === "admin" || p.role === "employee") && (
+                      {p.pinHash && (me.role === "admin" || usesPin(p.role)) && (
                         <div className="edit-sheet-part">
                           <span><b>Clock-in PIN</b><small>Clears the PIN they use on the clock-in tablet.</small></span>
                           <ActionButton action={clearPin.bind(null, p.id)} label="Reset PIN" confirm={`Clear ${p.name}'s PIN?`} />

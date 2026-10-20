@@ -6,6 +6,7 @@ import { db, staff, type Staff } from "@/db";
 import { auth } from "@/lib/auth/server";
 import { currentKiosk } from "@/lib/kiosk";
 import { endPinSession, startPinSession } from "@/lib/pin-session";
+import { homeFor, usesPin } from "@/lib/roles";
 import {
   audit, onBranchNetwork, PIN_LOCK_MINUTES, PIN_MAX_TRIES, PIN_RULE, pinFailures, verifyPin,
 } from "@/lib/staff";
@@ -14,10 +15,10 @@ export type FormState = { error?: string; email?: string } | undefined;
 
 const clean = (v: FormDataEntryValue | null) => String(v ?? "").trim();
 const lower = (v: FormDataEntryValue | null) => clean(v).toLowerCase();
-/** Where to go after signing in: a staff page on this site (like Branch setup for the tablet), else Today */
-const staffPath = (v: FormDataEntryValue | null) => {
+/** Where to go after signing in: a staff page on this site (like Branch setup for the tablet), else their home */
+const staffPath = (v: FormDataEntryValue | null, home: string) => {
   const path = clean(v);
-  return /^\/staff(\/[\w-]+)*([?#][\w=&%-]*)?$/.test(path) ? path : "/staff";
+  return /^\/staff(\/[\w-]+)*([?#][\w=&%-]*)?$/.test(path) ? path : home;
 };
 
 /**
@@ -36,7 +37,7 @@ export async function signIn(_: FormState, form: FormData): Promise<FormState> {
   // ——— PIN ———
   if (PIN_RULE.test(secret)) {
     if (!found || !found.active) return { error: "We couldn't find that name or email on the team.", email: who };
-    if (found.role !== "employee") return { error: "Managers and the admin sign in with their password.", email: who };
+    if (!usesPin(found.role)) return { error: "Managers and the admin sign in with their password.", email: who };
     if (!(await atBranch(found.branchId!))) {
       return { error: "PIN sign-in only works on the cafe Wi-Fi or the counter tablet. Use your password here.", email: who };
     }
@@ -49,7 +50,7 @@ export async function signIn(_: FormState, form: FormData): Promise<FormState> {
     }
     await startPinSession(found.id);
     await audit(found.id, "sign-in.pin");
-    redirect(staffPath(form.get("next")));
+    redirect(staffPath(form.get("next"), homeFor(found)));
   }
 
   // ——— Password ———
@@ -63,7 +64,7 @@ export async function signIn(_: FormState, form: FormData): Promise<FormState> {
     return { error: "This account doesn't have staff access. Ask the admin to add you.", email: who };
   }
   await endPinSession();
-  redirect(staffPath(form.get("next")));
+  redirect(staffPath(form.get("next"), homeFor(me)));
 }
 
 /** Match an email, a full name, or a first name that only one active, set-up person has */
@@ -114,7 +115,7 @@ export async function setUpAccount(_: FormState, form: FormData): Promise<FormSt
 
   await db.update(staff).set({ authUserId: data.user.id }).where(eq(staff.id, invite.id));
   await audit(invite.id, "account.setup", { email });
-  redirect("/staff?welcome=1");
+  redirect(`${homeFor(invite)}?welcome=1`);
 }
 
 /** First run only: creates the owner's admin account. Locked once any admin exists. */

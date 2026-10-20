@@ -1,5 +1,6 @@
 import { branches } from "@/data/branches";
 import type { Payload } from "./push-rules";
+import type { Role } from "./roles";
 
 /**
  * Push-to-talk (Staff > Talk and the counter tablet). Pure, so it's tested.
@@ -16,7 +17,6 @@ export const CLIP_MAX_BYTES = 1_500_000;
 export const CLIP_KEEP_DAYS = 7;
 export const MIC_IDLE_MS = 30_000; // the microphone switches off this long after the last press
 
-type Role = "employee" | "manager" | "admin";
 
 /** The channels someone may be on: every branch for the admin, their own branch while clocked in */
 export function talkChannels(p: { role: Role; branchId: string | null }, clockedIn: boolean, all: readonly string[]): string[] {

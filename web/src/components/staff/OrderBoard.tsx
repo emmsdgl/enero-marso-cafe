@@ -10,9 +10,10 @@ import { branches } from "@/data/branches";
 import { formatDistance, mapsLink } from "@/lib/delivery";
 import { peso } from "@/lib/menu";
 import type { Unread } from "@/lib/order-chat";
-import { nextStatuses, statusLabel, type OrderStatus } from "@/lib/order-rules";
+import { COULDNT_DELIVER_REASONS, nextStatuses, statusLabel, type OrderStatus } from "@/lib/order-rules";
 import { formatPhone } from "@/lib/pricing";
 import type { FullOrder } from "@/lib/orders";
+import type { RiderChoice } from "@/lib/riders";
 import DeliveryActions from "./DeliveryActions";
 
 const STEP_LABEL: Partial<Record<OrderStatus, string>> = {
@@ -46,6 +47,12 @@ export type BoardContext = {
   accounts: Record<string, string>;
   /** Other orders that used the same payment reference */
   clashes: Record<string, string[]>;
+  /** Who can take each branch's deliveries now: riders, and counter staff on shift */
+  riders: Record<string, RiderChoice[]>;
+  /** Names of the people already taking these deliveries */
+  riderNames: Record<string, string>;
+  /** Managers can call off a delivery that's out ("Couldn't deliver") */
+  manager: boolean;
 };
 
 /** Two rising notes from the Web Audio API: no sound file to load, works offline */
@@ -209,8 +216,9 @@ type CardProps = { order: FullOrder; showBranch: boolean; isNew?: boolean; unrea
 /** What the customer still owes, or has paid */
 function payLabel(o: FullOrder) {
   if (o.fulfillment === "pickup") return "Pay at counter";
-  if (o.paymentStatus === "verified") return "Paid";
-  if (o.status === "pending") return "Items · fee to confirm";
+  if (o.paymentStatus === "verified") return o.paymentMethod === "cash" ? "Paid in cash" : "Paid";
+  if (o.paymentMethod === "cash") return "Cash on delivery";
+  if (o.status === "pending") return "Pays online after you accept";
   if (o.paymentStatus === "submitted") return "Payment to check";
   return "Waiting for payment";
 }
@@ -221,12 +229,17 @@ export function OrderCard({ order: o, showBranch, isNew = false, unread, detail 
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
-  const [reason, setReason] = useState(REASONS[0]);
+  const [reason, setReason] = useState<string | null>(null);
   const steps = nextStatuses(o.fulfillment, o.status);
   const delivery = o.fulfillment === "delivery";
   // Delivery's fee, payment and send-out steps have their own controls (DeliveryActions)
   const special = delivery && (o.status === "pending" || o.status === "awaiting_payment" || o.status === "ready");
+  const live = delivery && o.status !== "done" && o.status !== "cancelled";
   const forward = special ? undefined : steps.find((s) => s !== "cancelled" && STEP_LABEL[s]);
+  // A delivery that's out can only be called off by a manager, and says why it came back
+  const out = o.status === "out_for_delivery";
+  const canCancel = steps.includes("cancelled") && (!out || context.manager);
+  const reasons: readonly string[] = out ? COULDNT_DELIVER_REASONS : REASONS;
   const forwardLabel = forward === "done" && delivery ? "Delivered" : forward && STEP_LABEL[forward];
   const minutes = now ? Math.max(0, Math.round((now - o.createdAt.getTime()) / 60_000)) : null;
 
@@ -273,32 +286,38 @@ export function OrderCard({ order: o, showBranch, isNew = false, unread, detail 
           {o.lat != null && o.lng != null && (
             <span>
               <a href={mapsLink({ lat: o.lat, lng: o.lng })} target="_blank" rel="noopener noreferrer">Open map</a>
-              <CopyText text={[o.address, o.landmark && `(${o.landmark})`, o.plusCode].filter(Boolean).join(" ")} label="Copy for Lalamove" className="order-link" />
+              <CopyText text={[o.address, o.landmark && `(${o.landmark})`, o.plusCode].filter(Boolean).join(" ")} label="Copy address" className="order-link" />
             </span>
           )}
         </div>
       )}
       {o.notes && <p className="order-card-notes">“{o.notes}”</p>}
-      <p className={`order-card-total${o.paymentStatus === "verified" ? " is-paid" : ""}`}><span>{payLabel(o)}</span><b>{peso(o.total)}</b></p>
-      {special && (
+      <p className={`order-card-total${o.paymentStatus === "verified" ? " is-paid" : ""}`}>
+        <span>{payLabel(o)}{delivery && o.deliveryFee != null && <small>{o.deliveryFee ? `incl. ${peso(o.deliveryFee)} delivery` : "free delivery"}</small>}</span>
+        <b>{peso(o.total)}</b>
+      </p>
+      {live && (
         <DeliveryActions
           order={o}
-          freeWithin={context.freeWithin[o.branchId] ?? 0}
           accountLabel={o.paymentAccountId ? (context.accounts[o.paymentAccountId] ?? null) : null}
           clashes={context.clashes[o.id]}
+          riders={context.riders[o.branchId] ?? []}
+          riderName={o.riderId ? (context.riderNames[o.riderId] ?? null) : null}
         />
       )}
 
       {cancelling ? (
         <div className="order-card-cancel">
           <label>
-            Why are you cancelling?
-            <select value={reason} onChange={(e) => setReason(e.target.value)}>
-              {REASONS.map((r) => <option key={r}>{r}</option>)}
+            {out ? "Why couldn't it be delivered?" : "Why are you cancelling?"}
+            <select value={reason ?? reasons[0]} onChange={(e) => setReason(e.target.value)}>
+              {reasons.map((r) => <option key={r}>{r}</option>)}
             </select>
           </label>
           <div className="order-card-actions">
-            <button type="button" className="staff-btn is-danger" disabled={pending} onClick={() => go("cancelled", reason)}>{pending ? "…" : "Cancel order"}</button>
+            <button type="button" className="staff-btn is-danger" disabled={pending} onClick={() => go("cancelled", reason ?? reasons[0])}>
+              {pending ? "…" : out ? "Call off the delivery" : "Cancel order"}
+            </button>
             <button type="button" className="staff-btn is-quiet" onClick={() => setCancelling(false)}>Keep it</button>
           </div>
         </div>
@@ -309,8 +328,8 @@ export function OrderCard({ order: o, showBranch, isNew = false, unread, detail 
               {pending ? "Saving…" : forwardLabel}
             </button>
           )}
-          {steps.includes("cancelled") && (
-            <button type="button" className="staff-btn is-quiet" disabled={pending} onClick={() => setCancelling(true)}>Cancel</button>
+          {canCancel && (
+            <button type="button" className="staff-btn is-quiet" disabled={pending} onClick={() => setCancelling(true)}>{out ? "Couldn’t deliver" : "Cancel"}</button>
           )}
         </div>
       )}

@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import ActionForm from "@/components/staff/ActionForm";
 import PushSetup from "@/components/staff/PushSetup";
 import { myDevices, pushConfigured } from "@/lib/push";
+import { ALL_ROLES } from "@/lib/roles";
 import { requireStaff, signedInWithPin } from "@/lib/staff";
 import { changeMyPassword, setMyPin } from "../actions";
 
 export const metadata: Metadata = { title: "My account" };
 
 export default async function AccountPage() {
-  const me = await requireStaff();
+  const me = await requireStaff(ALL_ROLES);
   const [viaPin, devices] = await Promise.all([signedInWithPin(), myDevices(me)]);
   return (
     <div className="staff-page">

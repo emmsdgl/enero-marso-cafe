@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { boolean, check, customType, date, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { CARD_KINDS } from "@/lib/chat-cards";
 import { ORDER_STATUSES } from "@/lib/order-rules";
+import { ROLES } from "@/lib/roles";
 
 /** The two locations. Ids match src/data/branches.ts. */
 export const branches = pgTable(
@@ -22,12 +23,21 @@ export const branches = pgTable(
     freeDeliveryMeters: integer("free_delivery_meters").notNull().default(0), // 0 = no free delivery
     maxDeliveryMeters: integer("max_delivery_meters").notNull().default(5000),
     deliveryMinOrder: integer("delivery_min_order").notNull().default(0),
+    // Our riders' fee outside the free area: the base fee covers the first stretch, then each started km
+    deliveryBaseFee: integer("delivery_base_fee").notNull().default(49),
+    deliveryBaseMeters: integer("delivery_base_meters").notNull().default(2000),
+    deliveryPerKm: integer("delivery_per_km").notNull().default(8),
+    /** Customers may pay the rider in cash (they say which bill, so the rider brings change) */
+    cashOnDelivery: boolean("cash_on_delivery").notNull().default(false),
   },
   (t) => [
     check("branches_order_cutoff", sql`${t.orderCutoffMinutes} in (30, 45, 60)`),
     check("branches_free_delivery", sql`${t.freeDeliveryMeters} in (0, 100, 250, 500, 1000, 2000)`),
     check("branches_max_delivery", sql`${t.maxDeliveryMeters} in (2000, 3000, 5000, 8000, 10000)`),
     check("branches_delivery_min_order", sql`${t.deliveryMinOrder} in (0, 200, 300, 500)`),
+    check("branches_delivery_base_fee", sql`${t.deliveryBaseFee} between 0 and 1000`),
+    check("branches_delivery_base_meters", sql`${t.deliveryBaseMeters} in (1000, 2000, 3000, 5000)`),
+    check("branches_delivery_per_km", sql`${t.deliveryPerKm} between 0 and 200`),
   ],
 );
 
@@ -79,7 +89,7 @@ export const staff = pgTable(
     authUserId: text("auth_user_id").unique(), // set when the person finishes account setup
     email: text("email").notNull().unique(),
     name: text("name").notNull(),
-    role: text("role", { enum: ["employee", "manager", "admin"] }).notNull(),
+    role: text("role", { enum: ROLES }).notNull(),
     branchId: text("branch_id").references(() => branches.id), // null for admin (both branches)
     pinHash: text("pin_hash"), // for the clock-in tablet
     active: boolean("active").notNull().default(true),
@@ -266,6 +276,11 @@ export const orders = pgTable(
     paymentSubmittedAt: timestamp("payment_submitted_at", { withTimezone: true }),
     paymentVerifiedAt: timestamp("payment_verified_at", { withTimezone: true }),
     paymentVerifiedBy: uuid("payment_verified_by").references(() => staff.id),
+    // Cash on delivery: the bill the customer pays with (the total for "exact amount"), so the rider brings change
+    cashTendered: integer("cash_tendered"),
+    // Our rider (a rider, or counter staff on shift) taking this delivery
+    riderId: uuid("rider_id").references(() => staff.id),
+    assignedAt: timestamp("assigned_at", { withTimezone: true }),
     // Timeline
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -289,6 +304,8 @@ export const orders = pgTable(
     index("orders_ip_created").on(t.createdIp, t.createdAt),
     // Staff are warned when a reference number was already used on another order
     index("orders_gcash_ref").on(t.gcashRef),
+    index("orders_rider_status").on(t.riderId, t.status),
+    check("orders_cash_tendered", sql`${t.cashTendered} is null or ${t.cashTendered} between 1 and 100000`),
   ],
 );
 

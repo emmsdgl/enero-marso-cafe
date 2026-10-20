@@ -40,12 +40,14 @@ Both branches take online orders from launch, each with its own menu and order b
 
 ## Payment and delivery
 - **Pickup:** pay at the counter, by cash or GCash.
-- **Delivery (via Lalamove):**
-  1. Staff open the customer's pin (Plus Code and an "Open in Google Maps" link) in the Lalamove app and check the fee.
-  2. Staff post the delivery fee; the order moves to **awaiting payment** with the new total.
-  3. The customer pays the total by **GCash** to the branch's number or QR and enters the **reference number**.
-  4. Staff check the reference and amount in the GCash app, then **verify**. Only then can the order be accepted.
-  5. Staff book the Lalamove rider and paste the **tracking link**, which the customer sees on their page.
+- **Delivery (our own riders, since M13; Lalamove before):**
+  1. The fee is worked out from the straight-line distance (free area, base fee, price per km, set per branch) and shown at checkout.
+  2. The customer chooses to pay online, or cash to the rider (saying the bill they'll pay with, so the rider brings change).
+  3. Staff accept in one tap. Paying online, the order moves to **awaiting payment**; the customer pays by **GCash**, Maya or
+     bank and enters the **reference number**, and staff check it in the app before anything is made. Paying cash, it's accepted.
+  4. Staff choose who takes it: a rider, or a barista on shift. The rider sees it on their own screen.
+  5. The rider taps **On my way**, then **Delivered** (ticking that they got the cash). Lalamove, with its tracking link, is a
+     backup for orders paid online when our riders are busy.
 - Payment checking is **manual**: a personal GCash account has no API.
 - **Later:** a PayMongo account confirms payments automatically through a webhook. An unregistered individual account
   can take **QR Ph** (1.34% per payment, payable from the GCash app). With DTI + BIR registration it can take direct

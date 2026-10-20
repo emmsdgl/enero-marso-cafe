@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { placeOrderAction } from "@/app/order/actions";
 import { branches } from "@/data/branches";
+import { readTendered } from "@/lib/cash";
 import { checkDelivery, formatDistance, type LatLng } from "@/lib/delivery";
 import { isBranchId, peso, type BranchId, type MenuCategory, type MenuItem, type Menus } from "@/lib/menu";
 import type { OrderSettings } from "@/lib/orders";
 import { pickupWindow, type PickupWindow } from "@/lib/pickup";
-import HowStep, { type How } from "./HowStep";
+import HowStep, { type How, type Pay } from "./HowStep";
 import ItemSheet, { firstSize, type Choice, type Picked } from "./ItemSheet";
 import MenuPicker from "./MenuPicker";
 
@@ -49,6 +50,8 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
   const [pin, setPin] = useState<LatLng | null>(null);
   const [address, setAddress] = useState("");
   const [landmark, setLandmark] = useState("");
+  const [pay, setPay] = useState<Pay | null>(null);
+  const [tender, setTender] = useState("exact");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
@@ -74,9 +77,14 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
   // Nothing is chosen for them; a branch that doesn't deliver asks for pickup again
   const how: How | null = mode === "delivery" ? (delivers(branch) ? "delivery" : null) : mode;
   const reach = how === "delivery" ? checkDelivery(rules, pin, total) : null;
+  const fee = reach?.ok ? reach.fee : 0;
+  const grand = total + (how === "delivery" ? fee : 0);
+  // Cash only where the branch takes it; nothing is chosen for them when both are possible
+  const payNow: Pay | null = !rules.cash ? "online" : pay;
+  const cashReady = payNow !== "cash" || tender === "exact" || (reach?.ok === true && readTendered(tender, grand).ok);
   // Nothing is wrong before there's a pin (the map says what to do); the minimum has its own line
   const reachError = reach && !reach.ok && pin && !reach.error.startsWith("Delivery needs") ? reach.error : null;
-  const deliveryReady = how === "pickup" || (how === "delivery" && reach?.ok === true && address.trim().length >= 5);
+  const deliveryReady = how === "pickup" || (how === "delivery" && reach?.ok === true && address.trim().length >= 5 && payNow !== null && cashReady);
 
   const chosen = branches.find((b) => b.id === branch)!;
   const otherOpen = branches.find((b) => b.id !== branch && canOrder(b.id));
@@ -117,6 +125,7 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
         phone,
         notes,
         delivery: how === "delivery" && pin ? { ...pin, address, landmark } : null,
+        ...(how === "delivery" ? { pay: payNow ?? undefined, tendered: payNow === "cash" ? tender : undefined } : {}),
       });
       if (r?.error) setError(r.error);
     });
@@ -207,6 +216,10 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
             onAddress={setAddress}
             landmark={landmark}
             onLandmark={setLandmark}
+            pay={payNow}
+            onPay={(p) => { setPay(p); setError(null); }}
+            tender={tender}
+            onTender={setTender}
           />
         </div>
 
@@ -247,14 +260,20 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
             <>
               <p className="slip-fee">
                 <span>Delivery</span>
-                <b>{reach?.ok ? (reach.free ? "Free" : "Confirmed by the cafe") : "–"}</b>
+                <b>{reach?.ok ? (reach.free ? "Free" : peso(reach.fee)) : "–"}</b>
               </p>
-              <p className="slip-pay">Pay by GCash, Maya or bank transfer once the cafe confirms your order and the delivery fee.</p>
+              <p className="slip-pay">
+                {payNow === "cash"
+                  ? `Pay the rider in cash when it arrives${tender !== "exact" && readTendered(tender, grand).ok ? `: you'll pay with ${peso(Number(tender))}, so they'll bring ${peso(Number(tender) - grand)} change` : ""}.`
+                  : payNow === "online"
+                    ? "Pay by GCash, Maya or bank in the chat, once the cafe accepts your order."
+                    : "Choose how you'll pay: online, or cash to the rider."}
+              </p>
             </>
           ) : how === "pickup" ? (
             <p className="slip-pay">Pay when you pick up: cash or GCash at the counter.</p>
           ) : null}
-          <div className="slip-total"><span>{how === "delivery" ? "Items" : "Total"}</span><b>{peso(total)}</b></div>
+          <div className="slip-total"><span>Total</span><b>{how === "delivery" && !reach?.ok ? `${peso(total)} + delivery` : peso(grand)}</b></div>
           {error && <p className="slip-error" role="alert">{error}</p>}
           <button type="submit" className="order-submit" disabled={!open || lines.length === 0 || sending || !how || !deliveryReady}>
             {sending
@@ -264,7 +283,7 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
                 : !how
                   ? "Choose pickup or delivery"
                   : !deliveryReady
-                    ? reach?.ok ? "Add your address" : "Set where to deliver"
+                    ? !reach?.ok ? "Set where to deliver" : address.trim().length < 5 ? "Add your address" : payNow === null ? "Choose how you'll pay" : "Say what you'll pay with"
                     : how === "delivery" ? "Send order" : "Place order"}
           </button>
           <p className="slip-privacy">
@@ -276,7 +295,7 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
         {count > 0 && (
           // On a phone: the next thing to do, pickup or delivery first, then the order slip
           <a className="checkout-bar" href={how ? "#your-order" : "#how"}>
-            <span>{count} item{count === 1 ? "" : "s"} · {peso(total)}</span>
+            <span>{count} item{count === 1 ? "" : "s"} · {peso(grand)}</span>
             <b>{how ? "Review order" : "Pickup or delivery"}</b>
           </a>
         )}

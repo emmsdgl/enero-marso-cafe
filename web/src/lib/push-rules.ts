@@ -1,5 +1,7 @@
+import { cashLine } from "./cash";
 import { formatDistance } from "./delivery";
 import { peso } from "./menu";
+import { usesPin, type Role } from "./roles";
 
 /**
  * Staff phone notifications: who gets which, and what they say. Pure, so it's tested.
@@ -9,7 +11,7 @@ export type PushKind = "order" | "payment" | "message";
 
 export type Device = {
   staffId: string;
-  role: "employee" | "manager" | "admin";
+  role: Role;
   branchId: string | null; // null for the admin (both branches)
   active: boolean;
   orders: boolean; // new orders and payments to check
@@ -18,21 +20,23 @@ export type Device = {
 };
 
 /**
- * The devices that should buzz for something at a branch: that branch's staff (and the admin),
- * who chose this kind, and, if they asked, only while they're clocked in there.
+ * The devices that should buzz for something at a branch: that branch's counter staff (and the
+ * admin), who chose this kind, and, if they asked, only while they're clocked in there. Riders hear
+ * only about their own deliveries (assignedPayload, sent to them directly).
  */
 export function recipients<D extends Device>(devices: D[], branchId: string, kind: PushKind, onShift: Set<string>): D[] {
   return devices.filter(
     (d) =>
       d.active &&
+      d.role !== "rider" &&
       (d.role === "admin" || d.branchId === branchId) &&
       (kind === "message" ? d.messages : d.orders) &&
       (!d.onShiftOnly || onShift.has(d.staffId)),
   );
 }
 
-/** Employees are notified while they're on shift; managers and the admin, always. Each device can change it. */
-export const defaultOnShiftOnly = (role: Device["role"]) => role === "employee";
+/** Employees and riders are notified while they're on shift; managers and the admin, always. Each device can change it. */
+export const defaultOnShiftOnly = (role: Role) => usesPin(role);
 
 export type Payload = { kind: PushKind | "talk" | "test"; title: string; body: string; url: string; tag: string };
 
@@ -68,6 +72,18 @@ export function paymentPayload(o: { id: string; code: string; branchId: string; 
     title: `Payment to check: ${o.code}`,
     body: `${BRANCH_SHORT[o.branchId] ?? o.branchId} · ${peso(o.total)} to ${account}. Check it in the app, then accept.`,
     url: `/staff/orders/${o.id}`,
+    tag: `order-${o.code}`,
+  };
+}
+
+/** To the rider (or barista) given a delivery: how far, and what to collect. Never who or where. */
+export function assignedPayload(o: { id: string; code: string; distanceMeters: number | null; total: number; paymentMethod: string | null; cashTendered: number | null }): Payload {
+  const far = o.distanceMeters != null ? `${formatDistance(o.distanceMeters)} away · ` : "";
+  return {
+    kind: "order",
+    title: `Delivery ${o.code} is yours`,
+    body: far + (o.paymentMethod === "cash" ? cashLine(o.total, o.cashTendered) : "Paid online, nothing to collect"),
+    url: `/staff/deliveries#order-${o.id}`,
     tag: `order-${o.code}`,
   };
 }

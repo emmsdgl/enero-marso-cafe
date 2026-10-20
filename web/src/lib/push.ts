@@ -78,6 +78,23 @@ export function notifyBranch(branchId: string, kind: PushKind, payload: Payload)
   });
 }
 
+/** One person's devices (a delivery given to them, a message on it), if they're still active and want order alerts */
+export function notifyStaff(staffId: string, payload: Payload) {
+  if (!pushConfigured) return;
+  after(async () => {
+    try {
+      const rows = await db
+        .select({ sub: pushSubscriptions })
+        .from(pushSubscriptions)
+        .innerJoin(staff, eq(staff.id, pushSubscriptions.staffId))
+        .where(and(eq(pushSubscriptions.staffId, staffId), eq(staff.active, true), eq(pushSubscriptions.orders, true)));
+      await send(rows.map((r) => r.sub), payload);
+    } catch (e) {
+      console.error("Push failed", e);
+    }
+  });
+}
+
 /**
  * A saved talk clip that some of the branch's clocked-in staff (or the owner) didn't hear live.
  * Runs after the response is sent.

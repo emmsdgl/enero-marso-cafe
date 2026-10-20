@@ -7,11 +7,14 @@ import { redirect } from "next/navigation";
 import { branchNetworks, branches, db, kiosks, paymentAccounts, pushSubscriptions, staff, timeEntries } from "@/db";
 import { auth } from "@/lib/auth/server";
 import { toggleClock } from "@/lib/clock";
-import { FREE_DELIVERY_OPTIONS, formatDistance, inPhilippines, isLatLng, MAX_DELIVERY_OPTIONS, MIN_ORDER_OPTIONS } from "@/lib/delivery";
+import {
+  BASE_DISTANCE_OPTIONS, feeSummary, FREE_DELIVERY_OPTIONS, formatDistance, inPhilippines, isLatLng, MAX_DELIVERY_FEE, MAX_DELIVERY_OPTIONS, MAX_PER_KM, MIN_ORDER_OPTIONS,
+} from "@/lib/delivery";
 import { removeSpecialDay, saveSpecialDay, saveWeek } from "@/lib/hours-store";
 import { peso } from "@/lib/menu";
 import { savePaymentAccount, setPaymentAccountActive } from "@/lib/payments";
 import { endPinSession } from "@/lib/pin-session";
+import { ALL_ROLES, ROLES, usesPin, type Role } from "@/lib/roles";
 import {
   audit, canActOnBranch, clientIp, hashKioskToken, hashPin, KIOSK_COOKIE, newKioskToken, onBranchNetwork, PIN_RULE, requireStaff,
 } from "@/lib/staff";
@@ -25,7 +28,7 @@ const fromManila = (v: string) => (v ? new Date(`${v}:00+08:00`) : null);
 
 // ——— Clock in/out from a personal device on the branch Wi-Fi ———
 export async function clockViaWifi(): Promise<ActionState> {
-  const me = await requireStaff(["employee", "manager"]);
+  const me = await requireStaff(["employee", "manager", "rider"]);
   const net = await onBranchNetwork(me.branchId!);
   if (!net.ok) return { error: "You're not on the branch Wi-Fi. Connect to it, or use the clock-in tablet." };
   const punch = await toggleClock(me, me.branchId!, "wifi", net.ip);
@@ -38,12 +41,12 @@ export async function addStaff(_: ActionState, form: FormData): Promise<ActionSt
   const me = await requireStaff(["admin"]);
   const name = s(form.get("name"));
   const email = s(form.get("email")).toLowerCase();
-  const role = s(form.get("role")) as "employee" | "manager" | "admin";
+  const role = s(form.get("role")) as Role;
   const branchId = role === "admin" ? null : s(form.get("branch"));
   if (!name || !/^\S+@\S+\.\S+$/.test(email)) return { error: "Enter a name and a valid email." };
-  if (!["employee", "manager", "admin"].includes(role)) return { error: "Choose a role." };
+  if (!ROLES.includes(role)) return { error: "Choose a role." };
   if (branchId && !BRANCHES.includes(branchId)) return { error: "Choose a branch." };
-  if (role !== "admin" && !branchId) return { error: "Employees and managers need a branch." };
+  if (role !== "admin" && !branchId) return { error: "Everyone but the admin needs a branch." };
 
   const [dupe] = await db.select({ id: staff.id, removedAt: staff.removedAt }).from(staff).where(eq(sql`lower(${staff.email})`, email)).limit(1);
   if (dupe?.removedAt) return { error: "That email belongs to a past team member. Restore them from Past team members below." };
@@ -103,11 +106,12 @@ export async function restoreStaff(id: string): Promise<ActionState> {
 export async function updateStaff(_: ActionState, form: FormData): Promise<ActionState> {
   const me = await requireStaff(["admin"]);
   const id = s(form.get("id"));
-  const role = s(form.get("role")) as "employee" | "manager" | "admin";
+  const role = s(form.get("role")) as Role;
   const branchId = role === "admin" ? null : s(form.get("branch"));
   const active = form.get("active") === "on";
+  if (!ROLES.includes(role)) return { error: "Choose a role." };
   if (id === me.id && (role !== "admin" || !active)) return { error: "You can't remove your own admin access." };
-  if (role !== "admin" && !BRANCHES.includes(branchId ?? "")) return { error: "Employees and managers need a branch." };
+  if (role !== "admin" && !BRANCHES.includes(branchId ?? "")) return { error: "Everyone but the admin needs a branch." };
   await db.update(staff).set({ role, branchId, active }).where(eq(staff.id, id));
   await audit(me.id, "staff.update", { staffId: id, role, branchId, active });
   revalidatePath("/staff/team");
@@ -118,7 +122,7 @@ export async function clearPin(staffId: string): Promise<ActionState> {
   const me = await requireStaff(["admin", "manager"]);
   const [target] = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
   if (!target) return { error: "Not found." };
-  if (me.role === "manager" && (target.branchId !== me.branchId || target.role !== "employee")) return { error: "You can only reset PINs for employees in your branch." };
+  if (me.role === "manager" && (target.branchId !== me.branchId || !usesPin(target.role))) return { error: "You can only reset PINs for employees and riders in your branch." };
   await db.update(staff).set({ pinHash: null }).where(eq(staff.id, staffId));
   await audit(me.id, "staff.pin-clear", { staffId });
   revalidatePath("/staff/team");
@@ -127,7 +131,7 @@ export async function clearPin(staffId: string): Promise<ActionState> {
 
 // ——— My account ———
 export async function setMyPin(_: ActionState, form: FormData): Promise<ActionState> {
-  const me = await requireStaff();
+  const me = await requireStaff(ALL_ROLES);
   const pin = s(form.get("pin"));
   if (!PIN_RULE.test(pin)) return { error: "Use 4 to 6 digits." };
   if (pin !== s(form.get("confirm"))) return { error: "The two PINs don't match." };
@@ -138,7 +142,7 @@ export async function setMyPin(_: ActionState, form: FormData): Promise<ActionSt
 }
 
 export async function changeMyPassword(_: ActionState, form: FormData): Promise<ActionState> {
-  await requireStaff();
+  await requireStaff(ALL_ROLES);
   const currentPassword = String(form.get("current") ?? "");
   const newPassword = String(form.get("next") ?? "");
   if (newPassword.length < 8) return { error: "Use at least 8 characters." };
@@ -281,15 +285,26 @@ export async function saveDeliveryRules(_: ActionState, form: FormData): Promise
   const free = Number(form.get("free"));
   const max = Number(form.get("max"));
   const min = Number(form.get("min"));
+  const baseFee = Number(s(form.get("baseFee")));
+  const baseMeters = Number(form.get("baseMeters"));
+  const perKm = Number(s(form.get("perKm")));
+  const cash = form.get("cash") === "on";
   if (!mayChange(me, branchId)) return { error: "You can't change that branch." };
   const ok = (list: readonly number[], v: number) => list.includes(v);
-  if (!ok(FREE_DELIVERY_OPTIONS, free) || !ok(MAX_DELIVERY_OPTIONS, max) || !ok(MIN_ORDER_OPTIONS, min)) return { error: "Choose from the lists." };
+  if (!ok(FREE_DELIVERY_OPTIONS, free) || !ok(MAX_DELIVERY_OPTIONS, max) || !ok(MIN_ORDER_OPTIONS, min) || !ok(BASE_DISTANCE_OPTIONS, baseMeters)) {
+    return { error: "Choose from the lists." };
+  }
   if (free > max) return { error: "The free delivery area can't be bigger than the delivery limit." };
-  await db.update(branches).set({ freeDeliveryMeters: free, maxDeliveryMeters: max, deliveryMinOrder: min }).where(eq(branches.id, branchId));
-  await audit(me.id, "delivery.rules", { branchId, free, max, min });
+  if (!Number.isInteger(baseFee) || baseFee < 0 || baseFee > MAX_DELIVERY_FEE) return { error: `Enter a base fee from ₱0 to ${peso(MAX_DELIVERY_FEE)}.` };
+  if (!Number.isInteger(perKm) || perKm < 0 || perKm > MAX_PER_KM) return { error: `Enter a price per km from ₱0 to ${peso(MAX_PER_KM)}.` };
+  await db
+    .update(branches)
+    .set({ freeDeliveryMeters: free, maxDeliveryMeters: max, deliveryMinOrder: min, deliveryBaseFee: baseFee, deliveryBaseMeters: baseMeters, deliveryPerKm: perKm, cashOnDelivery: cash })
+    .where(eq(branches.id, branchId));
+  await audit(me.id, "delivery.rules", { branchId, free, max, min, baseFee, baseMeters, perKm, cash });
   revalidatePath("/staff/branch");
   return {
-    ok: `Saved. ${free ? `Free within ${formatDistance(free)}` : "No free delivery"}, up to ${formatDistance(max)}${min ? `, from ${peso(min)}` : ""}.`,
+    ok: `Saved. ${feeSummary({ freeWithin: free, baseFee, baseMeters, perKm })}, up to ${formatDistance(max)}${min ? `, from ${peso(min)}` : ""}.${cash ? " Cash on delivery is on." : ""}`,
   };
 }
 

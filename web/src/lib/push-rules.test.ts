@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultOnShiftOnly, deviceName, messagePayload, newOrderPayload, paymentPayload, recipients, type Device } from "./push-rules";
+import { assignedPayload, defaultOnShiftOnly, deviceName, messagePayload, newOrderPayload, paymentPayload, recipients, type Device } from "./push-rules";
 
 const device = (over: Partial<Device> & { staffId: string }): Device => ({
   role: "employee", branchId: "main", active: true, orders: true, messages: true, onShiftOnly: true, ...over,
@@ -60,5 +60,27 @@ describe("what the notification says", () => {
     expect(deviceName("Mozilla/5.0 (Linux; Android 14; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36")).toBe("Chrome on Android");
     expect(deviceName("Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1")).toBe("Safari on iPhone");
     expect(deviceName("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36 Edg/129.0")).toBe("Edge on Windows");
+  });
+});
+
+describe("riders", () => {
+  const rider = { staffId: "rid", role: "rider" as const, branchId: "main", active: true, orders: true, messages: true, onShiftOnly: false };
+
+  it("never get the branch's order, payment or message alerts", () => {
+    expect(recipients([rider], "main", "order", new Set(["rid"]))).toEqual([]);
+    expect(recipients([rider], "main", "message", new Set(["rid"]))).toEqual([]);
+  });
+
+  it("are told how far and what to collect, never who or where", () => {
+    const cash = assignedPayload({ id: "o1", code: "EM-7KQ4P2", distanceMeters: 1240, total: 495, paymentMethod: "cash", cashTendered: 1000 });
+    expect(cash.title).toBe("Delivery EM-7KQ4P2 is yours");
+    expect(cash.body).toBe("1.2 km away · Collect ₱495 · paying with ₱1,000 · bring ₱505 change");
+    expect(cash.url).toBe("/staff/deliveries#order-o1");
+    const paid = assignedPayload({ id: "o2", code: "EM-ABC123", distanceMeters: null, total: 300, paymentMethod: "transfer", cashTendered: null });
+    expect(paid.body).toBe("Paid online, nothing to collect");
+  });
+
+  it("get alerts only while on shift unless they change it", () => {
+    expect(defaultOnShiftOnly("rider")).toBe(true);
   });
 });

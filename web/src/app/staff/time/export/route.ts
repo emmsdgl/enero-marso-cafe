@@ -1,4 +1,5 @@
 import { branches } from "@/data/branches";
+import { isManager } from "@/lib/roles";
 import { getCurrentStaff, hoursBetween } from "@/lib/staff";
 import { weekEntries } from "@/lib/timesheet";
 import { mondayOf, toManilaInput, validMonday } from "@/lib/week";
@@ -6,7 +7,7 @@ import { mondayOf, toManilaInput, validMonday } from "@/lib/week";
 /** CSV of a week's shifts for payroll. Managers get their branch; the admin gets the chosen branch or both. */
 export async function GET(request: Request) {
   const me = await getCurrentStaff();
-  if (!me || me.role === "employee") return new Response("Forbidden", { status: 403 });
+  if (!me || !isManager(me)) return new Response("Forbidden", { status: 403 });
 
   const url = new URL(request.url);
   const week = validMonday(url.searchParams.get("week") ?? undefined, mondayOf(new Date()));

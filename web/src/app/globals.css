@@ -705,6 +705,32 @@ body:has(.track .chat-compose) .order-bubbles { bottom: calc(env(safe-area-inset
 .delivery-reach.is-off { background: #f6dcd8; color: #6e1710; }
 .slip-fee { margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; font-size: 0.9375rem; }
 .slip-fee span { font-weight: 700; font-size: 0.75rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--brown); }
+
+/* How they pay a delivery, and for cash, what they'll hand the rider (so the change is ready) */
+.checkout-pay, .checkout-tender { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 0.5rem; }
+.checkout-pay legend, .checkout-tender legend {
+  padding: 0; margin-bottom: 0.5rem; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brown);
+}
+.checkout-tender legend small { margin-left: 0.35rem; font-weight: 500; letter-spacing: 0.04em; text-transform: none; color: var(--cocoa); }
+.checkout-pay label, .checkout-tender label {
+  display: flex; align-items: center; gap: 0.7rem; padding: 0.85rem 1rem; border: 1.5px solid var(--ink); cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.checkout-pay input[type="radio"], .checkout-tender input[type="radio"] { flex: none; width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--gold); }
+.checkout-pay label > span { display: grid; gap: 0.15rem; font-weight: 700; font-size: 0.9375rem; }
+.checkout-pay small { font-weight: 500; font-size: 0.8125rem; color: var(--cocoa); }
+.checkout-pay label:has(input:checked), .checkout-tender label:has(input:checked) { background: var(--ink); color: var(--cream); }
+.checkout-pay label:has(input:checked) small { color: var(--card); }
+.checkout-pay label:has(input:focus-visible), .checkout-tender label:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+.checkout-tender label > span { font-weight: 600; font-size: 0.9375rem; }
+.checkout-tender-other { flex-wrap: wrap; }
+.peso-field {
+  display: inline-flex; align-items: center; gap: 0.3rem; margin-left: auto; padding: 0.4rem 0.65rem;
+  border: 1.5px solid var(--cream); background: var(--cream); color: var(--ink); font-weight: 700;
+}
+.peso-field input { width: 6ch; padding: 0; border: 0; background: none; color: var(--ink); font: 700 1rem var(--brand); }
+.peso-field input:focus { outline: none; }
+.peso-field:focus-within { outline: 2px solid var(--gold); outline-offset: 1px; }
 .copy-btn {
   padding: 0.3rem 0.7rem; border: 1px solid rgb(21 18 17 / 0.35); border-radius: 999px; background: none; color: var(--ink); cursor: pointer;
   font: 600 0.75rem/1 var(--brand); letter-spacing: 0.04em; vertical-align: 0.1em;

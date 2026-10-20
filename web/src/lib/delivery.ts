@@ -2,8 +2,8 @@ import { peso } from "./menu";
 
 /**
  * Delivery rules shared by checkout, the server and the staff screens. Pure: no database, no
- * map service. Distances are straight lines from the branch's pin (free and instant); staff
- * confirm every delivery fee anyway, so a pin a few meters off can't cost anyone money.
+ * map service. Distances are straight lines from the branch's pin (free and instant), and the
+ * fee follows from the distance, so customers see it before they order.
  */
 export type LatLng = { lat: number; lng: number };
 
@@ -11,10 +11,37 @@ export type LatLng = { lat: number; lng: number };
 export const FREE_DELIVERY_OPTIONS = [0, 100, 250, 500, 1000, 2000] as const;
 export const MAX_DELIVERY_OPTIONS = [2000, 3000, 5000, 8000, 10000] as const;
 export const MIN_ORDER_OPTIONS = [0, 200, 300, 500] as const;
-/** The highest fee staff can quote, a guard against typos like ₱6000 for ₱60 */
+/** How far the base fee goes before the per-km price starts */
+export const BASE_DISTANCE_OPTIONS = [1000, 2000, 3000, 5000] as const;
+/** The highest delivery fee, a guard against typos like ₱6000 for ₱60 */
 export const MAX_DELIVERY_FEE = 1000;
+export const MAX_PER_KM = 200;
 
-export type DeliverySettings = { open: boolean; store: LatLng | null; freeWithin: number; maxDistance: number; minOrder: number };
+export type FeeSettings = { freeWithin: number; baseFee: number; baseMeters: number; perKm: number };
+export type DeliverySettings = FeeSettings & {
+  open: boolean;
+  store: LatLng | null;
+  maxDistance: number;
+  minOrder: number;
+  /** Customers may pay the rider in cash */
+  cash: boolean;
+};
+
+/**
+ * Our riders' fee for a distance: free inside the free area; otherwise the base fee covers the
+ * first stretch, plus the per-km price for each kilometer started after it. Never over ₱1,000.
+ */
+export function deliveryFee(s: FeeSettings, distance: number): number {
+  if (s.freeWithin > 0 && distance <= s.freeWithin) return 0;
+  const extraKm = Math.max(0, Math.ceil((distance - s.baseMeters) / 1000));
+  return Math.min(MAX_DELIVERY_FEE, s.baseFee + extraKm * s.perKm);
+}
+
+/** "Free within 500 m · ₱49 up to 2 km, then ₱8 per km" */
+export function feeSummary(s: FeeSettings): string {
+  const base = `${peso(s.baseFee)} up to ${formatDistance(s.baseMeters)}${s.perKm ? `, then ${peso(s.perKm)} per km` : ""}`;
+  return s.freeWithin ? `Free within ${formatDistance(s.freeWithin)} · ${base}` : base;
+}
 
 export function isLatLng(v: unknown): v is LatLng {
   const p = v as LatLng;
@@ -38,7 +65,7 @@ export function formatDistance(m: number) {
   return `${(m / 1000).toFixed(m < 10_000 ? 1 : 0).replace(/\.0$/, "")} km`;
 }
 
-export type DeliveryCheck = { ok: true; distance: number; free: boolean } | { ok: false; error: string; distance?: number };
+export type DeliveryCheck = { ok: true; distance: number; free: boolean; fee: number } | { ok: false; error: string; distance?: number };
 
 /** Can this branch deliver to this pin, for this many pesos of items? */
 export function checkDelivery(s: DeliverySettings, pin: LatLng | null, subtotal: number): DeliveryCheck {
@@ -50,7 +77,8 @@ export function checkDelivery(s: DeliverySettings, pin: LatLng | null, subtotal:
     return { ok: false, distance, error: `That's ${formatDistance(distance)} away. We deliver up to ${formatDistance(s.maxDistance)} from the branch.` };
   }
   if (subtotal < s.minOrder) return { ok: false, distance, error: `Delivery needs at least ${peso(s.minOrder)} in items.` };
-  return { ok: true, distance, free: distance <= s.freeWithin };
+  const fee = deliveryFee(s, distance);
+  return { ok: true, distance, free: fee === 0, fee };
 }
 
 /** The free delivery area as a closed ring of [lng, lat] points, for drawing on the map */

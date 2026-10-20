@@ -4,6 +4,7 @@ import TalkScreen from "@/components/talk/TalkScreen";
 import { branches } from "@/data/branches";
 import { talkConfigured } from "@/lib/realtime-sfu";
 import { requireStaff } from "@/lib/staff";
+import { ALL_ROLES } from "@/lib/roles";
 import { clipsFor, staffMember } from "@/lib/talk";
 import { shortBranch } from "@/lib/talk-rules";
 
@@ -11,7 +12,7 @@ export const metadata: Metadata = { title: "Talk" };
 
 /** Push-to-talk between the owner and the people on shift */
 export default async function TalkPage() {
-  const me = await requireStaff();
+  const me = await requireStaff(ALL_ROLES);
   const member = await staffMember(me);
   const configured = talkConfigured();
   const clips = member && configured ? await clipsFor(member) : [];

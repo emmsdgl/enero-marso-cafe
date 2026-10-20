@@ -120,7 +120,7 @@ export default function Invitations() {
       <section id="trays" className="iv-band iv-band--brown" aria-labelledby="iv-trays">
         <header className="iv-band-head">
           <h2 id="iv-trays">Trays</h2>
-          <p>For meetings and parties, picked up or sent by Lalamove. {SAMPLE_NOTE}</p>
+          <p>For meetings and parties, picked up or delivered. {SAMPLE_NOTE}</p>
         </header>
         <ul className="iv-tickets">
           {trays.map((o) => (

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { asc, eq } from "drizzle-orm";
 import ActionForm from "@/components/staff/ActionForm";
+import { ALL_ROLES, hoursScope, isManager } from "@/lib/roles";
 import { db, staff } from "@/db";
 import { branches } from "@/data/branches";
 import { hoursBetween, manila, requireStaff } from "@/lib/staff";
@@ -16,12 +17,12 @@ const h2 = (h: number) => h.toFixed(2);
 const short = (id: string) => branches.find((b) => b.id === id)!.name.replace("Enero Marso ", "");
 
 export default async function TimePage({ searchParams }: PageProps<"/staff/time">) {
-  const me = await requireStaff();
+  const me = await requireStaff(ALL_ROLES);
   const sp = await searchParams;
   const thisWeek = mondayOf(new Date());
   const week = validMonday(typeof sp.week === "string" ? sp.week : undefined, thisWeek);
   const branch = me.role === "admin" && typeof sp.branch === "string" && ["main", "noir"].includes(sp.branch) ? sp.branch : "all";
-  const canEdit = me.role !== "employee";
+  const canEdit = isManager(me);
   const now = new Date();
 
   const rows = await weekEntries(me, week, branch);
@@ -66,7 +67,7 @@ export default async function TimePage({ searchParams }: PageProps<"/staff/time"
       )}
 
       <section className="staff-card" aria-labelledby="sum-title">
-        <h2 id="sum-title">{me.role === "employee" ? "My hours" : "Hours this week"}</h2>
+        <h2 id="sum-title">{hoursScope(me) === "own" ? "My hours" : "Hours this week"}</h2>
         {totals.size === 0 ? (
           <p className="staff-empty">No shifts recorded this week.</p>
         ) : (
@@ -91,7 +92,7 @@ export default async function TimePage({ searchParams }: PageProps<"/staff/time"
               <thead>
                 <tr>
                   <th scope="col">Date</th>
-                  {me.role !== "employee" && <th scope="col">Name</th>}
+                  {hoursScope(me) !== "own" && <th scope="col">Name</th>}
                   {me.role === "admin" && <th scope="col">Branch</th>}
                   <th scope="col">In</th>
                   <th scope="col">Out</th>
@@ -104,7 +105,7 @@ export default async function TimePage({ searchParams }: PageProps<"/staff/time"
                 {rows.map((r) => (
                   <tr key={r.id}>
                     <td>{manila.date(r.clockIn)}</td>
-                    {me.role !== "employee" && <th scope="row">{r.name}</th>}
+                    {hoursScope(me) !== "own" && <th scope="row">{r.name}</th>}
                     {me.role === "admin" && <td>{short(r.branchId)}</td>}
                     <td>{manila.time(r.clockIn)}</td>
                     <td>{r.clockOut ? manila.time(r.clockOut) : <span className="tag is-ok">On shift</span>}</td>

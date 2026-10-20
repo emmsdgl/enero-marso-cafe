@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHAT_GRACE_MINUTES, MESSAGE_MAX, STALE_HOURS, canMove, chatState, cleanMessage, cleanPaymentRef, nextStatuses, statusLabel, statusNote, unreadCount } from "./order-rules";
+import { CHAT_GRACE_MINUTES, MESSAGE_MAX, STALE_HOURS, canMove, chatState, cleanMessage, cleanPaymentRef, nextStatuses, statusLabel, statusNote, trackSteps, unreadCount } from "./order-rules";
 
 const at = (iso: string) => new Date(iso);
 
@@ -30,12 +30,35 @@ describe("order status flow", () => {
     expect(canMove("delivery", "out_for_delivery", "done")).toBe(true);
   });
 
-  it("allows cancelling only before preparing starts", () => {
+  it("allows cancelling only before preparing starts, or calling off a delivery that's out", () => {
     expect(canMove("pickup", "pending", "cancelled")).toBe(true);
     expect(canMove("pickup", "accepted", "cancelled")).toBe(true);
     expect(canMove("delivery", "awaiting_payment", "cancelled")).toBe(true);
     expect(canMove("pickup", "preparing", "cancelled")).toBe(false);
-    expect(canMove("delivery", "out_for_delivery", "cancelled")).toBe(false);
+    expect(canMove("delivery", "ready", "cancelled")).toBe(false);
+    // "Couldn't deliver": the server lets only managers do it
+    expect(canMove("delivery", "out_for_delivery", "cancelled")).toBe(true);
+  });
+
+  it("accepts a cash delivery straight away, with no payment step", () => {
+    expect(canMove("delivery", "pending", "accepted", "unpaid", "cash")).toBe(true);
+    expect(canMove("delivery", "pending", "awaiting_payment", "unpaid", "cash")).toBe(false);
+    // Paying online never skips the payment
+    expect(canMove("delivery", "pending", "accepted", "unpaid", "transfer")).toBe(false);
+    expect(canMove("delivery", "pending", "awaiting_payment", "unpaid", "transfer")).toBe(true);
+  });
+
+  it("shows the customer a Pay step only when they pay online", () => {
+    expect(trackSteps("delivery", "transfer").map((s) => s.label)).toEqual(["Order sent", "Pay", "Being prepared", "On its way", "Delivered"]);
+    expect(trackSteps("delivery", "cash").map((s) => s.label)).toEqual(["Order sent", "Being prepared", "On its way", "Delivered"]);
+    expect(trackSteps("pickup", null)).toHaveLength(5);
+  });
+
+  it("says why a delivery came back", () => {
+    expect(statusNote("cancelled", "delivery", "No one was there to receive it", "out_for_delivery")).toBe(
+      "The cafe couldn't deliver the order: No one was there to receive it. Message us here if you'd still like it.",
+    );
+    expect(statusNote("cancelled", "delivery", "Too busy", "pending")).toBe("The cafe cancelled the order: Too busy");
   });
 
   it("has no way out of done or cancelled, and no skipping steps", () => {

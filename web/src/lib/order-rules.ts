@@ -2,9 +2,11 @@
  * Online order lifecycle and the per-order chat rules. Pure functions: the server enforces them,
  * the screens use them to decide which buttons to show, and the tests pin them down.
  *
- * Pickup:   pending → accepted → preparing → ready → done
- * Delivery: pending → awaiting_payment → accepted → preparing → ready → out_for_delivery → done
- * Either can be cancelled until preparing starts.
+ * Pickup:          pending → accepted → preparing → ready → done
+ * Delivery, online: pending → awaiting_payment → accepted → preparing → ready → out_for_delivery → done
+ * Delivery, cash:   pending → accepted → preparing → ready → out_for_delivery → done (paid to the rider)
+ * Any can be cancelled until preparing starts; a delivery that's out can be called off by a manager
+ * ("Couldn't deliver").
  */
 export const ORDER_STATUSES = [
   "pending",
@@ -19,6 +21,7 @@ export const ORDER_STATUSES = [
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type Fulfillment = "pickup" | "delivery";
 export type PaymentStatus = "unpaid" | "submitted" | "verified" | "refunded";
+export type PaymentMethod = "cash" | "gcash" | "transfer";
 
 /** What staff call each status on the board (see statusLabel for delivered orders) */
 export const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -58,13 +61,14 @@ const FLOW: Record<Fulfillment, Partial<Record<OrderStatus, OrderStatus[]>>> = {
     ready: ["done"],
   },
   delivery: {
-    // The fee is quoted first; the customer pays order + fee by GCash before anything is made
-    pending: ["awaiting_payment", "cancelled"],
+    // Paying online: accepting asks for order + fee first, and nothing is made until it's in.
+    // Paying cash: accepting starts it, and the rider collects at the door.
+    pending: ["awaiting_payment", "accepted", "cancelled"],
     awaiting_payment: ["accepted", "cancelled"],
     accepted: ["preparing", "cancelled"],
     preparing: ["ready"],
     ready: ["out_for_delivery"],
-    out_for_delivery: ["done"],
+    out_for_delivery: ["done", "cancelled"],
   },
 };
 
@@ -73,11 +77,42 @@ export function nextStatuses(fulfillment: Fulfillment, from: OrderStatus): Order
   return FLOW[fulfillment][from] ?? [];
 }
 
-/** Can the order move from → to? A delivery order is only accepted once its GCash payment is verified. */
-export function canMove(fulfillment: Fulfillment, from: OrderStatus, to: OrderStatus, payment: PaymentStatus = "unpaid") {
+/**
+ * Can the order move from → to? A delivery paid online is only accepted once its payment is
+ * verified; a cash one is accepted straight away and never waits for a payment.
+ */
+export function canMove(fulfillment: Fulfillment, from: OrderStatus, to: OrderStatus, payment: PaymentStatus = "unpaid", method: PaymentMethod | null = null) {
   if (!nextStatuses(fulfillment, from).includes(to)) return false;
-  if (fulfillment === "delivery" && to === "accepted") return payment === "verified";
+  if (fulfillment !== "delivery") return true;
+  const cash = method === "cash";
+  if (to === "awaiting_payment") return !cash;
+  if (to === "accepted") return from === "pending" ? cash : payment === "verified";
   return true;
+}
+
+/** Why a delivery that's out came back: the customer reads it */
+export const COULDNT_DELIVER_REASONS = ["No one was there to receive it", "We couldn't find the address", "The customer didn't answer our calls"] as const;
+
+export type TrackStep = { label: string; statuses: OrderStatus[] };
+
+/** The steps along the top of the customer's page. Cash deliveries have no "Pay" step. */
+export function trackSteps(fulfillment: Fulfillment, method: PaymentMethod | null): TrackStep[] {
+  if (fulfillment === "pickup") {
+    return [
+      { label: "Order sent", statuses: ["pending"] },
+      { label: "Accepted", statuses: ["accepted"] },
+      { label: "Being prepared", statuses: ["preparing"] },
+      { label: "Ready for pickup", statuses: ["ready"] },
+      { label: "Picked up", statuses: ["done"] },
+    ];
+  }
+  return [
+    { label: "Order sent", statuses: ["pending"] },
+    ...(method === "cash" ? [] : [{ label: "Pay", statuses: ["awaiting_payment"] as OrderStatus[] }]),
+    { label: "Being prepared", statuses: ["accepted", "preparing", "ready"] },
+    { label: "On its way", statuses: ["out_for_delivery"] },
+    { label: "Delivered", statuses: ["done"] },
+  ];
 }
 
 export type ChatClock = { status: OrderStatus; createdAt: Date; doneAt: Date | null; cancelledAt: Date | null };
@@ -120,7 +155,10 @@ export function cleanMessage(input: unknown): { ok: true; text: string } | { ok:
 }
 
 /** The line the chat shows when an order moves on. Both sides read it, so it says who did what. */
-export function statusNote(to: OrderStatus, fulfillment: Fulfillment, reason?: string | null): string | null {
+export function statusNote(to: OrderStatus, fulfillment: Fulfillment, reason?: string | null, from?: OrderStatus): string | null {
+  if (to === "cancelled" && from === "out_for_delivery") {
+    return reason ? `The cafe couldn't deliver the order: ${reason}. Message us here if you'd still like it.` : "The cafe couldn't deliver the order.";
+  }
   switch (to) {
     case "accepted":
       return "The cafe accepted the order.";

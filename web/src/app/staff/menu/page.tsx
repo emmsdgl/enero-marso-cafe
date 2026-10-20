@@ -9,6 +9,7 @@ import { peso, type BranchId, type MenuAddon, type MenuCategory, type MenuItem }
 import { hasPrice } from "@/lib/menu-rules";
 import { loadMenus } from "@/lib/menu-store";
 import { requireStaff } from "@/lib/staff";
+import { isManager } from "@/lib/roles";
 import {
   deleteAddon, deleteGroup, deleteItem, moveGroup, moveItem, saveAddon, saveGroup, saveMenuItem, saveMenuNotes, setAddonAvailable, setItemAvailable,
 } from "./actions";
@@ -23,7 +24,7 @@ export default async function StaffMenuPage({ searchParams }: PageProps<"/staff/
   const want = (await searchParams).branch;
   const branch = mine.find((b) => b.id === want) ?? mine[0];
   const menu = (await loadMenus())[branch.id];
-  const canEdit = me.role !== "employee";
+  const canEdit = isManager(me);
   const items = menu.categories.flatMap((c) => c.items);
   const soldOut = items.filter((i) => !i.available).length;
   const unpriced = items.filter((i) => !hasPrice(i.prices)).length;

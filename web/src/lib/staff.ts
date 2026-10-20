@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { auditLog, branchNetworks, db, staff, type Role, type Staff } from "@/db";
 import { auth } from "@/lib/auth/server";
 import { readPinSession } from "@/lib/pin-session";
+import { COUNTER, homeFor, usesPin } from "@/lib/roles";
 
 /** The signed-in person's staff record, or null (not signed in, not staff, or deactivated) */
 export async function getCurrentStaff(): Promise<Staff | null> {
@@ -15,11 +16,11 @@ export async function getCurrentStaff(): Promise<Staff | null> {
     const [row] = await db.select().from(staff).where(eq(staff.authUserId, user.id)).limit(1);
     return row && row.active ? row : null;
   }
-  // PIN sign-in at the branch: employees only, whatever the cookie says
+  // PIN sign-in at the branch: employees and riders only, whatever the cookie says
   const pinStaffId = await readPinSession();
   if (!pinStaffId) return null;
   const [row] = await db.select().from(staff).where(eq(staff.id, pinStaffId)).limit(1);
-  return row && row.active && row.role === "employee" ? row : null;
+  return row && row.active && usesPin(row.role) ? row : null;
 }
 
 /** True when the current person signed in with a PIN rather than a password */
@@ -28,11 +29,14 @@ export async function signedInWithPin(): Promise<boolean> {
   return !session?.user && !!(await readPinSession());
 }
 
-/** Use at the top of every staff page and action. Redirects anyone without the right role. */
-export async function requireStaff(roles?: Role[]): Promise<Staff> {
+/**
+ * Use at the top of every staff page and action. With no roles given it's the counter staff
+ * (not riders); anyone without the right role goes to their own home page.
+ */
+export async function requireStaff(roles: Role[] = COUNTER): Promise<Staff> {
   const me = await getCurrentStaff();
   if (!me) redirect("/login?reason=no-access");
-  if (roles && !roles.includes(me.role)) redirect("/staff?reason=forbidden");
+  if (!roles.includes(me.role)) redirect(`${homeFor(me)}?reason=forbidden`);
   return me;
 }
 

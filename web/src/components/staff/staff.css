@@ -717,3 +717,44 @@
 @media (prefers-reduced-motion: reduce) {
   .talk-wave i, .talk-hold[data-state="on"] { animation: none; }
 }
+
+/* ——— Our riders: on the order card, in Branch setup, and the rider's own screen ——— */
+.order-card-total small { display: block; font-size: 0.75rem; font-weight: 500; color: var(--cocoa); }
+.order-card-cash { margin: 0; padding: 0.5rem 0.7rem; border-radius: 0.5rem; background: #f7e7cf; color: #5c3a0d; font-weight: 600; font-size: 0.875rem; }
+.order-card-rider label { display: grid; gap: 0.3rem; font-weight: 600; font-size: 0.8125rem; }
+.order-card-rider select {
+  width: 100%; padding: 0.55rem 0.6rem; border: 1px solid rgb(21 18 17 / 0.3); border-radius: 0.5rem; background: #fffdf9;
+  color: var(--ink); font: 500 0.9375rem var(--brand);
+}
+.order-card-rider select:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.fee-rules {
+  margin: 0; padding: 0.85rem 1rem 1rem; border: 1px solid rgb(21 18 17 / 0.15); border-radius: 0.65rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: 0.75rem;
+}
+.fee-rules legend { padding: 0 0.35rem; font-weight: 600; font-size: 0.875rem; }
+
+.rider-card { display: grid; gap: 0.9rem; scroll-margin-top: 7rem; }
+.rider-card.is-out_for_delivery { border-color: rgb(47 90 34 / 0.45); }
+.rider-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+.rider-card-head h2 { margin: 0; font-size: 1.25rem; letter-spacing: 0.04em; }
+.rider-card-when { margin-left: auto; color: var(--cocoa); font-weight: 600; font-size: 0.875rem; }
+.rider-collect { margin: 0; padding: 0.75rem 0.9rem; border-radius: 0.6rem; background: rgb(21 18 17 / 0.06); font-weight: 600; }
+.rider-collect.is-cash { background: #f7e7cf; color: #5c3a0d; font-size: 1.0625rem; }
+.rider-where { display: grid; gap: 0.75rem; }
+.rider-where > p { margin: 0; display: grid; gap: 0.15rem; }
+.rider-where b { font-size: 1.0625rem; }
+.rider-where small { color: var(--cocoa); }
+.rider-where-do { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.rider-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.rider-items small { display: block; color: var(--cocoa); font-size: 0.8125rem; }
+.rider-actions { display: grid; gap: 0.6rem; }
+.rider-cash { font-size: 1.0625rem; }
+.rider-chat summary { padding: 0.4rem 0; font-weight: 600; cursor: pointer; }
+.rider-done ul { list-style: none; margin: 0; padding: 0; display: grid; }
+.rider-done li {
+  display: grid; grid-template-columns: auto 1fr auto auto; gap: 0.75rem; align-items: baseline;
+  padding: 0.55rem 0; border-top: 1px solid rgb(21 18 17 / 0.1); font-size: 0.9375rem;
+}
+.rider-done li:first-child { border-top: 0; }
+.rider-done .num { font-weight: 600; font-variant-numeric: tabular-nums; }
+.rider-cash-total { margin: 0.75rem 0 0; padding: 0.75rem 0.9rem; border-radius: 0.6rem; background: #f7e7cf; color: #5c3a0d; }

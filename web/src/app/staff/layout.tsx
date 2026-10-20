@@ -6,6 +6,8 @@ import StaffNav from "@/components/staff/StaffNav";
 import TalkDock from "@/components/talk/TalkDock";
 import { branches } from "@/data/branches";
 import { talkConfigured } from "@/lib/realtime-sfu";
+import { myDeliveryCount } from "@/lib/riders";
+import { ALL_ROLES, homeFor, isManager, ROLE_LABEL } from "@/lib/roles";
 import { requireStaff } from "@/lib/staff";
 import { staffMember, unheardCount } from "@/lib/talk";
 import { signOut } from "../login/actions";
@@ -21,29 +23,35 @@ export const metadata: Metadata = {
 };
 export const dynamic = "force-dynamic";
 
-const ROLE_LABEL = { employee: "Employee", manager: "Branch manager", admin: "Admin" } as const;
-
 export default async function StaffLayout({ children }: LayoutProps<"/staff">) {
-  const me = await requireStaff();
+  // Every role gets the frame; each page says who may see it
+  const me = await requireStaff(ALL_ROLES);
   const branch = branches.find((b) => b.id === me.branchId);
   // Talk: the admin always, everyone else while clocked in
-  const talk = talkConfigured() ? await staffMember(me) : null;
+  const [talk, deliveries] = await Promise.all([talkConfigured() ? staffMember(me) : null, myDeliveryCount(me.id)]);
   const unheard = talk ? await unheardCount(talk) : 0;
-  const links = [
-    { href: "/staff", label: "Today" },
-    { href: "/staff/orders", label: "Orders" },
-    { href: "/staff/talk", label: "Talk", badge: unheard },
-    { href: "/staff/menu", label: "Menu" },
-    { href: "/staff/time", label: "Hours" },
-    ...(me.role !== "employee" ? [{ href: "/staff/team", label: "Team" }, { href: "/staff/branch", label: "Branch" }] : []),
-    { href: "/staff/account", label: "Account" },
-    { href: "/staff/help", label: "Help" },
-  ];
+  const talkLink = { href: "/staff/talk", label: "Talk", badge: unheard };
+  const deliveriesLink = { href: "/staff/deliveries", label: "Deliveries", badge: deliveries };
+  const links =
+    me.role === "rider"
+      ? [deliveriesLink, talkLink, { href: "/staff/time", label: "Hours" }, { href: "/staff/account", label: "Account" }, { href: "/staff/help", label: "Help" }]
+      : [
+          { href: "/staff", label: "Today" },
+          { href: "/staff/orders", label: "Orders" },
+          // Counter staff sent out with a delivery get the rider's screen while they have one
+          ...(deliveries ? [deliveriesLink] : []),
+          talkLink,
+          { href: "/staff/menu", label: "Menu" },
+          { href: "/staff/time", label: "Hours" },
+          ...(isManager(me) ? [{ href: "/staff/team", label: "Team" }, { href: "/staff/branch", label: "Branch" }] : []),
+          { href: "/staff/account", label: "Account" },
+          { href: "/staff/help", label: "Help" },
+        ];
   return (
     <div className="staff-shell">
       <StaffApp />
       <header className="staff-top">
-        <Link href="/staff" className="staff-brand">
+        <Link href={homeFor(me)} className="staff-brand">
           <Image src="/brand/enero-marso-monogram-gold.png" alt="" width={439} height={500} />
           <span>Enero Marso <small>Staff</small></span>
         </Link>

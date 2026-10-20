@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Branch } from "@/data/branches";
+import { cashNote } from "@/lib/cash";
 import type { Card } from "@/lib/chat-cards";
 import { formatDistance } from "@/lib/delivery";
 import { peso } from "@/lib/menu";
@@ -72,7 +73,7 @@ export function OrderDetails({ ctx }: { ctx: CardContext }) {
 
 /** What's in the order, with the fee and the total */
 function Receipt({ order: o }: { order: FullOrder }) {
-  const fee = o.deliveryFee === null ? "The cafe confirms it" : o.deliveryFee === 0 ? "Free" : peso(o.deliveryFee);
+  const fee = o.deliveryFee === null ? "Set by the cafe" : o.deliveryFee === 0 ? "Free" : peso(o.deliveryFee);
   return (
     <ul className="track-items">
       {o.items.map((i) => (
@@ -100,7 +101,13 @@ export function PlacedCard({ ctx, open }: { ctx: CardContext; open: boolean }) {
     <ChatCard tone={o.status === "pending" ? "now" : "done"} title="Order sent" sub={`${count} item${count === 1 ? "" : "s"} · ${peso(o.total)}`} time={at(o.createdAt)} open={open}>
       <OrderDetails ctx={ctx} />
       {!delivery && o.status !== "cancelled" && o.status !== "done" && <p className="track-pay">Pay at the counter when you pick up: cash or GCash.</p>}
-      {delivery && o.status === "pending" && <p className="track-pay">You&rsquo;ll pay by GCash, Maya or bank transfer once the cafe confirms the delivery fee. Nothing to pay yet.</p>}
+      {delivery && o.status === "pending" && (
+        <p className="track-pay">
+          {o.paymentMethod === "cash"
+            ? cashNote(o.total, o.cashTendered)
+            : "You’ll pay by GCash, Maya or bank transfer here once the cafe accepts your order. Nothing to pay yet."}
+        </p>
+      )}
       {o.status !== "done" && o.status !== "cancelled" && <OrderLink code={o.code} />}
       {canCancel && <CancelOrder code={o.code} token={token} />}
     </ChatCard>
@@ -155,6 +162,7 @@ export function LineCard({ card, body, time, ctx, open, live }: { card: Card; bo
           return (
             <ChatCard tone="done" title="Accepted" sub={o.wantedAt ? `Ready by ${at(o.wantedAt)}` : "We'll start on it shortly"} time={time} open={open}>
               <p>{body}</p>
+              {o.paymentMethod === "cash" && o.status !== "done" && o.status !== "cancelled" && <p className="track-pay">{cashNote(o.total, o.cashTendered)}</p>}
             </ChatCard>
           );
         case "preparing":
@@ -179,8 +187,9 @@ export function LineCard({ card, body, time, ctx, open, live }: { card: Card; bo
           );
         case "out_for_delivery":
           return (
-            <ChatCard tone={o.status === "out_for_delivery" ? "now" : "done"} title="On its way" sub={card.provider === "lalamove" ? "With a Lalamove rider" : "With our staff"} time={time} open={open}>
+            <ChatCard tone={o.status === "out_for_delivery" ? "now" : "done"} title="On its way" sub={card.provider === "lalamove" ? "With a Lalamove rider" : "With our rider"} time={time} open={open}>
               <p>To {o.address}{o.landmark ? ` (${o.landmark})` : ""}.</p>
+              {o.paymentMethod === "cash" && o.status === "out_for_delivery" && <p className="track-pay">{cashNote(o.total, o.cashTendered)}</p>}
               {card.provider === "lalamove" && o.trackingUrl && o.status === "out_for_delivery" && (
                 <a href={o.trackingUrl} className="track-rider" target="_blank" rel="noopener noreferrer">Track your rider</a>
               )}

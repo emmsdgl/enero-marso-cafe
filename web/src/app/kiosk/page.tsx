@@ -32,7 +32,7 @@ export default async function KioskPage() {
   const team = await db
     .select({ id: staff.id, name: staff.name })
     .from(staff)
-    .where(and(eq(staff.branchId, kiosk.branchId), eq(staff.active, true), isNotNull(staff.pinHash), inArray(staff.role, ["employee", "manager"])))
+    .where(and(eq(staff.branchId, kiosk.branchId), eq(staff.active, true), isNotNull(staff.pinHash), inArray(staff.role, ["employee", "manager", "rider"])))
     .orderBy(asc(staff.name));
   const open = team.length
     ? await db.select({ staffId: timeEntries.staffId, clockIn: timeEntries.clockIn }).from(timeEntries)

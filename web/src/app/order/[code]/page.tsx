@@ -10,29 +10,14 @@ import { branches } from "@/data/branches";
 import { livePayCard, readCard } from "@/lib/chat-cards";
 import { peso } from "@/lib/menu";
 import { listMessages } from "@/lib/order-chat";
-import { chatState, unreadCount, type OrderStatus } from "@/lib/order-rules";
+import { cashNote } from "@/lib/cash";
+import { chatState, trackSteps, unreadCount, type OrderStatus } from "@/lib/order-rules";
 import { getCustomerOrder } from "@/lib/orders";
 import { listPaymentAccounts, toPayAccount } from "@/lib/payments";
 import { channels } from "@/lib/realtime";
 
 export const metadata: Metadata = { title: "Your order", robots: { index: false, follow: false }, referrer: "no-referrer" };
 export const dynamic = "force-dynamic";
-
-type Step = { label: string; statuses: OrderStatus[] };
-const PICKUP_STEPS: Step[] = [
-  { label: "Order sent", statuses: ["pending"] },
-  { label: "Accepted", statuses: ["accepted"] },
-  { label: "Being prepared", statuses: ["preparing"] },
-  { label: "Ready for pickup", statuses: ["ready"] },
-  { label: "Picked up", statuses: ["done"] },
-];
-const DELIVERY_STEPS: Step[] = [
-  { label: "Order sent", statuses: ["pending"] },
-  { label: "Pay", statuses: ["awaiting_payment"] },
-  { label: "Being prepared", statuses: ["accepted", "preparing", "ready"] },
-  { label: "On its way", statuses: ["out_for_delivery"] },
-  { label: "Delivered", statuses: ["done"] },
-];
 
 const at = (d: Date) => d.toLocaleTimeString("en-PH", { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" });
 
@@ -57,10 +42,10 @@ export default async function TrackOrderPage({ params, searchParams }: PageProps
   ]);
   const chat = chatState(order);
   const unread = unreadCount(messages, "customer", order.customerLastReadAt);
-  // Staff names stay at the cafe: the customer sees the branch
+  // Staff names stay at the cafe: the customer sees the branch, or "Your rider" for the one delivering
   const lines = messages.map((m) => ({
     id: m.id, sender: m.sender, body: m.body, time: at(m.createdAt), kind: m.kind,
-    who: m.sender === "customer" ? "You" : m.sender === "staff" ? cafe : null,
+    who: m.sender === "customer" ? "You" : m.sender === "staff" ? (m.staffId && m.staffId === order.riderId ? "Your rider" : cafe) : null,
   }));
 
   // The cards: one per step line; the newest one is open, and the pay form sits in the card that asks for it
@@ -76,17 +61,22 @@ export default async function TrackOrderPage({ params, searchParams }: PageProps
     cards[m.id] = <LineCard card={card} body={m.body} time={at(m.createdAt)} ctx={ctx} open={m.id === newest} live={m.id === pay} />;
   }
 
-  const STEPS = delivery ? DELIVERY_STEPS : PICKUP_STEPS;
+  const STEPS = trackSteps(order.fulfillment, order.paymentMethod);
+  const cash = order.paymentMethod === "cash";
   const step = order.status === "done" ? STEPS.length : STEPS.findIndex((s) => s.statuses.includes(order.status));
   const codeTag = <span className="nowrap">{order.code}</span>;
   const headline: Record<OrderStatus, ReactNode> = delivery
     ? {
-        pending: `Order sent. ${order.branchId === "noir" ? "Cafe Noir" : "The cafe"} will confirm it and the delivery fee.`,
-        awaiting_payment: order.paymentStatus === "submitted" ? "Payment sent. The cafe is checking it." : `Confirmed! Pay ${peso(order.total)} to start your order.`,
-        accepted: order.wantedAt ? `Paid and accepted. We'll deliver around ${at(order.wantedAt)}.` : "Paid and accepted. We'll start on it shortly.",
+        pending: cash
+          ? `Order sent. ${order.branchId === "noir" ? "Cafe Noir" : "The cafe"} will accept it shortly.`
+          : `Order sent. Once ${order.branchId === "noir" ? "Cafe Noir" : "the cafe"} accepts it, you pay ${peso(order.total)} here.`,
+        awaiting_payment: order.paymentStatus === "submitted" ? "Payment sent. The cafe is checking it." : `Accepted! Pay ${peso(order.total)} to start your order.`,
+        accepted: cash
+          ? (order.wantedAt ? `Accepted. We'll deliver around ${at(order.wantedAt)}.` : "Accepted. We'll start on it shortly.")
+          : (order.wantedAt ? `Paid and accepted. We'll deliver around ${at(order.wantedAt)}.` : "Paid and accepted. We'll start on it shortly."),
         preparing: "Your order is being prepared.",
         ready: "Ready, and waiting for the rider.",
-        out_for_delivery: "On its way to you.",
+        out_for_delivery: cash ? `On its way to you. ${cashNote(order.total, order.cashTendered)}` : "On its way to you.",
         done: "Delivered. Thanks for ordering!",
         cancelled: "This order was cancelled.",
       }

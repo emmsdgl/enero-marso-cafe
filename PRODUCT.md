@@ -60,7 +60,7 @@ Online ordering (pickup and delivery, with a chat per order) is being built; see
 ## Operations (confirmed by owner, Oct 2026)
 
 - POS: both stores use **Loyverse** for sales and stock. The website must not duplicate POS sales/inventory; staff features complement it.
-- Delivery: third-party only (**Lalamove**). No in-house riders yet, so no delivery role; the owner may hire riders if online ordering succeeds.
+- Delivery: our own riders (Oct 2026). Riders have their own role and screen and see only the deliveries given to them; baristas clocked in can be sent out too. Lalamove stays as a hidden backup for orders paid online, when our riders are busy.
 - Payments: **GCash** and **cash** at both stores.
 - Staff portal (inside the same Next.js app under /staff): roles Employee, Branch Manager, Admin. Built: accounts, clock in/out, time records, the menu page (anyone marks items sold out; managers and the admin edit names and prices), the Orders board for online pickup and delivery orders, a page per order with its chat, the delivery map and a way to send the customer a new link, delivery settings and payment accounts on Branch, and each branch's opening hours (the usual week plus special days such as holidays; the website, Open now badge and order times all read them). It installs on phones as its own app (EM Staff), and each phone can get notifications for new orders, payments to check and customer messages. Talk (Oct 2026) is push-to-talk between the owner (in Finland) and whoever is clocked in, one channel per branch: hold to talk, live audio through Cloudflare Realtime, one talker at a time, each press kept 7 days, a "missed talk" notification for anyone not listening, and the counter tablet listening all day as a base station. It works while the app is open; iPhones pause it in the background. Planned: website content.
 - The menus live in the database (seeded from the printed menus in Oct 2026); the website reads them, so edits on /staff/menu show on /menu and the homepage right away.
@@ -83,11 +83,11 @@ Status: pickup ordering is built (customers order at /order, pick a time later t
 
 Full spec: `cafe-order-platform-brief.md`. In short:
 - Both branches, **pickup and delivery** from launch; orders only while open, until 30 minutes before closing.
-- Pickup pays at the counter (cash/GCash). Delivery: staff quote the Lalamove fee in the order's chat from the customer's map pin, the customer prepays by GCash and enters the reference number, staff verify it by hand, then book Lalamove and share the tracking link.
+- Pickup pays at the counter (cash/GCash). Delivery: the fee follows from the straight-line distance (free inside the free area, then a base fee for the first stretch and a price per km, set per branch) and shows at checkout. The customer pays online (GCash, Maya or bank in the order's chat after staff accept, checked by hand) or cash to the rider, saying the bill they'll pay with so the rider brings change. Staff accept in one tap, choose who takes it, and the rider taps On my way and Delivered (confirming any cash). A manager can call off a delivery that's out (Couldn't deliver), with a reason the customer reads.
 - **One chat per order**: open while the order is in progress and 30 minutes after it is done, then read-only (enforced by the server). Kept 1 year, then personal details anonymized (Data Privacy Act).
 - No customer accounts: a private tracking link (shown on screen, remembered on the phone, re-issued by staff if lost). No SMS.
 - Staff side is the `/staff` portal made installable, with a live board (sound on the counter tablets) and web push. No native app for now.
-- Later options: PayMongo QR Ph for automatic payment checks, own riders, Lalamove API quotes, Loyverse sync.
+- Later options: PayMongo QR Ph for automatic payment checks, road-distance fees, Lalamove API booking, Loyverse sync. Next (M14): the rider's live location on the customer's page while their screen is on.
 
 ## Positioning
 

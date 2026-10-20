@@ -48,7 +48,11 @@ export default function PrivacyPage() {
             <h2>Who sees it</h2>
             <ul>
               <li><b>The branch&rsquo;s staff,</b> to make and hand over your order. Staff phone alerts show the order code, never your name or number.</li>
-              <li><b>Lalamove,</b> when we book a rider for your delivery: your name, number, address and pin.</li>
+              <li>
+                <b>Our rider,</b> who delivers your order: your first name, number, address and pin, what you ordered, and what to
+                collect if you pay cash. Their phone alerts show only the order code and the distance.
+              </li>
+              <li><b>Lalamove,</b> only when our riders are busy and you paid online: your name, number, address and pin.</li>
               <li>
                 <b>The services that run this site:</b> Vercel (hosting) and Neon (database), both in Singapore. Pusher only carries
                 &ldquo;something changed&rdquo; signals, without your details. The map comes from OpenFreeMap, which sees the area you view.

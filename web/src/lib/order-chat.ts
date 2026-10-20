@@ -5,7 +5,7 @@ import type { CardKind } from "./chat-cards";
 import { chatState, cleanMessage, CUSTOMER_ALERT_KINDS, type Fulfillment, type OrderStatus, type Sender } from "./order-rules";
 import { tokenMatches } from "./order-token";
 import { getCustomerOrder, getStaffOrder, isOrderId } from "./orders";
-import { notifyBranch } from "./push";
+import { notifyBranch, notifyStaff } from "./push";
 import { messagePayload } from "./push-rules";
 import { announce, channels } from "./realtime";
 import { canActOnBranch } from "./staff";
@@ -14,7 +14,10 @@ import { canActOnBranch } from "./staff";
  * The per-order chat. The order's own times decide whether it's open (see chatState), so a
  * closed chat needs no background job, and every write checks again on the server.
  */
-export type ChatMessage = { id: string; sender: Sender; body: string; kind: string; meta: Record<string, unknown> | null; createdAt: Date; staffName: string | null };
+export type ChatMessage = {
+  id: string; sender: Sender; body: string; kind: string; meta: Record<string, unknown> | null; createdAt: Date;
+  staffId: string | null; staffName: string | null;
+};
 type Fail = { ok: false; error: string };
 
 /** Keeps one excited (or scripted) customer from flooding a branch's board */
@@ -25,7 +28,7 @@ export async function listMessages(orderId: string): Promise<ChatMessage[]> {
   return db
     .select({
       id: orderMessages.id, sender: orderMessages.sender, body: orderMessages.body, kind: orderMessages.kind, meta: orderMessages.meta,
-      createdAt: orderMessages.createdAt, staffName: staff.name,
+      createdAt: orderMessages.createdAt, staffId: orderMessages.staffId, staffName: staff.name,
     })
     .from(orderMessages)
     .leftJoin(staff, eq(staff.id, orderMessages.staffId))
@@ -56,6 +59,10 @@ export async function postCustomerMessage(code: string, token: string, body: unk
   ]);
   await announce([channels.branch(o.branchId), channels.order(o.id)]);
   notifyBranch(o.branchId, "message", messagePayload(o, msg.text));
+  // On the way: the rider hears about it too ("I'm at the gate"), on their own screen
+  if (o.riderId && (o.status === "ready" || o.status === "out_for_delivery")) {
+    notifyStaff(o.riderId, { ...messagePayload(o, msg.text), url: `/staff/deliveries#order-${o.id}` });
+  }
   return { ok: true };
 }
 

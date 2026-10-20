@@ -1,13 +1,45 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireStaff } from "@/lib/staff";
+import { ALL_ROLES, isManager } from "@/lib/roles";
 
 export const metadata: Metadata = { title: "Help" };
 
 /** The run-through for a shift with online orders: before opening, each kind of order, problems, closing */
 export default async function HelpPage() {
-  const me = await requireStaff();
-  const manager = me.role !== "employee";
+  const me = await requireStaff(ALL_ROLES);
+  const manager = isManager(me);
+  // Riders, and counter staff sent out with a delivery
+  const delivering = (
+    <section className="staff-card">
+      <h2>Delivering</h2>
+      <ol>
+        <li>Your deliveries are on <Link href="/staff/deliveries">Deliveries</Link>: the address and map, the customer&rsquo;s number and chat, and what to collect.</li>
+        <li>Turn on notifications in <Link href="/staff/account#notifications">Account</Link>, so a new delivery reaches your phone.</li>
+        <li>When the counter marks it ready, take it and tap <b>On my way</b>. The customer sees it&rsquo;s coming.</li>
+        <li>At the door, tap <b>Delivered</b>. If they pay cash, collect it, tick <b>I got ₱… in cash</b>, then tap <b>Delivered</b>.</li>
+        <li>Can&rsquo;t find the place? Message or call the customer from the delivery. Still stuck: call the branch.</li>
+        <li>Hand the cash you collected to the counter before you clock out. Deliveries shows the total.</li>
+      </ol>
+    </section>
+  );
+  if (me.role === "rider") {
+    return (
+      <div className="staff-page">
+        <header className="staff-head">
+          <h1>How delivering works</h1>
+          <p>Everything you need on the road.</p>
+        </header>
+        <div className="help">
+          {delivering}
+          <section className="staff-card">
+            <h2>Talk</h2>
+            <p>While you&rsquo;re clocked in you can talk with the owner and the branch: open <Link href="/staff/talk">Talk</Link>, hold the button, and let go to send.</p>
+          </section>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="staff-page">
       <header className="staff-head">
@@ -39,14 +71,21 @@ export default async function HelpPage() {
         <section className="staff-card">
           <h2>A delivery order</h2>
           <ol>
-            <li>Check the address and the map pin on the order&rsquo;s page. Use <b>Copy for Lalamove</b> to get the rider&rsquo;s fee.</li>
-            <li>Enter the fee (inside the free area it starts at ₱0) and tap <b>Confirm and send fee</b>. Nothing is made yet.</li>
-            <li>The customer pays and sends a reference number. Find that payment, with the same amount, in the account&rsquo;s app history.</li>
-            <li>Found it: <b>Payment received</b> (that also accepts the order). Not there: <b>Not found</b>, and they&rsquo;re asked to check.</li>
-            <li>Prepare it, <b>Mark ready</b>, book the rider, paste the Lalamove tracking link, then <b>Out for delivery</b>.</li>
-            <li>When it arrives, tap <b>Delivered</b>.</li>
+            <li>It comes in with its fee already worked out from the distance. Check the address and the map pin, then tap <b>Accept</b> (or <b>Change fee</b> first).</li>
+            <li>
+              <b>Paid online:</b> the customer pays in the chat and sends a reference number. Find that payment, with the same amount, in the
+              account&rsquo;s app history: <b>Payment received</b>, or <b>Not found</b> and they&rsquo;re asked to check. Nothing is made before that.
+            </li>
+            <li><b>Cash on delivery:</b> there&rsquo;s nothing to check. The card says what the rider collects and the change to bring.</li>
+            <li>Under <b>Taking it</b>, choose a rider, or someone clocked in. Their phone gets a notification.</li>
+            <li>Prepare it and <b>Mark ready</b>. The rider taps <b>On my way</b> on their phone when they leave (or tap <b>Send out with …</b> here).</li>
+            <li>At the door they tap <b>Delivered</b>. For cash, they tick that they got it first, and hand the cash to the counter later.</li>
+            <li>Our riders all busy, and it&rsquo;s paid online? <b>Book Lalamove instead</b>, and paste its tracking link.</li>
+            {manager && <li>Nobody there, or the address can&rsquo;t be found: tap <b>Couldn&rsquo;t deliver</b> and choose why. The customer reads it in their chat.</li>}
           </ol>
         </section>
+
+        {delivering}
 
         <section className="staff-card">
           <h2>Messages</h2>

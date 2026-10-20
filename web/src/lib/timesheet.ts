@@ -1,13 +1,14 @@
 import "server-only";
 import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { db, staff, timeEntries, type Staff } from "@/db";
+import { hoursScope } from "./roles";
 import { weekRange } from "./week";
 
 /** Time records one person may see for a week: own (employee), branch (manager), chosen branch or all (admin) */
 export async function weekEntries(me: Staff, monday: string, branchFilter?: string) {
   const { start, end } = weekRange(monday);
   const scope =
-    me.role === "employee"
+    hoursScope(me) === "own"
       ? eq(timeEntries.staffId, me.id)
       : me.role === "manager"
         ? eq(timeEntries.branchId, me.branchId!)

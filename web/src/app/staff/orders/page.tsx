@@ -9,6 +9,7 @@ import { staffUnread } from "@/lib/order-chat";
 import { getOrderSettings, listBranchOrders } from "@/lib/orders";
 import { channels } from "@/lib/realtime";
 import { requireStaff } from "@/lib/staff";
+import { isManager } from "@/lib/roles";
 import { boardContext } from "./board-context";
 
 export const metadata: Metadata = { title: "Orders" };
@@ -20,7 +21,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/staff/ord
   const shown = mine.length > 1 && (want === "main" || want === "noir") ? mine.filter((b) => b.id === want) : mine;
   const ids = shown.map((b) => b.id);
   const [orders, settings] = await Promise.all([listBranchOrders(ids), getOrderSettings()]);
-  const [unread, context] = await Promise.all([staffUnread(orders.map((o) => o.id)), boardContext(orders, ids)]);
+  const [unread, context] = await Promise.all([staffUnread(orders.map((o) => o.id)), boardContext(orders, ids, isManager(me))]);
   const paused = shown.filter((b) => !settings[b.id].ordersOpen);
 
   return (
@@ -46,7 +47,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/staff/ord
       {paused.length > 0 && (
         <p className="staff-note is-warn">
           {paused.map((b) => b.name).join(" and ")} {paused.length === 1 ? "isn't" : "aren't"} taking online orders right now.{" "}
-          {me.role === "employee" ? "Ask your manager to switch them on." : <>Switch them on in <Link href="/staff/branch">Branch</Link>.</>}
+          {!isManager(me) ? "Ask your manager to switch them on." : <>Switch them on in <Link href="/staff/branch">Branch</Link>.</>}
         </p>
       )}
 

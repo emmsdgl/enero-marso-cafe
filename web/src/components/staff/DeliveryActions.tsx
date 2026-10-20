@@ -1,24 +1,31 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { quoteDeliveryAction, reviewPaymentAction, sendOutAction } from "@/app/staff/orders/actions";
+import { acceptDeliveryAction, assignRiderAction, changeFeeAction, reviewPaymentAction, sendOutAction } from "@/app/staff/orders/actions";
 import CopyText from "@/components/CopyText";
+import { cashLine } from "@/lib/cash";
 import { NOT_FOUND_REASONS } from "@/lib/chat-cards";
 import { formatDistance, MAX_DELIVERY_FEE } from "@/lib/delivery";
 import { peso } from "@/lib/menu";
 import type { FullOrder } from "@/lib/orders";
+import type { RiderChoice } from "@/lib/riders";
 
-type Props = { order: FullOrder; freeWithin: number; accountLabel: string | null; clashes: string[] | undefined };
+type Props = { order: FullOrder; accountLabel: string | null; clashes: string[] | undefined; riders: RiderChoice[]; riderName: string | null };
+
+const firstName = (name: string | null) => (name ?? "them").split(" ")[0];
 
 /**
- * The delivery steps on an order card: confirm the fee, check the payment, send it out.
- * The other steps (preparing, ready, delivered, cancel) use the card's usual buttons.
+ * The delivery steps on an order card: accept (the fee comes from the distance), check an online
+ * payment, choose who takes it, send it out. The other steps (preparing, ready, delivered, cancel)
+ * use the card's usual buttons.
  */
-export default function DeliveryActions({ order: o, freeWithin, accountLabel, clashes }: Props) {
+export default function DeliveryActions({ order: o, accountLabel, clashes, riders, riderName }: Props) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [changingFee, setChangingFee] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [lalamove, setLalamove] = useState(false);
+  const cash = o.paymentMethod === "cash";
   const run = (act: () => Promise<{ error?: string }>, after?: () => void) =>
     start(async () => {
       setError(null);
@@ -26,14 +33,34 @@ export default function DeliveryActions({ order: o, freeWithin, accountLabel, cl
       if (r.error) setError(r.error);
       else after?.();
     });
+  const feeWords = o.deliveryFee == null ? "Fee not set" : o.deliveryFee === 0 ? "Free delivery" : `${peso(o.deliveryFee)} delivery`;
+  const far = o.distanceMeters != null ? ` (${formatDistance(o.distanceMeters)})` : "";
+  const collect = cash && <p className="order-card-cash">{cashLine(o.total, o.cashTendered)}</p>;
 
   let body: React.ReactNode = null;
-  if (o.status === "pending" || (o.status === "awaiting_payment" && o.paymentStatus === "unpaid" && changingFee)) {
-    body = <FeeForm order={o} freeWithin={freeWithin} pending={pending} requote={o.status === "awaiting_payment"} onSend={(fee) => run(() => quoteDeliveryAction(o.id, fee), () => setChangingFee(false))} onCancelEdit={() => setChangingFee(false)} />;
+  if (o.status === "pending") {
+    // An order from before fees came from the distance has none yet: staff give it
+    body =
+      changingFee || o.deliveryFee == null ? (
+        <FeeForm order={o} pending={pending} submit="Accept with this fee" onSend={(fee) => run(() => acceptDeliveryAction(o.id, fee), () => setChangingFee(false))} onCancel={o.deliveryFee == null ? undefined : () => setChangingFee(false)} />
+      ) : (
+        <div className="order-card-step">
+          <p>{feeWords}{far} · total <b>{peso(o.total)}</b></p>
+          {cash ? collect : <small>They pay online once you accept.</small>}
+          <div className="order-card-actions">
+            <button type="button" className="staff-btn is-primary" disabled={pending} onClick={() => run(() => acceptDeliveryAction(o.id))}>
+              {pending ? "Saving…" : "Accept"}
+            </button>
+            <button type="button" className="staff-btn is-quiet" disabled={pending} onClick={() => setChangingFee(true)}>Change fee</button>
+          </div>
+        </div>
+      );
   } else if (o.status === "awaiting_payment" && o.paymentStatus === "unpaid") {
-    body = (
+    body = changingFee ? (
+      <FeeForm order={o} pending={pending} submit="Update the fee" onSend={(fee) => run(() => changeFeeAction(o.id, fee), () => setChangingFee(false))} onCancel={() => setChangingFee(false)} />
+    ) : (
       <div className="order-card-step">
-        <p>Waiting for the customer to pay <b>{peso(o.total)}</b>{o.deliveryFee ? ` (${peso(o.deliveryFee)} delivery)` : " (free delivery)"}.</p>
+        <p>Waiting for the customer to pay <b>{peso(o.total)}</b> ({feeWords.toLowerCase()}).</p>
         <button type="button" className="order-link" onClick={() => setChangingFee(true)}>Change the fee</button>
       </div>
     );
@@ -69,8 +96,64 @@ export default function DeliveryActions({ order: o, freeWithin, accountLabel, cl
         )}
       </div>
     );
-  } else if (o.status === "ready") {
-    body = <SendOutForm pending={pending} onSend={(provider, link) => run(() => sendOutAction(o.id, provider, link))} />;
+  } else if (["accepted", "preparing", "ready"].includes(o.status)) {
+    const known = !o.riderId || riders.some((r) => r.id === o.riderId);
+    body = (
+      <div className="order-card-step order-card-rider">
+        {riders.length === 0 && !o.riderId ? (
+          <p>No riders, and nobody clocked in, at this branch.{cash ? " Clock someone in to take it." : " Book Lalamove, or clock someone in."}</p>
+        ) : (
+          <label>
+            Taking it
+            <select value={o.riderId ?? ""} disabled={pending} onChange={(e) => run(() => assignRiderAction(o.id, e.target.value))}>
+              <option value="">Choose who…</option>
+              {riders.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                  {r.role === "rider" ? "" : " (counter)"}
+                  {r.onShift ? "" : " · not clocked in"}
+                  {r.load ? ` · ${r.load} on now` : ""}
+                </option>
+              ))}
+              {!known && <option value={o.riderId!}>{riderName ?? "Someone"}</option>}
+            </select>
+          </label>
+        )}
+        {collect}
+        {cash &&
+          (changingFee ? (
+            <FeeForm order={o} pending={pending} submit="Update the fee" onSend={(fee) => run(() => changeFeeAction(o.id, fee), () => setChangingFee(false))} onCancel={() => setChangingFee(false)} />
+          ) : (
+            <button type="button" className="order-link" onClick={() => setChangingFee(true)}>Change the fee ({feeWords.toLowerCase()})</button>
+          ))}
+        {o.status === "ready" && (
+          <div className="order-card-actions">
+            {o.riderId ? (
+              <button type="button" className="staff-btn is-primary" disabled={pending} onClick={() => run(() => sendOutAction(o.id, "own_rider", ""))}>
+                {pending ? "Saving…" : `Send out with ${firstName(riderName)}`}
+              </button>
+            ) : (
+              <small>Choose who&rsquo;s taking it, then send it out. They can also tap &ldquo;On my way&rdquo; themselves.</small>
+            )}
+          </div>
+        )}
+        {o.status === "ready" && !cash && (lalamove ? (
+          <LalamoveForm pending={pending} onSend={(link) => run(() => sendOutAction(o.id, "lalamove", link))} onCancel={() => setLalamove(false)} />
+        ) : (
+          <button type="button" className="order-link" onClick={() => setLalamove(true)}>Book Lalamove instead</button>
+        ))}
+      </div>
+    );
+  } else if (o.status === "out_for_delivery") {
+    body = (
+      <div className="order-card-step">
+        <p>
+          {o.deliveryProvider === "lalamove" ? "With Lalamove" : `With ${riderName ?? "our rider"}`}
+          {o.deliveryProvider === "lalamove" && o.trackingUrl && <> · <a href={o.trackingUrl} target="_blank" rel="noopener noreferrer">Tracking</a></>}
+        </p>
+        {collect}
+      </div>
+    );
   }
 
   return (
@@ -81,11 +164,8 @@ export default function DeliveryActions({ order: o, freeWithin, accountLabel, cl
   );
 }
 
-function FeeForm({ order: o, freeWithin, pending, requote, onSend, onCancelEdit }: {
-  order: FullOrder; freeWithin: number; pending: boolean; requote: boolean; onSend: (fee: string) => void; onCancelEdit: () => void;
-}) {
-  const inFreeArea = o.distanceMeters != null && freeWithin > 0 && o.distanceMeters <= freeWithin;
-  const [fee, setFee] = useState(requote && o.deliveryFee != null ? String(o.deliveryFee) : inFreeArea ? "0" : "");
+function FeeForm({ order: o, pending, submit, onSend, onCancel }: { order: FullOrder; pending: boolean; submit: string; onSend: (fee: string) => void; onCancel?: () => void }) {
+  const [fee, setFee] = useState(o.deliveryFee != null ? String(o.deliveryFee) : "");
   const n = Number(fee);
   const valid = fee.trim() !== "" && Number.isInteger(n) && n >= 0 && n <= MAX_DELIVERY_FEE;
   return (
@@ -98,39 +178,29 @@ function FeeForm({ order: o, freeWithin, pending, requote, onSend, onCancelEdit 
         </span>
       </label>
       <small>
-        {inFreeArea
-          ? `Inside the free area (${formatDistance(freeWithin)}). Add a fee only if the rider charges.`
-          : "Check Lalamove using the address and the map pin, then enter its fee."}
+        {o.deliveryFee != null ? `Worked out from the distance: ${o.deliveryFee ? peso(o.deliveryFee) : "free"}.` : "This order came in before fees were worked out from the distance."}
         {valid && ` The customer pays ${peso(o.subtotal + n)}.`}
       </small>
       <div className="order-card-actions">
-        <button type="submit" className="staff-btn is-primary" disabled={pending || !valid}>
-          {pending ? "Saving…" : requote ? "Update the fee" : "Confirm and send fee"}
-        </button>
-        {requote && <button type="button" className="staff-btn is-quiet" onClick={onCancelEdit}>Keep it</button>}
+        <button type="submit" className="staff-btn is-primary" disabled={pending || !valid}>{pending ? "Saving…" : submit}</button>
+        {onCancel && <button type="button" className="staff-btn is-quiet" onClick={onCancel}>Keep it</button>}
       </div>
     </form>
   );
 }
 
-function SendOutForm({ pending, onSend }: { pending: boolean; onSend: (provider: string, link: string) => void }) {
-  const [provider, setProvider] = useState<"lalamove" | "own_rider">("lalamove");
+/** The backup when our riders are busy: book it in the Lalamove app, paste the tracking link */
+function LalamoveForm({ pending, onSend, onCancel }: { pending: boolean; onSend: (link: string) => void; onCancel: () => void }) {
   const [link, setLink] = useState("");
   return (
-    <form className="order-card-step" onSubmit={(e) => { e.preventDefault(); onSend(provider, link); }}>
-      <fieldset className="order-card-who-delivers">
-        <legend>Who&rsquo;s delivering?</legend>
-        <label><input type="radio" name="provider" checked={provider === "lalamove"} onChange={() => setProvider("lalamove")} /> Lalamove</label>
-        <label><input type="radio" name="provider" checked={provider === "own_rider"} onChange={() => setProvider("own_rider")} /> Our staff</label>
-      </fieldset>
-      {provider === "lalamove" && (
-        <label className="order-card-link">
-          Tracking link <small>optional, from the Lalamove app</small>
-          <input type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://" inputMode="url" />
-        </label>
-      )}
+    <form className="order-card-step" onSubmit={(e) => { e.preventDefault(); onSend(link); }}>
+      <label className="order-card-link">
+        Lalamove tracking link <small>optional, from the Lalamove app</small>
+        <input type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://" inputMode="url" />
+      </label>
       <div className="order-card-actions">
-        <button type="submit" className="staff-btn is-primary" disabled={pending}>{pending ? "Saving…" : "Out for delivery"}</button>
+        <button type="submit" className="staff-btn is-primary" disabled={pending}>{pending ? "Saving…" : "Out with Lalamove"}</button>
+        <button type="button" className="staff-btn is-quiet" onClick={onCancel}>Back</button>
       </div>
     </form>
   );
