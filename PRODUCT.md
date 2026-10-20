@@ -83,11 +83,11 @@ Status: pickup ordering is built (customers order at /order, pick a time later t
 
 Full spec: `cafe-order-platform-brief.md`. In short:
 - Both branches, **pickup and delivery** from launch; orders only while open, until 30 minutes before closing.
-- Pickup pays at the counter (cash/GCash). Delivery: the fee follows from the straight-line distance (free inside the free area, then a base fee for the first stretch and a price per km, set per branch) and shows at checkout. The customer pays online (GCash, Maya or bank in the order's chat after staff accept, checked by hand) or cash to the rider, saying the bill they'll pay with so the rider brings change. Staff accept in one tap, choose who takes it, and the rider taps On my way and Delivered (confirming any cash). A manager can call off a delivery that's out (Couldn't deliver), with a reason the customer reads.
+- Pickup pays at the counter (cash/GCash). Delivery: the fee follows from the straight-line distance (free inside the free area, then a base fee for the first stretch and a price per km, set per branch) and shows at checkout. The customer pays online (GCash, Maya or bank in the order's chat after staff accept, checked by hand) or cash to the rider, saying the bill they'll pay with so the rider brings change. Staff accept in one tap, choose who takes it, and the rider taps On my way and Delivered (confirming any cash). A manager can call off a delivery that's out (Couldn't deliver), with a reason the customer reads. While it's on its way, the customer's page shows our rider on a map ("About 1.2 km away · updated 12 s ago"), sent from the rider's phone about every 15 s while their screen is on; paused if it stops, and deleted when the delivery ends (no history kept).
 - **One chat per order**: open while the order is in progress and 30 minutes after it is done, then read-only (enforced by the server). Kept 1 year, then personal details anonymized (Data Privacy Act).
 - No customer accounts: a private tracking link (shown on screen, remembered on the phone, re-issued by staff if lost). No SMS.
 - Staff side is the `/staff` portal made installable, with a live board (sound on the counter tablets) and web push. No native app for now.
-- Later options: PayMongo QR Ph for automatic payment checks, road-distance fees, Lalamove API booking, Loyverse sync. Next (M14): the rider's live location on the customer's page while their screen is on.
+- Later options: PayMongo QR Ph for automatic payment checks, road-distance fees, Lalamove API booking, Loyverse sync.
 
 ## Positioning
 

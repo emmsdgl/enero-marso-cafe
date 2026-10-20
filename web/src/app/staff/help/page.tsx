@@ -17,6 +17,10 @@ export default async function HelpPage() {
         <li>Your deliveries are on <Link href="/staff/deliveries">Deliveries</Link>: the address and map, the customer&rsquo;s number and chat, and what to collect.</li>
         <li>Turn on notifications in <Link href="/staff/account#notifications">Account</Link>, so a new delivery reaches your phone.</li>
         <li>When the counter marks it ready, take it and tap <b>On my way</b>. The customer sees it&rsquo;s coming.</li>
+        <li>
+          While it&rsquo;s on its way, keep Deliveries open: the customer sees where you are on a map. It&rsquo;s shared only then, and
+          deleted when you&rsquo;re done. On an iPhone a locked screen pauses it.
+        </li>
         <li>At the door, tap <b>Delivered</b>. If they pay cash, collect it, tick <b>I got ₱… in cash</b>, then tap <b>Delivered</b>.</li>
         <li>Can&rsquo;t find the place? Message or call the customer from the delivery. Still stuck: call the branch.</li>
         <li>Hand the cash you collected to the counter before you clock out. Deliveries shows the total.</li>

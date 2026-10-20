@@ -29,16 +29,21 @@ type Props = {
   label: string;
   /** What "use my location" is for, e.g. "Use my location" or "I'm at the branch now" */
   locateLabel?: string;
+  /** Our rider on the way, drawn as a moving dot (the customer's "On its way" card) */
+  rider?: LatLng | null;
 };
 
 /**
  * A map with one pin: drag it, tap the map to move it, or use the phone's location. If the map
  * can't load (no WebGL, tiles down), the location button still works on its own.
  */
-export default function PinMap({ pin, onPin, center, store, freeRadius = 0, label, locateLabel = "Use my location" }: Props) {
+export default function PinMap({ pin, onPin, center, store, freeRadius = 0, label, locateLabel = "Use my location", rider = null }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const marker = useRef<Marker | null>(null);
+  const lib = useRef<{ Marker: typeof import("maplibre-gl").Marker } | null>(null);
+  const riderMark = useRef<Marker | null>(null);
+  const fitted = useRef(false);
   const placed = useRef(false);
   const setPin = useRef(onPin);
   useEffect(() => {
@@ -58,6 +63,7 @@ export default function PinMap({ pin, onPin, center, store, freeRadius = 0, labe
     import("maplibre-gl")
       .then(({ default: maplibregl }) => {
         if (cancelled || !box.current) return;
+        lib.current = maplibregl;
         const m = new maplibregl.Map({
           container: box.current,
           style: MAP_STYLE,
@@ -123,7 +129,9 @@ export default function PinMap({ pin, onPin, center, store, freeRadius = 0, labe
       built?.remove();
       map.current = null;
       marker.current = null;
+      riderMark.current = null;
       placed.current = false;
+      fitted.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -140,6 +148,35 @@ export default function PinMap({ pin, onPin, center, store, freeRadius = 0, labe
     }
     if (!m.getBounds().contains([pin.lng, pin.lat])) m.panTo([pin.lng, pin.lat]);
   }, [pin, state]);
+
+  // The rider's dot: placed when their position comes in, moved as it changes. The first time, the
+  // map fits both the rider and the delivery pin.
+  useEffect(() => {
+    const m = map.current;
+    const L = lib.current;
+    if (!m || !L) return;
+    if (!rider) {
+      riderMark.current?.remove();
+      riderMark.current = null;
+      return;
+    }
+    if (!riderMark.current) {
+      const el = document.createElement("div");
+      el.className = "pin-map-rider";
+      el.title = "Your rider";
+      riderMark.current = new L.Marker({ element: el }).setLngLat([rider.lng, rider.lat]).addTo(m);
+    } else {
+      riderMark.current.setLngLat([rider.lng, rider.lat]);
+    }
+    if (!fitted.current && pin) {
+      fitted.current = true;
+      m.fitBounds(
+        [[Math.min(pin.lng, rider.lng), Math.min(pin.lat, rider.lat)], [Math.max(pin.lng, rider.lng), Math.max(pin.lat, rider.lat)]],
+        // More room at the bottom, where the map credits sit
+        { padding: { top: 56, right: 56, bottom: 88, left: 56 }, maxZoom: 16, duration: 0 },
+      );
+    }
+  }, [rider?.lat, rider?.lng, pin, state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const locate = () => {
     if (!("geolocation" in navigator)) return setNote("This browser can't share its location. Tap the map instead.");

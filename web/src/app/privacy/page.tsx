@@ -50,7 +50,8 @@ export default function PrivacyPage() {
               <li><b>The branch&rsquo;s staff,</b> to make and hand over your order. Staff phone alerts show the order code, never your name or number.</li>
               <li>
                 <b>Our rider,</b> who delivers your order: your first name, number, address and pin, what you ordered, and what to
-                collect if you pay cash. Their phone alerts show only the order code and the distance.
+                collect if you pay cash. Their phone alerts show only the order code and the distance. While your order is on its way
+                you see where the rider is; that position isn&rsquo;t kept.
               </li>
               <li><b>Lalamove,</b> only when our riders are busy and you paid online: your name, number, address and pin.</li>
               <li>

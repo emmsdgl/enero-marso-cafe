@@ -758,3 +758,11 @@
 .rider-done li:first-child { border-top: 0; }
 .rider-done .num { font-weight: 600; font-variant-numeric: tabular-nums; }
 .rider-cash-total { margin: 0.75rem 0 0; padding: 0.75rem 0.9rem; border-radius: 0.6rem; background: #f7e7cf; color: #5c3a0d; }
+.share-location {
+  display: grid; gap: 0.25rem; padding: 0.85rem 1rem; border-radius: 0.75rem;
+  background: #e6efe2; border: 1px solid rgb(47 90 34 / 0.3); color: #24461a;
+}
+.share-location p { margin: 0; display: flex; align-items: center; gap: 0.55rem; }
+.share-location small { font-size: 0.8125rem; }
+.share-location.is-off { background: #f7e7cf; border-color: #d9b47c; color: #5c3a0d; }
+.share-location.is-off .dot { background: transparent; border-color: currentColor; }

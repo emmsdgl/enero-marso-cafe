@@ -3,7 +3,8 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { glanceOrders, markCustomerRead, postCustomerMessage, type Glance } from "@/lib/order-chat";
-import { cancelByCustomer, placeOrder, submitPayment, type PlaceOrderInput } from "@/lib/orders";
+import { cancelByCustomer, getCustomerOrder, placeOrder, submitPayment, type PlaceOrderInput } from "@/lib/orders";
+import { riderSpotFor, type SpotView } from "@/lib/rider-location";
 import { clientIp } from "@/lib/staff";
 
 /** Checkout: on success the customer lands on their private order page */
@@ -18,6 +19,12 @@ export async function cancelOrderAction(code: string, token: string): Promise<{ 
   if (!r.ok) return { error: r.error };
   refresh();
   return {};
+}
+
+/** Where their rider is, while the order is on its way with one of ours (null otherwise, or for a wrong link) */
+export async function riderSpotAction(code: string, token: string): Promise<SpotView | null> {
+  const o = await getCustomerOrder(String(code), String(token));
+  return o ? riderSpotFor(o) : null;
 }
 
 /** Delivery: "I've paid", with the reference number from the receipt */

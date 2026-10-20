@@ -16,6 +16,7 @@ import { pickupAllowed } from "./pickup";
 import { normalizePhone, priceCart, type CartLine } from "./pricing";
 import { notifyBranch, notifyStaff } from "./push";
 import { assignedPayload, newOrderPayload, paymentPayload } from "./push-rules";
+import { clearSpotIfIdle } from "./rider-location";
 import { announce, channels } from "./realtime";
 import { canDeliver, canSeeOrder, isManager } from "./roles";
 import { audit } from "./staff";
@@ -264,6 +265,8 @@ export async function moveOrder(me: Staff, orderId: string, from: OrderStatus, t
   if (to === "cancelled" && o.paymentStatus === "verified") note += ` Your payment of ${peso(o.total)} will be refunded.`;
   if (to === "cancelled" && o.paymentStatus === "submitted") note += ` If you already paid, the cafe will refund ${peso(o.total)}.`;
   if (to === "cancelled") await audit(me.id, "order.cancel", { orderId: o.id, code: o.code, reason: why, payment: o.paymentStatus });
+  // Delivered or called off from the counter: the rider's position stops being shown
+  if (from === "out_for_delivery") await clearSpotIfIdle(o.riderId);
   await noteAndAnnounce(o, note || null, { kind: "step", status: to });
   return { ok: true };
 }
@@ -596,6 +599,7 @@ export async function riderStep(me: Staff, orderId: string, step: unknown, cashC
       .returning({ id: orders.id });
     if (done.length === 0) return STALE;
     await audit(me.id, "order.delivered", { orderId: o.id, code: o.code, ...(cash ? { cash: o.total } : {}) });
+    await clearSpotIfIdle(me.id);
     await noteAndAnnounce(o, statusNote("done", "delivery"), { kind: "step", status: "done" });
     return { ok: true };
   }

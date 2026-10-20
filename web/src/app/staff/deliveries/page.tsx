@@ -4,6 +4,7 @@ import LiveRefresh from "@/components/LiveRefresh";
 import PinMap from "@/components/map/PinMap";
 import ClockButton from "@/components/staff/ClockButton";
 import RiderActions from "@/components/staff/RiderActions";
+import ShareLocation from "@/components/staff/ShareLocation";
 import StaffChat from "@/components/staff/StaffChat";
 import { cashLine } from "@/lib/cash";
 import { openShift } from "@/lib/clock";
@@ -61,6 +62,7 @@ export default async function DeliveriesPage({ searchParams }: PageProps<"/staff
         {clocksIn(me.role) && <ClockButton clockedIn={!!shift} />}
       </header>
       {sp.welcome && <p className="staff-note is-ok">Your account is ready.</p>}
+      {active.some((o) => o.status === "out_for_delivery" && o.deliveryProvider === "own_rider") && <ShareLocation />}
 
       {active.map((o, i) => (
         <RiderCard key={o.id} order={o} store={settings[o.branchId as "main" | "noir"]?.delivery.store ?? null} chat={chats[i]} myName={me.name} />

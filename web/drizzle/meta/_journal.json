@@ -106,6 +106,13 @@
       "when": 1792414305628,
       "tag": "0014_own_riders",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792530331508,
+      "tag": "0015_rider_locations",
+      "breakpoints": true
     }
   ]
 }

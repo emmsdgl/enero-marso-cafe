@@ -5,6 +5,7 @@ import { blockOrderPhone, unblockPhone } from "@/lib/blocklist";
 import { markStaffRead, postStaffMessage } from "@/lib/order-chat";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/order-rules";
 import { acceptDelivery, assignRider, changeDeliveryFee, moveOrder, reissueOrderLink, reviewPayment, riderStep, sendOut } from "@/lib/orders";
+import { saveRiderSpot } from "@/lib/rider-location";
 import { ALL_ROLES } from "@/lib/roles";
 import { requireStaff } from "@/lib/staff";
 
@@ -63,6 +64,13 @@ export async function sendOutAction(orderId: string, provider: string, tracking:
   const r = await sendOut(me, String(orderId), provider, tracking);
   refresh();
   return r.ok ? {} : { error: r.error };
+}
+
+/** The rider's phone, about every 15 s while a delivery is on its way and the screen is on */
+export async function saveSpotAction(spot: { lat: number; lng: number; accuracy: number }): Promise<{ saved?: boolean; error?: string }> {
+  const me = await requireStaff(ALL_ROLES);
+  const r = await saveRiderSpot(me, spot);
+  return r.ok ? { saved: r.saved } : { error: r.error };
 }
 
 /** Counter staff, or the rider with the order (the customer sees them as "Your rider") */

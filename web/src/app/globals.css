@@ -699,6 +699,15 @@ body:has(.track .chat-compose) .order-bubbles { bottom: calc(env(safe-area-inset
   display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border: 2px solid var(--gold); border-radius: 50%;
   background: var(--ink); color: var(--gold); font: 700 0.6875rem/1 var(--brand); letter-spacing: 0.08em; box-shadow: 0 2px 6px rgb(21 18 17 / 0.4);
 }
+/* Our rider on the way: a gold dot with a soft pulse, and how far and how fresh under the map */
+.pin-map-rider {
+  width: 1.2rem; height: 1.2rem; border-radius: 50%; border: 3px solid var(--ink); background: var(--gold);
+  box-shadow: 0 0 0 0.35rem rgb(207 157 87 / 0.35); animation: rider-pulse 2.4s ease-in-out infinite;
+}
+@keyframes rider-pulse { 50% { box-shadow: 0 0 0 0.6rem rgb(207 157 87 / 0.12); } }
+@media (prefers-reduced-motion: reduce) { .pin-map-rider { animation: none; } }
+.rider-map { display: grid; gap: 0.5rem; margin: 0.75rem 0; }
+.rider-map-line { margin: 0; font-weight: 600; font-size: 0.9375rem; }
 .delivery-where { display: grid; gap: 0.85rem; }
 .delivery-reach { margin: 0; padding: 0.7rem 0.9rem; background: var(--sand); font-size: 0.9375rem; font-weight: 500; }
 .delivery-reach.is-free { background: #e6efe2; color: #24461a; }

@@ -384,6 +384,22 @@ export const blockedPhones = pgTable("blocked_phones", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Where a rider is, while they have a delivery on its way and their screen on: one row per rider,
+ * overwritten every 15 s or so, removed when they're done. No history is kept.
+ */
+export const riderLocations = pgTable(
+  "rider_locations",
+  {
+    riderId: uuid("rider_id").primaryKey().references(() => staff.id, { onDelete: "cascade" }),
+    lat: doublePrecision("lat").notNull(),
+    lng: doublePrecision("lng").notNull(),
+    accuracy: integer("accuracy").notNull(), // meters, as the phone reports it
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [check("rider_locations_accuracy", sql`${t.accuracy} between 0 and 2000`)],
+);
+
 // ——— Push-to-talk (Staff > Talk and the counter tablet) ———
 
 /** Binary data, for the saved talk clips. Sent and read in Postgres's hex form, which the HTTP driver passes as text. */

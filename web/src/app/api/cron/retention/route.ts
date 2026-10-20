@@ -1,13 +1,15 @@
 import { timingSafeEqual } from "node:crypto";
 import { anonymizeOldOrders } from "@/lib/retention";
 import { audit } from "@/lib/staff";
+import { removeOldSpots } from "@/lib/rider-location";
 import { removeOldTalk } from "@/lib/talk";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Daily, from Vercel Cron (vercel.json): removes customers' details from orders older than a
- * year, and talk clips older than 7 days. Vercel sends the CRON_SECRET it holds; anyone else gets a 401.
+ * year, talk clips older than 7 days, and rider positions a phone left behind. Vercel sends the
+ * CRON_SECRET it holds; anyone else gets a 401.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -17,5 +19,6 @@ export async function GET(request: Request) {
   const done = await anonymizeOldOrders();
   if (done.orders > 0) await audit(null, "retention.run", done);
   const talk = await removeOldTalk();
+  await removeOldSpots();
   return Response.json({ ...done, talkClips: talk.clips });
 }

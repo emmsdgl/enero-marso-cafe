@@ -9,6 +9,7 @@ import type { FullOrder } from "@/lib/orders";
 import type { PayAccount } from "@/lib/payments";
 import { formatPhone } from "@/lib/pricing";
 import { CancelOrder, OrderLink } from "./OrderLink";
+import RiderMap from "./RiderMap";
 import PayPanel from "./PayPanel";
 
 /**
@@ -189,6 +190,10 @@ export function LineCard({ card, body, time, ctx, open, live }: { card: Card; bo
           return (
             <ChatCard tone={o.status === "out_for_delivery" ? "now" : "done"} title="On its way" sub={card.provider === "lalamove" ? "With a Lalamove rider" : "With our rider"} time={time} open={open}>
               <p>To {o.address}{o.landmark ? ` (${o.landmark})` : ""}.</p>
+              {/* Our rider's live position, only while it's on its way */}
+              {card.provider !== "lalamove" && o.status === "out_for_delivery" && o.lat != null && o.lng != null && (
+                <RiderMap code={o.code} token={ctx.token} destination={{ lat: o.lat, lng: o.lng }} />
+              )}
               {o.paymentMethod === "cash" && o.status === "out_for_delivery" && <p className="track-pay">{cashNote(o.total, o.cashTendered)}</p>}
               {card.provider === "lalamove" && o.trackingUrl && o.status === "out_for_delivery" && (
                 <a href={o.trackingUrl} className="track-rider" target="_blank" rel="noopener noreferrer">Track your rider</a>
