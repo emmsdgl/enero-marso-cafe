@@ -4,6 +4,7 @@ import { after } from "next/server";
 import webpush from "web-push";
 import { db, pushSubscriptions, staff, timeEntries, type PushSubscriptionRow, type Staff } from "@/db";
 import { defaultOnShiftOnly, deviceName, recipients, type Payload, type PushKind } from "./push-rules";
+import { siteUrl } from "./site";
 import { manila } from "./staff";
 import { missedTalkPayload, missedTalkRecipients } from "./talk-rules";
 
@@ -14,7 +15,8 @@ import { missedTalkPayload, missedTalkRecipients } from "./talk-rules";
  */
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
-const SUBJECT = process.env.VAPID_SUBJECT || "https://enero-marso-cafe.vercel.app";
+const SITE = siteUrl();
+const SUBJECT = process.env.VAPID_SUBJECT || (SITE.startsWith("https://") ? SITE : "https://enero-marso-cafe.vercel.app");
 export const pushConfigured = Boolean(PUBLIC_KEY && PRIVATE_KEY);
 type Fail = { ok: false; error: string };
 

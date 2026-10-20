@@ -1,10 +1,13 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, gte, inArray, isNull } from "drizzle-orm";
+import { after } from "next/server";
 import { branches as branchDefs } from "@/data/branches";
 import { blockedPhones, branches, db, orderItems, orderMessages, orders, paymentAccounts, staff, timeEntries, type Order, type OrderItem, type Staff } from "@/db";
 import { cashNote, readTendered } from "./cash";
 import { checkDelivery, deliveryFee, isLatLng, MAX_DELIVERY_FEE, plusCode, type DeliverySettings } from "./delivery";
+import { orderEmailFrom } from "./email";
+import { looksLikeEmail } from "./email-rules";
 import type { Schedule } from "./hours";
 import { loadSchedules } from "./hours-store";
 import { isBranchId, peso, type BranchId } from "./menu";
@@ -13,6 +16,7 @@ import { NOT_FOUND_REASONS, type Card } from "./chat-cards";
 import { canMove, cleanPaymentRef, COULDNT_DELIVER_REASONS, statusNote, type OrderStatus } from "./order-rules";
 import { hashOrderToken, newOrderCode, newOrderToken, tokenMatches } from "./order-token";
 import { pickupAllowed } from "./pickup";
+import { emailOrderLink } from "./order-email";
 import { normalizePhone, priceCart, type CartLine } from "./pricing";
 import { notifyBranch, notifyStaff } from "./push";
 import { assignedPayload, newOrderPayload, paymentPayload } from "./push-rules";
@@ -57,6 +61,8 @@ export type PlaceOrderInput = {
   lines: CartLine[];
   name: string;
   phone: string;
+  /** Optional, and only offered once order email is set up: the order's link is emailed once */
+  email?: string;
   notes: string;
   delivery?: DeliveryInput | null;
   /** Delivery only: "online" (GCash, Maya or bank, in the chat) or "cash" to the rider */
@@ -93,6 +99,8 @@ export async function placeOrder(input: PlaceOrderInput, ip: string): Promise<{ 
   if (name.length < 2 || name.length > 60) return { ok: false, error: "Enter your name, so we know whose order it is." };
   if (!phone) return { ok: false, error: "Enter a mobile number like 0917 123 4567, so we can reach you about your order." };
   if (notes && notes.length > 300) return { ok: false, error: "Keep the notes under 300 characters." };
+  const email = orderEmailFrom ? String(input.email ?? "").trim().toLowerCase() || null : null;
+  if (email && !looksLikeEmail(email)) return fail("Check your email address, or leave it empty.");
 
   const hourAgo = new Date(now.getTime() - 3_600_000);
   const [[byIp], [byPhone], [blocked]] = await Promise.all([
@@ -140,7 +148,7 @@ export async function placeOrder(input: PlaceOrderInput, ip: string): Promise<{ 
       await db.batch([
         db.insert(orders).values({
           id, code, branchId: input.branch, tokenHash: hashOrderToken(token), fulfillment, wantedAt: wanted,
-          customerName: name, customerPhone: phone, notes, subtotal: priced.subtotal, total, createdIp: ip,
+          customerName: name, customerPhone: phone, customerEmail: email, notes, subtotal: priced.subtotal, total, createdIp: ip,
           ...delivery,
         }),
         db.insert(orderItems).values(
@@ -155,6 +163,8 @@ export async function placeOrder(input: PlaceOrderInput, ip: string): Promise<{ 
         id, code, branchId: input.branch, fulfillment, wantedAt: wanted, total,
         items: priced.lines.reduce((n, l) => n + l.qty, 0), distanceMeters: delivery.distanceMeters ?? null,
       }));
+      // After the reply, so the customer never waits on it, and a failed email can't fail the order
+      if (email) after(() => emailOrderLink({ id, code, branchId: input.branch, token, email, name, fulfillment }).catch(() => {}));
       return { ok: true, code, token };
     } catch (e) {
       if (!isCodeClash(e)) throw e;

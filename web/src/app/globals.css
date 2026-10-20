@@ -459,6 +459,7 @@ h1, h2, h3 { margin: 0; }
 .slip-fields label small { font-weight: 500; letter-spacing: 0.04em; text-transform: none; color: var(--cocoa); }
 .slip-fields input, .slip-fields textarea { width: 100%; padding: 0.75rem 0.85rem; letter-spacing: 0; text-transform: none; resize: vertical; }
 .slip-fields input::placeholder, .slip-fields textarea::placeholder { color: #7a5a44; }
+.slip-fields .slip-hint { font-weight: 500; font-size: 0.8125rem; letter-spacing: 0; text-transform: none; color: var(--cocoa); }
 .slip-pay { margin: 0; font-size: 0.875rem; color: var(--cocoa); }
 .slip-total { display: flex; justify-content: space-between; align-items: baseline; padding-top: 0.85rem; border-top: 2px solid var(--ink); }
 .slip-total span { font-weight: 700; font-size: 0.75rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--brown); }

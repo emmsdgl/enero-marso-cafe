@@ -7,6 +7,9 @@ import { redirect } from "next/navigation";
 import { branchNetworks, branches, db, kiosks, paymentAccounts, pushSubscriptions, staff, timeEntries } from "@/db";
 import { auth } from "@/lib/auth/server";
 import { toggleClock } from "@/lib/clock";
+import { staffEmailFrom } from "@/lib/email";
+import { INVITE_DAYS } from "@/lib/email-rules";
+import { emailInvite, inviteLink } from "@/lib/invites";
 import {
   BASE_DISTANCE_OPTIONS, feeSummary, FREE_DELIVERY_OPTIONS, formatDistance, inPhilippines, isLatLng, MAX_DELIVERY_FEE, MAX_DELIVERY_OPTIONS, MAX_PER_KM, MIN_ORDER_OPTIONS,
 } from "@/lib/delivery";
@@ -52,10 +55,38 @@ export async function addStaff(_: ActionState, form: FormData): Promise<ActionSt
   if (dupe?.removedAt) return { error: "That email belongs to a past team member. Restore them from Past team members below." };
   if (dupe) return { error: "Someone with that email is already on the team." };
 
-  const [row] = await db.insert(staff).values({ name, email, role, branchId }).returning({ id: staff.id });
+  const [row] = await db.insert(staff).values({ name, email, role, branchId }).returning();
   await audit(me.id, "staff.add", { staffId: row.id, name, email, role, branchId });
+  if (!staffEmailFrom) {
+    revalidatePath("/staff/team");
+    return { ok: `${name} added. They can now set up their account at /login/setup with ${email}.` };
+  }
+  // Email is set up: send their personal setup link now. A failed email never undoes adding them.
+  const sent = await emailInvite(row, me);
   revalidatePath("/staff/team");
-  return { ok: `${name} added. They can now set up their account at /login/setup with ${email}.` };
+  return sent.ok
+    ? { ok: `${name} added. We emailed ${email} a setup link that works for ${INVITE_DAYS} days.` }
+    : { ok: `${name} added. ${sent.error} The setup link is under Manage on their row.` };
+}
+
+/** Emails a new setup link to someone who hasn't set up yet (the old link stops working) */
+export async function sendInvite(id: string): Promise<ActionState> {
+  const me = await requireStaff(["admin"]);
+  const [p] = await db.select().from(staff).where(and(eq(staff.id, String(id)), isNull(staff.removedAt))).limit(1);
+  if (!p) return { error: "That person isn't on the team any more." };
+  const sent = await emailInvite(p, me);
+  revalidatePath("/staff/team");
+  return sent.ok ? { ok: `Invite emailed to ${p.email}. It works for ${INVITE_DAYS} days.` } : { error: sent.error };
+}
+
+/** A new setup link for the admin to send by text or chat (the old link stops working) */
+export async function makeInviteLink(id: string): Promise<{ path?: string; error?: string }> {
+  const me = await requireStaff(["admin"]);
+  const [p] = await db.select().from(staff).where(and(eq(staff.id, String(id)), isNull(staff.removedAt), eq(staff.active, true))).limit(1);
+  if (!p) return { error: "That person can't sign in right now. Turn on Can sign in first." };
+  const r = await inviteLink(p, me);
+  revalidatePath("/staff/team");
+  return r;
 }
 
 /**

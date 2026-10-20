@@ -7,6 +7,7 @@ export const retentionCutoff = (now: Date) => new Date(now.getTime() - RETAIN_DA
 export const SCRUBBED = {
   customerName: "Removed",
   customerPhone: "",
+  customerEmail: null,
   notes: null,
   address: null,
   landmark: null,

@@ -126,6 +126,7 @@ export default async function HelpPage() {
             <li><b>Too busy:</b> {manager ? <>pause online orders in <Link href="/staff/branch">Branch</Link>; customers see it at once.</> : "ask your manager to pause online orders."}</li>
             {manager && <li><b>Prank or no-show:</b> on the order&rsquo;s page, <b>Block this number</b>. It can&rsquo;t order online at either branch.</li>}
             <li><b>No sound or no orders coming in:</b> reload the Orders page and tap <b>Turn on sound</b> again.</li>
+            <li><b>Forgot your password:</b> on the sign-in page, tap <b>Reset it</b>. We email you a 6-digit code.</li>
           </ul>
         </section>
 

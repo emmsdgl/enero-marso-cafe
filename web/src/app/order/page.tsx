@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Checkout from "@/components/order/Checkout";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import { orderEmailFrom } from "@/lib/email";
 import { getMenus } from "@/lib/menu-store";
 import { getOrderSettings } from "@/lib/orders";
 
@@ -23,7 +24,7 @@ export default async function OrderPage({ searchParams }: PageProps<"/order">) {
           <h1>Order ahead</h1>
           <p className="page-script">Skip the line, we&rsquo;ll have it ready</p>
         </header>
-        <Checkout menus={menus} settings={settings} initialBranch={branch} />
+        <Checkout menus={menus} settings={settings} initialBranch={branch} emailOn={Boolean(orderEmailFrom)} />
       </main>
       <SiteFooter />
     </>

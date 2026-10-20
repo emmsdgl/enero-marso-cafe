@@ -113,6 +113,13 @@
       "when": 1792530331508,
       "tag": "0015_rider_locations",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792533170715,
+      "tag": "0016_email",
+      "breakpoints": true
     }
   ]
 }

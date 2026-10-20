@@ -96,6 +96,12 @@ export const staff = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     // Removed from the team by the admin: no access, hidden from the team list, history kept
     removedAt: timestamp("removed_at", { withTimezone: true }),
+    // Their personal setup link (only its hash is kept), good until it expires or a new one is made
+    inviteHash: text("invite_hash").unique(),
+    inviteExpiresAt: timestamp("invite_expires_at", { withTimezone: true }),
+    inviteSentAt: timestamp("invite_sent_at", { withTimezone: true }), // null: the admin copied the link instead of emailing it
+    // Set up through an emailed link, so the email is theirs
+    emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   },
   (t) => [
     check("staff_role_branch", sql`(${t.role} = 'admin') or (${t.branchId} is not null)`),
@@ -254,6 +260,8 @@ export const orders = pgTable(
     wantedAt: timestamp("wanted_at", { withTimezone: true }), // null = as soon as possible
     customerName: text("customer_name").notNull(),
     customerPhone: text("customer_phone").notNull(),
+    customerEmail: text("customer_email"), // optional: the order's private link is emailed once
+    emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
     notes: text("notes"),
     // Delivery (Lalamove) — filled from milestone 4
     address: text("address"),
@@ -306,6 +314,9 @@ export const orders = pgTable(
     index("orders_gcash_ref").on(t.gcashRef),
     index("orders_rider_status").on(t.riderId, t.status),
     check("orders_cash_tendered", sql`${t.cashTendered} is null or ${t.cashTendered} between 1 and 100000`),
+    check("orders_customer_email", sql`${t.customerEmail} is null or char_length(${t.customerEmail}) between 3 and 254`),
+    // Order emails are capped per day
+    index("orders_email_sent").on(t.emailSentAt),
   ],
 );
 

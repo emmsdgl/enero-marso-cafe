@@ -20,7 +20,7 @@ const manilaTime = (d: Date) => d.toLocaleTimeString("en-PH", { timeZone: "Asia/
  * Online order: the branch, then the menu, then pickup or delivery as the last step, beside the
  * order slip with the customer's details. Prices and distances are re-checked on the server.
  */
-export default function Checkout({ menus, settings, initialBranch }: { menus: Menus; settings: OrderSettings; initialBranch?: string }) {
+export default function Checkout({ menus, settings, initialBranch, emailOn = false }: { menus: Menus; settings: OrderSettings; initialBranch?: string; emailOn?: boolean }) {
   // Times depend on the clock, so they're worked out in the browser only (and refreshed every 30 s)
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
@@ -54,6 +54,7 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
   const [tender, setTender] = useState("exact");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, start] = useTransition();
@@ -123,6 +124,7 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
         lines: lines.map(({ itemId, size, sizeName, upsize, addons, qty }) => ({ itemId, size, sizeName, upsize, addons, qty })),
         name,
         phone,
+        email: emailOn ? email : undefined,
         notes,
         delivery: how === "delivery" && pin ? { ...pin, address, landmark } : null,
         ...(how === "delivery" ? { pay: payNow ?? undefined, tendered: payNow === "cash" ? tender : undefined } : {}),
@@ -253,6 +255,13 @@ export default function Checkout({ menus, settings, initialBranch }: { menus: Me
           <div className="slip-fields">
             <label>Name<input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required minLength={2} maxLength={60} placeholder="Juan Dela Cruz" /></label>
             <label>Mobile number<input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" autoComplete="tel" required inputMode="tel" placeholder="0917 123 4567" /></label>
+            {emailOn && (
+              <label>
+                Email <small>optional</small>
+                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" inputMode="email" maxLength={254} placeholder="juan@gmail.com" aria-describedby="slip-email-hint" />
+                <span id="slip-email-hint" className="slip-hint">We&rsquo;ll email you this order&rsquo;s link once. Nothing else.</span>
+              </label>
+            )}
             <label>Notes <small>optional</small><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={300} placeholder={how === "delivery" ? "Less sugar, who receives it, gate code…" : "Less sugar, extra sauce, who's picking up…"} /></label>
           </div>
 

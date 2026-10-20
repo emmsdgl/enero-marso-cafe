@@ -29,13 +29,15 @@ Both branches take online orders from launch, each with its own menu and order b
 ## Customer flow (no account)
 1. Pick the branch, then **Pickup** or **Delivery**.
 2. Add items. Sizes, prices and sold-out items come from the server; the cart never sets a price.
-3. Enter name, mobile number and notes. For **delivery**, also drop a pin on the map (or "use my location") and add the
-   address and a landmark.
+3. Enter name, mobile number and notes. Once email is set up there's also an optional email, used only to send the
+   order's link once. For **delivery**, also drop a pin on the map (or "use my location") and add the address and a
+   landmark.
 4. Accept the privacy notice and place the order.
 5. Land on the private **tracking page** `/order/{code}?t={token}`, which has the live status and the chat.
 6. Getting back to it is free: the link is shown with copy and share buttons, and the site remembers the active order
    on that phone ("You have an order in progress"). If the link is lost, staff can **re-issue** one, which voids the
-   old link. No SMS. Email links come later, once the cafe has its own domain.
+   old link. No SMS. A customer who adds an email gets the link once, right after ordering (at most 60 order emails
+   a day, so staff password codes always have room). No status emails.
 7. After completion, the chat shows as closed with a thank-you message.
 
 ## Payment and delivery
@@ -192,7 +194,20 @@ Both branches take online orders from launch, each with its own menu and order b
   - The GCash number or QR and account name for each branch (or one shared).
   - The delivery area or maximum distance, any minimum order, and whether Cafe Noir delivers.
 - **M6:** upgrade to Vercel Pro, and name the privacy contact person.
-- **Optional:** a custom domain, which unlocks email links.
+- **M7, domain and email** (the code is ready and stays switched off until these are set):
+  - Buy eneromarso.cafe in Vercel and add it to the project, with www.
+  - Resend (free plan, Tokyo): verify the domain. Add Resend's SPF and DKIM records, a DMARC record, and ImprovMX's MX
+    records in Vercel DNS.
+  - ImprovMX: forward hello@, privacy@ and dmarc@ to the owner's Gmail.
+  - Neon Auth on `main`: custom SMTP through Resend (smtp.resend.com, port 465, user "resend", the API key as the
+    password, sender no-reply@). Add https://eneromarso.cafe and https://www.eneromarso.cafe as trusted domains, then
+    turn off "allow localhost". Keep "require email verification" off. `dev` stays on Neon's shared sender.
+  - In Vercel, for Production only: `SITE_URL=https://eneromarso.cafe`, `RESEND_API_KEY`,
+    `STAFF_EMAIL_FROM="Enero Marso Cafe <no-reply@eneromarso.cafe>"`,
+    `ORDER_EMAIL_FROM="Enero Marso Cafe <orders@eneromarso.cafe>"`, `EMAIL_REPLY_TO=hello@eneromarso.cafe` and
+    `PRIVACY_EMAIL=privacy@eneromarso.cafe`.
+  - What turns on: staff invites by email (setup then needs the emailed link), the optional email at checkout, and
+    the privacy email on the privacy notice. "Forgot password" works already, through Neon Auth.
 - **Sentry:**
   - Create a free account and a Next.js project.
   - Add `NEXT_PUBLIC_SENTRY_DSN` in Vercel and `web/.env.local`.

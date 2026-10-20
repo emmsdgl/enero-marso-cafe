@@ -9,7 +9,7 @@ describe("keeping customer details for a year", () => {
   });
 
   it("clears every field that can identify or locate the customer", () => {
-    const personal: (keyof Order)[] = ["customerName", "customerPhone", "notes", "address", "landmark", "lat", "lng", "plusCode", "trackingUrl", "gcashRef", "createdIp"];
+    const personal: (keyof Order)[] = ["customerName", "customerPhone", "customerEmail", "notes", "address", "landmark", "lat", "lng", "plusCode", "trackingUrl", "gcashRef", "createdIp"];
     expect(Object.keys(SCRUBBED).sort()).toEqual([...personal].sort());
     expect(SCRUBBED.customerName).toBe("Removed");
   });

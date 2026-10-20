@@ -111,7 +111,7 @@ Premium coffee quality is the differentiator: the coffee itself, not just the sp
 
 - Logo artwork, the Canva design, and the confirmed facts above.
 - Known since: opening hours, socials, both full menus, the cafe phone 0915 954 1360 (from the contract).
-- Still missing: email, food and drink photos, final reservation/tray offers, GCash numbers per branch. Do not invent them; placeholders say "to be announced" or "photo coming soon".
+- Still missing: a public email (hello@eneromarso.cafe once the domain is set up), food and drink photos, final reservation/tray offers, GCash numbers per branch. Do not invent them; placeholders say "to be announced" or "photo coming soon".
 
 ## Product Principles
 

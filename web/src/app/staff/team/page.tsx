@@ -3,9 +3,12 @@ import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
 import ActionForm from "@/components/staff/ActionForm";
 import ActionButton from "@/components/staff/ActionButton";
 import EditSheet from "@/components/staff/EditSheet";
+import InviteTools from "@/components/staff/InviteTools";
 import TeamFilter from "@/components/staff/TeamFilter";
 import { db, staff } from "@/db";
 import { branches } from "@/data/branches";
+import { staffEmailFrom } from "@/lib/email";
+import { inviteState } from "@/lib/email-rules";
 import { usesPin } from "@/lib/roles";
 import { manila, requireStaff } from "@/lib/staff";
 import { addStaff, clearPin, removeStaff, restoreStaff, updateStaff } from "../actions";
@@ -20,6 +23,21 @@ const ROLES = [
 ];
 const short = (id: string | null) => (id ? branches.find((b) => b.id === id)!.name.replace("Enero Marso ", "") : "Both");
 
+/** The row's tag and the Manage panel's line for someone who hasn't set up yet */
+function inviteText(state: ReturnType<typeof inviteState>, p: { inviteExpiresAt: Date | null; inviteSentAt: Date | null }, emailOn: boolean) {
+  const until = p.inviteExpiresAt ? manila.date(p.inviteExpiresAt) : "";
+  switch (state) {
+    case "emailed": return { tag: "Invite emailed", warn: false, line: `Emailed ${manila.date(p.inviteSentAt!)}. Works until ${until}.` };
+    case "copied": return { tag: "Invited", warn: false, line: `A link was copied to send. Works until ${until}.` };
+    case "expired": return emailOn
+      ? { tag: "Invite ran out", warn: true, line: `The last link ran out on ${until}. Send a new one.` }
+      : { tag: "Invited", warn: false, line: "The last link ran out. They can still set up at /login/setup with this email." };
+    default: return emailOn
+      ? { tag: "Not invited", warn: true, line: "No setup link sent yet." }
+      : { tag: "Invited", warn: false, line: "They set up at /login/setup with this email, or with a link you copy here." };
+  }
+}
+
 export default async function TeamPage() {
   const me = await requireStaff(["admin", "manager"]);
   const team = await db
@@ -28,6 +46,8 @@ export default async function TeamPage() {
     .where(and(isNull(staff.removedAt), me.role === "manager" ? eq(staff.branchId, me.branchId!) : undefined))
     .orderBy(asc(staff.role), asc(staff.name));
   const past = me.role === "admin" ? await db.select().from(staff).where(isNotNull(staff.removedAt)).orderBy(asc(staff.name)) : [];
+  const emailOn = Boolean(staffEmailFrom);
+  const now = new Date();
 
   return (
     <div className="staff-page">
@@ -39,7 +59,11 @@ export default async function TeamPage() {
       {me.role === "admin" && (
         <section className="staff-card" aria-labelledby="add-title">
           <h2 id="add-title">Add someone</h2>
-          <p className="staff-help">They&rsquo;ll set their own password at <b>/login/setup</b> using this email.</p>
+          <p className="staff-help">
+            {emailOn
+              ? <>We email them a personal setup link. It works for 7 days.</>
+              : <>They&rsquo;ll set their own password at <b>/login/setup</b> using this email.</>}
+          </p>
           <ActionForm action={addStaff} submit="Add to team" className="is-row">
             <label>Name<input name="name" autoComplete="off" required /></label>
             <label>Email<input name="email" type="email" autoComplete="off" required /></label>
@@ -73,10 +97,22 @@ export default async function TeamPage() {
           <ul className="team-list">
             {[...team].sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
               <li key={p.id} data-person-id={p.id} className={p.active ? "team-row" : "team-row is-off"}>
-                <span className="team-who"><b>{p.name}</b><small>{p.email}</small></span>
+                <span className="team-who">
+                  <b>{p.name}</b>
+                  <small>{p.email}{p.emailVerifiedAt && <> · <span className="team-verified">verified</span></>}</small>
+                </span>
                 <span className="team-meta">{ROLES.find((r) => r.value === p.role)!.label.replace(" (both branches)", "")} · {p.branchId ? short(p.branchId) : "Both branches"}</span>
                 <span className="team-tags">
-                  {!p.active ? <span className="tag is-off">Deactivated</span> : p.authUserId ? <span className="tag is-ok">Active</span> : <span className="tag">Invited</span>}
+                  {!p.active ? (
+                    <span className="tag is-off">Deactivated</span>
+                  ) : p.authUserId ? (
+                    <span className="tag is-ok">Active</span>
+                  ) : (
+                    (() => {
+                      const t = inviteText(inviteState(p, now), p, emailOn);
+                      return <span className={t.warn ? "tag is-warn" : "tag"}>{t.tag}</span>;
+                    })()
+                  )}
                   {p.pinHash ? <span className="team-pin">PIN set</span> : p.role !== "admin" && <span className="tag is-warn">No PIN yet</span>}
                 </span>
                 <span className="team-do">
@@ -93,6 +129,14 @@ export default async function TeamPage() {
                           </label>
                           <label className="staff-check"><input type="checkbox" name="active" defaultChecked={p.active} /> Can sign in and clock in</label>
                         </ActionForm>
+                      )}
+                      {me.role === "admin" && !p.authUserId && p.active && (
+                        <InviteTools
+                          id={p.id}
+                          status={inviteText(inviteState(p, now), p, emailOn).line}
+                          emailOn={emailOn}
+                          hasLink={Boolean(p.inviteHash && p.inviteExpiresAt && p.inviteExpiresAt > now)}
+                        />
                       )}
                       {p.pinHash && (me.role === "admin" || usesPin(p.role)) && (
                         <div className="edit-sheet-part">

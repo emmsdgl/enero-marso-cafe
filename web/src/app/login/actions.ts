@@ -4,7 +4,11 @@ import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db, staff, type Staff } from "@/db";
 import { auth } from "@/lib/auth/server";
+import { staffEmailFrom } from "@/lib/email";
+import { looksLikeEmail, RESET_CODE_MINUTES } from "@/lib/email-rules";
+import { inviteFor } from "@/lib/invites";
 import { currentKiosk } from "@/lib/kiosk";
+import { resetWithCode, sendResetCode } from "@/lib/password-reset";
 import { endPinSession, startPinSession } from "@/lib/pin-session";
 import { homeFor, usesPin } from "@/lib/roles";
 import {
@@ -97,25 +101,78 @@ async function atBranch(branchId: string) {
   return kiosk?.branchId === branchId;
 }
 
-/** Invited staff create their password. Works only for an email the admin added that has no login yet. */
+/**
+ * Invited staff create their password. With a setup link (?invite=…) the link says who they are; an
+ * emailed link also proves the email is theirs. Without one, they type the email the admin added,
+ * which only works while email isn't set up: after that, everyone sets up through their link.
+ */
 export async function setUpAccount(_: FormState, form: FormData): Promise<FormState> {
-  const email = lower(form.get("email"));
+  const token = clean(form.get("invite"));
   const password = String(form.get("password") ?? "");
+  let invite: Staff | null;
+  let email: string;
+  if (token) {
+    invite = await inviteFor(token);
+    if (!invite) return { error: "This setup link has expired, or a newer one replaced it. Ask the admin for a new invite." };
+    email = invite.email.toLowerCase();
+  } else {
+    if (staffEmailFrom) return { error: "Use the setup link from your invite email. No email? Ask the admin to send it again." };
+    email = lower(form.get("email"));
+    [invite] = await db
+      .select()
+      .from(staff)
+      .where(and(eq(sql`lower(${staff.email})`, email), isNull(staff.authUserId), eq(staff.active, true), isNull(staff.removedAt)))
+      .limit(1);
+    if (!invite) return { error: "There's no pending invite for this email. Check the spelling, or ask the admin to add you.", email };
+  }
   if (password.length < 8) return { error: "Use at least 8 characters for your password.", email };
-
-  const [invite] = await db
-    .select()
-    .from(staff)
-    .where(and(eq(sql`lower(${staff.email})`, email), isNull(staff.authUserId), eq(staff.active, true)))
-    .limit(1);
-  if (!invite) return { error: "There's no pending invite for this email. Check the spelling, or ask the admin to add you.", email };
+  if (password.length > 128) return { error: "Use at most 128 characters for your password.", email };
 
   const { data, error } = await auth.signUp.email({ email, password, name: invite.name });
   if (error || !data?.user) return { error: error?.message ?? "Couldn't create your account. Try again.", email };
 
-  await db.update(staff).set({ authUserId: data.user.id }).where(eq(staff.id, invite.id));
-  await audit(invite.id, "account.setup", { email });
+  const emailed = Boolean(token && invite.inviteSentAt);
+  await db
+    .update(staff)
+    .set({ authUserId: data.user.id, inviteHash: null, inviteExpiresAt: null, ...(emailed ? { emailVerifiedAt: new Date() } : {}) })
+    .where(eq(staff.id, invite.id));
+  await audit(invite.id, "account.setup", { email, via: token ? (emailed ? "emailed link" : "copied link") : "typed email" });
   redirect(`${homeFor(invite)}?welcome=1`);
+}
+
+export type ResetState = { step: "email" | "code"; email: string; error?: string; notice?: string } | undefined;
+
+/**
+ * Forgot password, in two steps on one page. "email": send a 6-digit code (the answer is the same
+ * whether or not the email is on the team). "code": the code plus a new password.
+ */
+export async function resetPassword(_: ResetState, form: FormData): Promise<ResetState> {
+  const email = lower(form.get("email"));
+  const step = clean(form.get("step"));
+  if (step === "restart") return { step: "email", email: "" };
+  if (step === "code") {
+    const code = clean(form.get("code")).replace(/\s+/g, "");
+    const password = String(form.get("password") ?? "");
+    if (!/^\d{6}$/.test(code)) return { step: "code", email, error: "Enter the 6-digit code from the email." };
+    if (password.length < 8) return { step: "code", email, error: "Use at least 8 characters for your new password." };
+    if (password.length > 128) return { step: "code", email, error: "Use at most 128 characters for your new password." };
+    const outcome = await resetWithCode(email, code, password);
+    if (outcome === "ok") redirect("/login?reset=1");
+    const error = {
+      wrong: "That code isn’t right, or it has expired. Check the newest email, or send a new code.",
+      "too-many": "Too many wrong tries, so that code has stopped working. Send a new code.",
+      weak: "Use 8 to 128 characters for your new password.",
+      failed: "Couldn’t change your password just now. Try again in a minute.",
+    }[outcome];
+    return { step: "code", email, error };
+  }
+  if (!looksLikeEmail(email)) return { step: "email", email, error: "Enter the email you sign in with." };
+  await sendResetCode(email);
+  return {
+    step: "code",
+    email,
+    notice: `If ${email} is on the team, a 6-digit code is on its way. It works for ${RESET_CODE_MINUTES} minutes.`,
+  };
 }
 
 /** First run only: creates the owner's admin account. Locked once any admin exists. */

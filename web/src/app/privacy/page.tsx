@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { PRIVACY } from "@/data/privacy";
+import { orderEmailFrom } from "@/lib/email";
 
 export const metadata: Metadata = {
   title: "Privacy notice",
@@ -10,6 +11,9 @@ export const metadata: Metadata = {
 
 /** The privacy notice for online ordering, under the Data Privacy Act of 2012 (Republic Act 10173) */
 export default function PrivacyPage() {
+  // Order emails are optional and only offered once email is set up; the notice matches what the site does
+  const emailOn = Boolean(orderEmailFrom);
+  const privacyEmail = process.env.PRIVACY_EMAIL;
   return (
     <>
       <SiteHeader />
@@ -28,6 +32,7 @@ export default function PrivacyPage() {
             <h2>What we collect</h2>
             <ul>
               <li><b>When you order:</b> your name, mobile number, what you ordered, and any notes.</li>
+              {emailOn && <li><b>Your email, if you add it:</b> only to send you the link to your order, once. We don&rsquo;t send anything else.</li>}
               <li><b>For delivery:</b> your address, landmark and the pin you set on the map.</li>
               <li><b>Messages</b> you send the cafe about your order, and the cafe&rsquo;s replies.</li>
               <li><b>For delivery payments:</b> the reference number from your receipt and which of our accounts you paid.</li>
@@ -57,6 +62,7 @@ export default function PrivacyPage() {
               <li>
                 <b>The services that run this site:</b> Vercel (hosting) and Neon (database), both in Singapore. Pusher only carries
                 &ldquo;something changed&rdquo; signals, without your details. The map comes from OpenFreeMap, which sees the area you view.
+                {emailOn && <> If you add your email, Resend (in Japan) sends the one email with your order link.</>}
               </li>
               <li><b>Table and event requests</b> go through Facebook Messenger or a phone call, so Facebook&rsquo;s own privacy policy applies to those.</li>
             </ul>
@@ -65,7 +71,7 @@ export default function PrivacyPage() {
           <section>
             <h2>How long</h2>
             <p>
-              We keep your order details for one year. After that, your name, number, address, pin, notes, messages and payment
+              We keep your order details for one year. After that, your name, number, {emailOn && "email, "}address, pin, notes, messages and payment
               reference are removed automatically, and your order link stops working. We keep only what was ordered and the totals,
               for the cafe&rsquo;s books.
             </p>
@@ -83,7 +89,8 @@ export default function PrivacyPage() {
           <section>
             <h2>Contact us</h2>
             <p>
-              Call or text <a href={`tel:${PRIVACY.tel}`} className="nowrap">{PRIVACY.phone}</a>, or message{" "}
+              {privacyEmail ? <>Email <a href={`mailto:${privacyEmail}`}>{privacyEmail}</a>, call</> : "Call"} or text{" "}
+              <a href={`tel:${PRIVACY.tel}`} className="nowrap">{PRIVACY.phone}</a>, or message{" "}
               <a href={PRIVACY.facebook} target="_blank" rel="noopener noreferrer">{PRIVACY.controller}</a> on Facebook. Tell us your
               order code if you have it.
             </p>
